@@ -1,15 +1,10 @@
 import axios from 'axios';
 import { API_CONFIG } from './constants';
 
-const getBaseUrl = () => {
-  if (import.meta.env.PROD) {
-    return API_CONFIG.PROD_URL;
-  }
-  return API_CONFIG.BASE_URL;
-};
+import { API_BASE_URL } from "./constants.js";
 
 const axiosInstance = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL: API_BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
   headers: API_CONFIG.HEADERS,
   withCredentials: true
