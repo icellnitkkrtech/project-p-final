@@ -76,6 +76,34 @@ const EligibleBranchesStep = ({ formData, handleEligibleBranchChange, handleElig
                       color="primary"
                     />
                   }
+                  label={branch.specialization ? `${branch.department} - ${branch.specialization}` : branch.department}
+                  sx={{
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: '0.95rem'
+                    }
+                  }}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+
+        {/* PhD Section */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="h6" gutterBottom color="primary">
+            Doctorate Programme (PhD)
+          </Typography>
+          <Grid container spacing={2}>
+            {formData.eligibleBranches.phd.map((branch, index) => (
+              <Grid item xs={12} sm={6} key={`${branch.department}-${branch.specialization}`}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={branch.eligible}
+                      onChange={(e) => handleCheckboxChange(e, 'phd', index)}
+                      color="primary"
+                    />
+                  }
                   label={`${branch.department} - ${branch.specialization}`}
                   sx={{
                     '& .MuiFormControlLabel-label': {

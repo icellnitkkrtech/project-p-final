@@ -11,22 +11,22 @@ import {
   Alert,
 } from "@mui/material";
 import axios from "../../axios";
-
-const JobSection = ({ studentId }) => {
+import { useOutlet, useOutletContext } from "react-router-dom";
+const JobSection = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [applying, setApplying] = useState(null);
-
+  const { student, setStudent } = useOutletContext();
+  const studentId = student._id;
   useEffect(() => {
     fetchEligibleJobs();
   }, [studentId]);
-
+console.log("studentId",studentId)
   const fetchEligibleJobs = async () => {
     try {
-      const response = await axios.get(
-        `/student/eligible-jobs/${studentId}`
-      );
+      const response = await axios.get(`/student/eligible-jobs/${studentId}`);
+      // Remove /api/v1 since it's now in baseURL
       setJobs(response.data.data);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch jobs");

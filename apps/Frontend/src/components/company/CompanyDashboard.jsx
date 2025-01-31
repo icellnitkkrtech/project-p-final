@@ -32,17 +32,17 @@ import {
   Dashboard as DashboardIcon,
   Business as BusinessIcon,
   PostAdd as PostAddIcon,
-  ViewList as ViewListIcon,
   Notifications as NotificationIcon,
   Settings as SettingsIcon,
   Person as PersonIcon,
   Search as SearchIcon,
   ChevronRight as ChevronRightIcon,
-  ExitToApp as LogoutIcon
+  ExitToApp as LogoutIcon,
+  Email, 
+  Phone
 } from '@mui/icons-material';
 import { styled, alpha } from '@mui/material/styles';
 import CompanyProfile from './CompanyProfile';
-import JNFView from './JNFView';
 import JNFPosting from './JNFPosting';
 
 const drawerWidth = 280;
@@ -128,9 +128,8 @@ const CompanyDashboard = () => {
   };
 
   const menuItems = [
-    { text: 'Company Profile', icon: <BusinessIcon />, index: 0 },
-    { text: 'Post New JNF', icon: <PostAddIcon />, index: 1 },
-    { text: 'View JNFs', icon: <ViewListIcon />, index: 2 }
+    { text: 'Post New JNF', icon: <PostAddIcon />, index: 0 },
+    { text: 'Your Profile', icon: <BusinessIcon />, index: 1 },
   ];
 
   const drawer = (
@@ -151,7 +150,8 @@ const CompanyDashboard = () => {
             key={item.text}
             selected={activeTab === item.index}
             onClick={() => setActiveTab(item.index)}
-            sx={{
+            sx={{ 
+              cursor: 'pointer',
               '&.Mui-selected': {
                 background: alpha(theme.palette.primary.main, 0.1),
                 borderRight: `3px solid ${theme.palette.primary.main}`,
@@ -204,7 +204,26 @@ const CompanyDashboard = () => {
             <MenuIcon />
           </IconButton>
 
-          <Search>
+          <Stack 
+            direction="row" 
+            spacing={3} 
+            alignItems="center"
+            sx={{ 
+              ml: 2,
+              display: { xs: 'none', sm: 'flex' } // Hide on mobile
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Email fontSize="small" />
+              <Typography variant="body2">support@techcorp.com</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Phone fontSize="small" />
+              <Typography variant="body2">+91 1234567890</Typography>
+            </Box>
+          </Stack>
+
+          {/* <Search>
             <SearchIconWrapper>
               <SearchIcon />
             </SearchIconWrapper>
@@ -212,7 +231,7 @@ const CompanyDashboard = () => {
               placeholder="Search..."
               inputProps={{ 'aria-label': 'search' }}
             />
-          </Search>
+          </Search> */}
 
           <Box sx={{ flexGrow: 1 }} />
 
@@ -278,43 +297,10 @@ const CompanyDashboard = () => {
           mt: 8
         }}
       >
-        {/* <motion.div variants={itemVariants}>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  background: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
-                  color: 'white',
-                  borderRadius: 2
-                }}
-              >
-                <Typography variant="h4" gutterBottom>
-                  {activeTab === 0 ? 'Company Profile' : 
-                   activeTab === 1 ? 'Post New JNF' : 'View JNFs'}
-                </Typography>
-                <Breadcrumbs
-                  separator={<ChevronRightIcon sx={{ color: 'white' }} />}
-                  sx={{ color: 'white' }}
-                >
-                  <Link color="inherit" href="#" sx={{ color: 'white' }}>
-                    Dashboard
-                  </Link>
-                  <Typography color="inherit">
-                    {menuItems[activeTab].text}
-                  </Typography>
-                </Breadcrumbs>
-              </Paper>
-            </Grid>
-          </Grid>
-        </motion.div> */}
-
         <motion.div variants={itemVariants}>
           <Box sx={{ mb: 4 }}>
-            {activeTab === 0 && <CompanyProfile />}
-            {activeTab === 1 && <JNFPosting />}
-            {activeTab === 2 && <JNFView />}
+            {activeTab === 0 && <JNFPosting />}
+            {activeTab === 1 && <CompanyProfile />}
           </Box>
         </motion.div>
       </Box>

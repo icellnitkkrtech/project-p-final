@@ -20,6 +20,8 @@ import {
     Notifications as NotificationsIcon,
     AutoFixHigh,
 } from '@mui/icons-material';
+import ListAltIcon from "@mui/icons-material/ListAlt";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLayout } from '../../../hooks/admin/useLayout';
 
@@ -29,6 +31,8 @@ const menuItems = [
     { title: 'Companies', path: '/admin/companies', icon: <BusinessIcon /> },
     { title: 'JNF', path: '/admin/jnf', icon: <JNFIcon /> },
     { title: 'Placements', path: '/admin/placements', icon: <PlacementsIcon /> },
+    { title: 'Survey', path: '/admin/survey', icon: <ListAltIcon /> },
+    { title: 'Query', path: '/admin/query', icon: <ChatBubbleOutlineIcon /> },
     { title: 'Reports', path: '/admin/reports', icon: <ReportsIcon /> },
     { title: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },
     { title: 'Audit Logs', path: '/admin/audit', icon: <History /> },

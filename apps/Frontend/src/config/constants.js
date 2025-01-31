@@ -1,12 +1,9 @@
 // API Configuration
-const isProduction = import.meta.env.VITE_NODE_ENV === 'production';
-const backendPort = import.meta.env.VITE_BACKEND_PORT || '3001';
-const prodApiUrl = 'https://project-p-final-backend.vercel.app/api/v1';
-const devApiUrl = `http://localhost:${backendPort}/api/v1`;
 
-export const API_BASE_URL = isProduction ? prodApiUrl : devApiUrl;
-export const API_TIMEOUT = 30000; 
 
+// export const API_BASE_URL = isProduction ? prodApiUrl : devApiUrl;
+// export const API_TIMEOUT = 30000; 
+export const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/v1`;
 // App Configuration
 export const APP_CONFIG = {
   name: 'PMS Admin',
@@ -16,8 +13,8 @@ export const APP_CONFIG = {
 };
 
 export const API_CONFIG = {
-  BASE_URL: devApiUrl,
-  PROD_URL: prodApiUrl,
+  BASE_URL: API_BASE_URL,
+  // PROD_URL: prodApiUrl,
   TIMEOUT: 60000,
   HEADERS: {
     'Content-Type': 'application/json',
@@ -37,6 +34,7 @@ export const API_CONFIG = {
     },
     STUDENT: {
       BASE: '/student',
+      REGISTER: '/student/register',
       PROFILE: '/student/profile',
       APPLICATIONS: '/student/applications',
       RESUME: '/student/resume',

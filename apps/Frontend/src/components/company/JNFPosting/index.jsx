@@ -146,8 +146,31 @@ const index = () => {
                 { department: 'Civil Engineering', specialization: 'Water Resources Engineering', eligible: false },
                 { department: 'Physics', specialization: 'Instrumentation', eligible: false },
                 { department: 'Physics', specialization: 'Nanomaterials and Nanotechnology', eligible: false },
-                { department: 'Master of Computer Applications (MCA)', specialization: 'Master of Computer Applications (MCA)', eligible: false },
-                { department: 'Master of Business Administration (MBA)', specialization: 'Master of Business Administration (MBA)', eligible: false },
+                { department: 'Master of Computer Applications (MCA)', eligible: false },
+                { department: 'Master of Business Administration (MBA)', eligible: false },
+            ],
+            phd: [
+                { department: 'Computer Science & Engineering', specialization: 'Artificial Intelligence & Machine Learning', eligible: false },
+                { department: 'Computer Science & Engineering', specialization: 'Data Science', eligible: false },
+                { department: 'Computer Science & Engineering', specialization: 'Cybersecurity', eligible: false },
+                { department: 'Electronics & Communication', specialization: 'VLSI Design', eligible: false },
+                { department: 'Electronics & Communication', specialization: 'Communication Systems', eligible: false },
+                { department: 'Electronics & Communication', specialization: 'Signal Processing', eligible: false },
+                { department: 'Electrical Engineering', specialization: 'Power Systems', eligible: false },
+                { department: 'Electrical Engineering', specialization: 'Control Systems', eligible: false },
+                { department: 'Electrical Engineering', specialization: 'Renewable Energy', eligible: false },
+                { department: 'Mechanical Engineering', specialization: 'Thermal Engineering', eligible: false },
+                { department: 'Mechanical Engineering', specialization: 'Manufacturing Systems', eligible: false },
+                { department: 'Mechanical Engineering', specialization: 'Robotics', eligible: false },
+                { department: 'Civil Engineering', specialization: 'Structural Engineering', eligible: false },
+                { department: 'Civil Engineering', specialization: 'Environmental Engineering', eligible: false },
+                { department: 'Civil Engineering', specialization: 'Transportation Engineering', eligible: false },
+                { department: 'Physics', specialization: 'Quantum Computing', eligible: false },
+                { department: 'Physics', specialization: 'Materials Science', eligible: false },
+                { department: 'Chemistry', specialization: 'Polymer Chemistry', eligible: false },
+                { department: 'Chemistry', specialization: 'Analytical Chemistry', eligible: false },
+                { department: 'Mathematics', specialization: 'Applied Mathematics', eligible: false },
+                { department: 'Mathematics', specialization: 'Computational Mathematics', eligible: false }
             ]
         },
 
@@ -179,12 +202,6 @@ const index = () => {
                 mobile: '',
                 email: ''
             },
-            {
-                name: '',
-                designation: '',
-                mobile: '',
-                email: ''
-            }
         ],
         additionalInfo: {
             sponsorEvents: '',
@@ -258,14 +275,12 @@ const index = () => {
         }));
     };
 
-    const handlePointOfContactChange = (index, field, value) => {
-        setFormData((prev) => ({
-            ...prev,
-            pointOfContact: prev.pointOfContact.map((contact, i) =>
-                i === index ? { ...contact, [field]: value } : contact
-            )
+    const handlePointOfContactChange = (updatedContacts) => {
+        setFormData(prev => ({
+          ...prev,
+          pointOfContact: updatedContacts
         }));
-    };
+      };
 
     const handleAdditionalInfoChange = (field, value) => {
         setFormData((prev) => ({

@@ -6,8 +6,10 @@ import PlacementAnalytics from '../../components/admin/placements/PlacementAnaly
 import PlacementFilters from '../../components/admin/placements/PlacementFilters';
 import { useTable } from '../../hooks/admin/useTable';
 import { usePlacement } from '../../hooks/admin/usePlacement';
+import { useTheme } from '@mui/material';
 
 const Placements = () => {
+  const theme = useTheme();
   const { getPlacements } = usePlacement();
   const [filters, setFilters] = useState({
     search: '',
@@ -101,7 +103,8 @@ const Placements = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Placements</Typography>
+        <Typography variant="h4"
+        sx={{color:theme.palette.text.primary}}>Placements</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}

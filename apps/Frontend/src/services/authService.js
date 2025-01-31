@@ -87,7 +87,12 @@ const authService = {
 
       return response.data;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('login error:', {
+        env: import.meta.env.VITE_NODE_ENV,
+        baseUrl: axiosInstance.defaults.baseURL,
+        endpoint: API_CONFIG.ENDPOINTS.AUTH.REGISTER,
+        error: error.response?.data || error.message
+      });
       throw error;
     }
   },

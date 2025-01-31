@@ -31,7 +31,8 @@ const Header = () => {
   const { toggleSidebar, pageTitle } = useLayout();
   const { user, logout } = useAuth();
   const { theme: appTheme, toggleTheme } = useAppTheme();
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [profileAnchorEl, setProfileAnchorEl] = useState(null);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -52,21 +53,21 @@ const Header = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleProfileMenu = (event) => {
+    setProfileAnchorEl(event.currentTarget);
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
+  const handleProfileClose = () => {
+    setProfileAnchorEl(null);
   };
 
   const handleProfile = () => {
-    handleClose();
+    handleProfileClose();
     navigate('/admin/profile');
   };
 
   const handleLogout = async () => {
-    handleClose();
+    handleProfileClose();
     try {
       await logout();
     } catch (error) {
@@ -75,11 +76,11 @@ const Header = () => {
   };
 
   const handleNotificationClick = (event) => {
-    setAnchorEl(event.currentTarget);
+    setNotificationAnchorEl(event.currentTarget);
   };
 
   const handleNotificationClose = () => {
-    setAnchorEl(null);
+    setNotificationAnchorEl(null);
   };
 
   const handleNotificationRead = (id) => {
@@ -130,9 +131,9 @@ const Header = () => {
             onClick={handleNotificationClick}
             size="large"
             aria-label={`${unreadCount} notifications`}
-            aria-controls={Boolean(anchorEl) ? 'notification-menu' : undefined}
+            aria-controls={Boolean(notificationAnchorEl) ? 'notification-menu' : undefined}
             aria-haspopup="true"
-            aria-expanded={Boolean(anchorEl)}
+            aria-expanded={Boolean(notificationAnchorEl)}
           >
             <Badge badgeContent={unreadCount} color="error">
               <NotificationsIcon />
@@ -140,7 +141,7 @@ const Header = () => {
           </IconButton>
 
           <IconButton
-            onClick={handleMenu}
+            onClick={handleProfileMenu}
             color="inherit"
             sx={{ ml: 1 }}
           >
@@ -156,7 +157,7 @@ const Header = () => {
           </IconButton>
 
           <Menu
-            anchorEl={anchorEl}
+            anchorEl={profileAnchorEl}
             anchorOrigin={{
               vertical: 'bottom',
               horizontal: 'right',
@@ -166,8 +167,8 @@ const Header = () => {
               vertical: 'top',
               horizontal: 'right',
             }}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
+            open={Boolean(profileAnchorEl)}
+            onClose={handleProfileClose}
           >
             <MenuItem onClick={handleProfile}>Profile</MenuItem>
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
@@ -177,8 +178,8 @@ const Header = () => {
 
       <Menu
         id="notification-menu"
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
+        anchorEl={notificationAnchorEl}
+        open={Boolean(notificationAnchorEl)}
         onClose={handleNotificationClose}
         onClick={handleNotificationClose}
         PaperProps={{
@@ -242,4 +243,4 @@ const Header = () => {
   );
 };
 
-export default Header; 
+export default Header;

@@ -55,12 +55,13 @@ const Students = () => {
 
       {selectedStudent ? (
         isEditing ? (
-          <StudentProfileManager
-            student={selectedStudent}
-            onSave={handleSaveProfile}
-            onCancel={handleCancelEdit}
-          />
-        ) : (
+          <StudentDetailsView
+          studentId={selectedStudent.id}
+          onEdit={handleEditProfile}
+          onBack={() => setSelectedStudent(null)}
+        />
+        ) : 
+        (
           <StudentDetailsView
             studentId={selectedStudent.id}
             onEdit={handleEditProfile}

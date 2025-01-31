@@ -16,7 +16,7 @@ const ProfileSection = () => {
   const handleUpdate = async (updatedData) => {
     try {
       const response = await axios.put(
-        `/api/v1/student/profile/${student._id}`,
+        `/student/profile/${student._id}`,
         updatedData
       );
       if (response.data.statusCode === 200) {
