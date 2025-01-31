@@ -84,95 +84,18 @@ export default class StudentController {
 
   // New method to get students based on query parameters
   getStudents = asyncHandler(async (req, res) => {
-    const {
-      search = '',
-      batch = [],
-      branch = [],
-      section = [],
-      status = [],
-      gender = [],
-      placementStatus = [],
-      cgpaRange = [0, 10],
-      backlogsRange = [0, 10],
-      hasInternship = null,
-      hasProjects = null,
-      hasCertifications = null,
-      activeBacklogs = null,
-      eligibilityStatus = [],
-      offerStatus = [],
-      interviewStatus = [],
-      skillTags = [],
-      location = [],
-      category = [],
-      admissionType = [],
-      feesStatus = [],
-      hostelStatus = [],
-      page = 1,
-      limit = 10
-    } = req.query;
+    const response = await this.studentService.getStudents();
+    res.status(response.statusCode).json(response);
+  });
 
-    try {
-      const students = await this.studentService.getStudents({
-        search,
-        batch,
-        branch,
-        section,
-        status,
-        gender,
-        placementStatus,
-        cgpaRange,
-        backlogsRange,
-        hasInternship,
-        hasProjects,
-        hasCertifications,
-        activeBacklogs,
-        eligibilityStatus,
-        offerStatus,
-        interviewStatus,
-        skillTags,
-        location,
-        category,
-        admissionType,
-        feesStatus,
-        hostelStatus,
-        page,
-        limit
-      });
+  registerStudentByAdmin = asyncHandler(async (req, res) => {
+    const student = await this.studentService.registerStudentByAdmin(req.body);
+    res.status(student.statusCode).json(student);
+  });
 
-      const total = await this.studentService.countStudents({
-        search,
-        batch,
-        branch,
-        section,
-        status,
-        gender,
-        placementStatus,
-        cgpaRange,
-        backlogsRange,
-        hasInternship,
-        hasProjects,
-        hasCertifications,
-        activeBacklogs,
-        eligibilityStatus,
-        offerStatus,
-        interviewStatus,
-        skillTags,
-        location,
-        category,
-        admissionType,
-        feesStatus,
-        hostelStatus
-      });
-
-      res.json({
-        students,
-        total,
-        page,
-        limit
-      });
-    } catch (error) {
-      console.error("Error fetching students:", error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
+  deleteStudent = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const result = await this.studentService.deleteStudent(id);
+    res.status(result.statusCode).json(result);
   });
 }
