@@ -1,6 +1,6 @@
 // API Configuration
 const isProduction = import.meta.env.VITE_NODE_ENV === 'production';
-const backendPort = import.meta.env.VITE_BACKEND_PORT || '3002';
+const backendPort = import.meta.env.VITE_BACKEND_PORT || '3001';
 const prodApiUrl = 'https://project-p-final-backend.vercel.app/api/v1';
 const devApiUrl = `http://localhost:${backendPort}/api/v1`;
 

@@ -353,4 +353,142 @@ export default class StudentModel {
       );
     }
   }
+
+  async getTotalStudents() {
+    try {
+      const totalStudents = await this.student.countDocuments({});
+      return new apiResponse(200, totalStudents, "Total students fetched successfully");
+    } catch (error) {
+      return new apiResponse(500, null, "An error occurred while fetching total students");
+    }
+  }
+
+  async getStudents(query) {
+    const {
+      search,
+      batch,
+      branch,
+      section,
+      status,
+      gender,
+      placementStatus,
+      cgpaRange,
+      backlogsRange,
+      hasInternship,
+      hasProjects,
+      hasCertifications,
+      activeBacklogs,
+      eligibilityStatus,
+      offerStatus,
+      interviewStatus,
+      skillTags,
+      location,
+      category,
+      admissionType,
+      feesStatus,
+      hostelStatus,
+      page,
+      limit
+    } = query;
+
+    const filter = {};
+
+    // Build your filter based on the query parameters
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { rollNumber: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (batch.length) filter.batch = { $in: batch };
+    if (branch.length) filter.branch = { $in: branch };
+    if (section.length) filter.section = { $in: section };
+    if (status.length) filter.status = { $in: status };
+    if (gender.length) filter.gender = { $in: gender };
+    if (placementStatus.length) filter.placementStatus = { $in: placementStatus };
+    if (cgpaRange) filter.cgpa = { $gte: cgpaRange[0], $lte: cgpaRange[1] };
+    if (backlogsRange) filter.activeBacklogs = { $gte: backlogsRange[0], $lte: backlogsRange[1] };
+    if (hasInternship !== null) filter.hasInternship = hasInternship;
+    if (hasProjects !== null) filter.hasProjects = hasProjects;
+    if (hasCertifications !== null) filter.hasCertifications = hasCertifications;
+    if (activeBacklogs !== null) filter.activeBacklogs = activeBacklogs;
+    if (eligibilityStatus.length) filter.eligibilityStatus = { $in: eligibilityStatus };
+    if (offerStatus.length) filter.offerStatus = { $in: offerStatus };
+    if (interviewStatus.length) filter.interviewStatus = { $in: interviewStatus };
+    if (skillTags.length) filter.skillTags = { $in: skillTags };
+    if (location.length) filter.location = { $in: location };
+    if (category.length) filter.category = { $in: category };
+    if (admissionType.length) filter.admissionType = { $in: admissionType };
+    if (feesStatus.length) filter.feesStatus = { $in: feesStatus };
+    if (hostelStatus.length) filter.hostelStatus = { $in: hostelStatus };
+
+    const students = await Student.find(filter)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    return students;
+  }
+
+  async countStudents(query) {
+    const {
+      search,
+      batch,
+      branch,
+      section,
+      status,
+      gender,
+      placementStatus,
+      cgpaRange,
+      backlogsRange,
+      hasInternship,
+      hasProjects,
+      hasCertifications,
+      activeBacklogs,
+      eligibilityStatus,
+      offerStatus,
+      interviewStatus,
+      skillTags,
+      location,
+      category,
+      admissionType,
+      feesStatus,
+      hostelStatus
+    } = query;
+
+    const filter = {};
+
+    // Build your filter based on the query parameters (same as in getStudents)
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { rollNumber: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (batch.length) filter.batch = { $in: batch };
+    if (branch.length) filter.branch = { $in: branch };
+    if (section.length) filter.section = { $in: section };
+    if (status.length) filter.status = { $in: status };
+    if (gender.length) filter.gender = { $in: gender };
+    if (placementStatus.length) filter.placementStatus = { $in: placementStatus };
+    if (cgpaRange) filter.cgpa = { $gte: cgpaRange[0], $lte: cgpaRange[1] };
+    if (backlogsRange) filter.activeBacklogs = { $gte: backlogsRange[0], $lte: backlogsRange[1] };
+    if (hasInternship !== null) filter.hasInternship = hasInternship;
+    if (hasProjects !== null) filter.hasProjects = hasProjects;
+    if (hasCertifications !== null) filter.hasCertifications = hasCertifications;
+    if (activeBacklogs !== null) filter.activeBacklogs = activeBacklogs;
+    if (eligibilityStatus.length) filter.eligibilityStatus = { $in: eligibilityStatus };
+    if (offerStatus.length) filter.offerStatus = { $in: offerStatus };
+    if (interviewStatus.length) filter.interviewStatus = { $in: interviewStatus };
+    if (skillTags.length) filter.skillTags = { $in: skillTags };
+    if (location.length) filter.location = { $in: location };
+    if (category.length) filter.category = { $in: category };
+    if (admissionType.length) filter.admissionType = { $in: admissionType };
+    if (feesStatus.length) filter.feesStatus = { $in: feesStatus };
+    if (hostelStatus.length) filter.hostelStatus = { $in: hostelStatus };
+
+    const count = await Student.countDocuments(filter);
+    return count;
+  }
 }

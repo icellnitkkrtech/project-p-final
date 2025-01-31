@@ -55,4 +55,9 @@ studentRouter.post("/complete-profile", (req, res) =>
   StudentController.completeProfile(req, res)
 );
 
+// New route for fetching students with query parameters
+studentRouter.get("/", (req, res) =>
+  StudentController.getStudents(req, res)
+);
+
 export default studentRouter;
