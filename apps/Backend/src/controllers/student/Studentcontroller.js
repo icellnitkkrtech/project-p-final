@@ -1,10 +1,13 @@
 import asyncHandler from "../../utils/asyncHandler.js";
 import StudentService from "../../services/student/studentService.js";
 import Student from "../../schema/student/studentSchema.js"; // Import the Mongoose model directly
+import StudentModel from "../../models/studentModel.js"; // Import the StudentModel
 
 export default class StudentController {
   constructor() {
-    this.studentService = new StudentService();
+    // this.studentService = new StudentService();
+    // this.studentModel = new StudentModel();
+    this.studentService = new StudentService(new StudentModel());
   }
   registerStudent = asyncHandler(async (req, res) => {
     const student = await this.studentService.registerStudent(req.body);
@@ -72,4 +75,27 @@ export default class StudentController {
       });
     }
   }
+
+  getTotalStudents = asyncHandler(async (req, res) => {
+    // const totalStudentsResponse = await this.studentModel.getTotalStudents();
+    const totalStudentsResponse = await this.studentService.getTotalStudents();
+    res.status(totalStudentsResponse.statusCode).json(totalStudentsResponse);
+  });
+
+  // New method to get students based on query parameters
+  getStudents = asyncHandler(async (req, res) => {
+    const response = await this.studentService.getStudents();
+    res.status(response.statusCode).json(response);
+  });
+
+  registerStudentByAdmin = asyncHandler(async (req, res) => {
+    const student = await this.studentService.registerStudentByAdmin(req.body);
+    res.status(student.statusCode).json(student);
+  });
+
+  deleteStudent = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const result = await this.studentService.deleteStudent(id);
+    res.status(result.statusCode).json(result);
+  });
 }

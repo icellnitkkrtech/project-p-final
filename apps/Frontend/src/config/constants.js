@@ -1,8 +1,5 @@
 // API Configuration
-// const isProduction = import.meta.env.PROD;
-// const backendPort = import.meta.env.VITE_BACKEND_PORT || '3002';
-// const prodApiUrl = import.meta.env.VITE_API_URL;
-// const devApiUrl = `http://localhost:${backendPort}/api/v1`;
+
 
 // export const API_BASE_URL = isProduction ? prodApiUrl : devApiUrl;
 // export const API_TIMEOUT = 30000; 
