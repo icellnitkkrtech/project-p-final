@@ -1,24 +1,21 @@
 import { useState, useEffect } from "react";
 import jnfDetails from "../../components/admin/jnfManagement/jnfDetails";
 
-const useJNFData = (selectedJNFId) => {
+function useJNFData(selectedJNFId) {
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Add state to manage JNF list
+  const [jnfList, setJnfList] = useState(jnfDetails);
 
   useEffect(() => {
     const fetchData = () => {
       try {
         setLoading(true);
-
-        // Find the specific JNF entry by selectedJNFId
-        const data = jnfDetails.find((jnf) => jnf.id === selectedJNFId);
-
+        const data = jnfList.find((jnf) => jnf.id === selectedJNFId);
         if (!data) {
           throw new Error("JNF not found");
         }
-
-        // Populate formData with data from jnfDetails
         setFormData({
           company: data.name || "",
           email: data.email || "",
@@ -83,7 +80,7 @@ const useJNFData = (selectedJNFId) => {
     };
 
     if (selectedJNFId) fetchData();
-  }, [selectedJNFId]);
+  }, [selectedJNFId, jnfList]);
 
   /**
    * Adds a new entry to the `jnfDetails` array.
@@ -92,17 +89,16 @@ const useJNFData = (selectedJNFId) => {
   const addNewEntry = (newEntry) => {
     try {
       // Ensure the new entry has a unique ID
-      const newId = jnfDetails.length
-        ? Math.max(...jnfDetails.map((jnf) => parseInt(jnf.id, 10))) + 1
+      const newId = jnfList.length
+        ? Math.max(...jnfList.map((jnf) => parseInt(jnf.id, 10))) + 1
         : 1;
 
       const entryWithId = { ...newEntry, id: newId.toString() };
 
-      // Add the new entry to the jnfDetails array
-      jnfDetails.push(entryWithId);
+      // Update the jnfList state with the new entry
+      setJnfList(prevList => [...prevList, entryWithId]);
 
       console.log("New entry added:", entryWithId);
-
       return true;
     } catch (err) {
       console.error("Failed to add new entry:", err.message);
@@ -110,7 +106,34 @@ const useJNFData = (selectedJNFId) => {
     }
   };
 
-  return { formData, setFormData, addNewEntry, loading, error };
-};
+  const getAcceptedJNFs = async () => {
+    // Use the state instead of the imported jnfDetails
+    return jnfList.filter(jnf => jnf.status === 'accepted');
+  };
 
+  const getJNFById = async (id) => {
+    // Use the state instead of the imported jnfDetails
+    return jnfList.find(jnf => jnf.id === id);
+  };
+
+  // Add a method to get all JNFs
+  const getAllJNFs = () => {
+    return jnfList;
+  };
+
+  return { 
+    formData, 
+    setFormData, 
+    addNewEntry, 
+    loading, 
+    error, 
+    getAcceptedJNFs, 
+    getJNFById,
+    getAllJNFs,
+    jnfList  // Export the jnfList state
+  };
+}
+
+// Support both named and default exports
+export { useJNFData };
 export default useJNFData;

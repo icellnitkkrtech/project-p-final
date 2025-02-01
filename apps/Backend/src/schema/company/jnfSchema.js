@@ -68,6 +68,20 @@ const JNFSchema = new Schema(
           eligible: Boolean,
         },
       ],
+      msc: [
+        {
+          department: String,
+          specialization: String,
+          eligible: Boolean,
+        },
+      ],
+      phd: [
+        {
+          department: String,
+          specialization: String,
+          eligible: Boolean,
+        },
+      ],
     },
 
     eligibilityCriteria: String,
