@@ -245,8 +245,18 @@ const routes = [
       {
         path: "recruiter",
         children: [
-          { path: "login", element: Login },
-          { path: "initiate", element: Signup },
+          {
+            path: "login",
+            element: lazy(() =>
+              import("../components/company/auth_referal_for_company/Login")
+            ),
+          },
+          {
+            path: "signup",
+            element: lazy(() =>
+              import("../components/company/auth_referal_for_company/Signup")
+            ),
+          },
           { path: "reset-password", element: ResetPassword },
         ],
       },
