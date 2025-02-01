@@ -1,20 +1,32 @@
 // components/admin/dashboard/PlacementProgress.jsx
+import { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, Box, LinearProgress } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import axios from '../../../config/axios';
 
 const PlacementProgress = () => {
-  const monthlyData = [
-    { month: 'Jul', placed: 20, target: 25 },
-    { month: 'Aug', placed: 45, target: 50 },
-    { month: 'Sep', placed: 85, target: 75 },
-    { month: 'Oct', placed: 150, target: 125 },
-    { month: 'Nov', placed: 220, target: 200 },
-    { month: 'Dec', placed: 310, target: 300 }
-  ];
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [placedStudents, setPlacedStudents] = useState(0);
 
-  const totalStudents = 1200;
-  const placedStudents = 850;
-  const placementPercentage = (placedStudents / totalStudents) * 100;
+  useEffect(() => {
+    const fetchPlacementProgressData = async () => {
+      try {
+        const response = await axios.get('/dashboard/placement-progress');
+        const data = response.data;
+
+        setMonthlyData(data.monthlyData);
+        setTotalStudents(data.overall.total);
+        setPlacedStudents(data.overall.placed);
+      } catch (error) {
+        console.error("Error fetching placement progress data:", error);
+      }
+    };
+
+    fetchPlacementProgressData();
+  }, []);
+
+  const placementPercentage = (placedStudents / totalStudents) * 100 || 0;
 
   return (
     <Card>

@@ -101,4 +101,16 @@ export default class companyController {
             new apiResponse(500, null, error.message);
         }
     }
+
+    async getTotalCompanies(req, res) {
+        try {
+            const response = await this.CompanyService.getTotalCompanies();
+            if (!response) {
+                return res.status(404).json(new apiResponse(404, null, "Not Found"));
+            }
+            res.status(200).json(response);
+        } catch (error) {
+            res.status(500).json(new apiResponse(500, null, error.message));
+        }
+    }
 }

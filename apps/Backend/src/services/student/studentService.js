@@ -130,4 +130,73 @@ export default class StudentService {
       throw new Error("Failed to complete student profile: " + error.message);
     }
   }
+
+  // Add the getStudents method
+  async getStudents() {
+    try {
+      const students = await this.studentModel.getStudents(); // Fetch all students
+      return new apiResponse(200, students, "Students fetched successfully");
+    } catch (error) {
+      throw new Error("Failed to fetch students: " + error.message);
+    }
+  }
+
+  async registerStudentByAdmin(studentData) {
+    try {
+      // Validate required fields
+      if (
+        !studentData.personalInfo?.name ||
+        !studentData.personalInfo?.rollNumber ||
+        !studentData.personalInfo?.department ||
+        !studentData.personalInfo?.batch ||
+        !studentData.academics?.cgpa ||
+        !studentData.academics?.tenthMarks ||
+        !studentData.academics?.twelfthMarks
+      ) {
+        return new apiResponse(400, null, "Missing required fields");
+      }
+
+      // Generate email and password
+      const email = `${studentData.personalInfo.rollNumber}@nitkkr.ac.in`;
+      const password = studentData.personalInfo.rollNumber.toString();
+
+      // Create user data
+      const userData = {
+        email,
+        password,
+        user_role: "student",
+      };
+
+      // Create the user first
+      const user = await this.userServices.registerUser(userData);
+
+      if (user.statusCode !== 201) {
+        return new apiResponse(user.statusCode, null, user.message);
+      }
+
+      // Create a new student with the user ID
+      const newStudent = await this.studentModel.create({
+        user: user.data.user._id, // Use the created user's ID
+        personalInfo: studentData.personalInfo,
+        academics: studentData.academics,
+        email, // Include email in the student data
+        password, // Include password in the student data
+      });
+
+      return new apiResponse(201, newStudent, "Student registered successfully");
+    } catch (error) {
+      console.log("Registration error", error);
+      return new apiResponse(500, null, error.message);
+    }
+  }
+
+  async deleteStudent(id) {
+    try {
+      const result = await this.studentModel.deleteStudent(id); // Call the model's delete method
+      return result; // Return the result from the model
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      return new apiResponse(500, null, "An error occurred while deleting student");
+    }
+  }
 }
