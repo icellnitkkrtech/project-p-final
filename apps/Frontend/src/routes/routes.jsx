@@ -211,8 +211,8 @@ const routes = [
       { path: "companies", element: Companies },
       { path: "jnf", element: JNFManagement },
       { path: "placements", element: Placements },
-      { path: 'survey', element: Survey,},
-      { path: 'query', element: Query,},
+      { path: 'survey', element: Survey, },
+      { path: 'query', element: Query, },
       { path: "notifications", element: Notifications },
       { path: "templates", element: Templates },
       { path: "automation", element: Automation },
@@ -271,7 +271,20 @@ const routes = [
   {
     path: "/company",
     children: [
-      { path: "dashboard", element: CompanyDashboard }
+      {
+        path: ":id",
+        element: lazy(() => import("../components/company/CompanyDashboard")),
+        children: [
+          {
+            path: "profile",
+            element: lazy(() => import("../components/company/CompanyProfile")),
+          },
+          {
+            path: "post-jnf",
+            element: lazy(() => import("../components/company/JNFPosting/index")),
+          }
+        ],
+      },
     ],
   },
   {
