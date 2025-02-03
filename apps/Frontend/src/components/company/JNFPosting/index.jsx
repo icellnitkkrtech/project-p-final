@@ -269,11 +269,13 @@ const index = () => {
             console.log("response", response);
             
             if (response.status === 200 || response.status === 201) {
+                alert('JNF submitted successfully');
                 console.log("response", response);
                 console.log('JNF submitted successfully');
                 // Add navigation or success message here
             }
         } catch (err) {
+            alert('Failed to submit JNF');
             setError(err.response?.data?.message || 'Failed to submit JNF');
             console.error('Error submitting JNF:', err);
         } finally {
