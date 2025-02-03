@@ -1,12 +1,21 @@
 
-import React from 'react';
+import { Typography, Box, useTheme } from '@mui/material';
 
 const JNFAnalytics = () => {
+  const theme = useTheme();
+  
   return (
-    <div>
-      <h2>JNF Analytics</h2>
-      {/* Add analytics content here */}
-    </div>
+    <Box>
+      <Typography 
+        variant="h6" 
+        sx={{ 
+          color: theme.palette.text.primary,
+          mb: 2 
+        }}
+      >
+        JNF Analytics
+      </Typography>
+    </Box>
   );
 };
 

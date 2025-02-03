@@ -28,7 +28,8 @@ import {
   Slider,
   Divider,
   InputAdornment,
-  Tooltip
+  Tooltip,
+  Alert
 } from '@mui/material';
 import {
   Search,
@@ -44,6 +45,7 @@ import {
   MoreVert
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import studentService from '../../../services/admin/studentService';
 import { useAudit } from '../../../hooks/admin/useAudit';
 
@@ -85,8 +87,14 @@ const StudentList = ({ onStudentSelect }) => {
   });
 
   // State for pagination
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // State for students
+  const [students, setStudents] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Filter options
   const filterOptions = {
@@ -107,22 +115,27 @@ const StudentList = ({ onStudentSelect }) => {
     hostelStatus: ['Day Scholar', 'Hosteller']
   };
 
-  // Sample student data
-  const students = [
-    {
-      id: 1,
-      name: 'John Doe',
-      rollNo: 'CSE001',
-      batch: '2020-24',
-      branch: 'CSE',
-      section: 'A',
-      cgpa: 8.5,
-      backlogs: 0,
-      placementStatus: 'Placed',
-      // ... add more fields
-    },
-    // Add more students
-  ];
+  // Fetch students from the backend
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await studentService.getStudents(filters, { page, rowsPerPage });
+        console.log("Fetched students data:", response);
+
+        if (response && response.data && Array.isArray(response.data)) {
+          setStudents(response.data);
+        } else {
+          setStudents([]);
+          console.error("Unexpected response structure:", response);
+        }
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        setStudents([]);
+      }
+    };
+
+    fetchStudents();
+  }, [filters, page, rowsPerPage]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({
@@ -166,27 +179,57 @@ const StudentList = ({ onStudentSelect }) => {
     }
   };
 
-  const handleDeleteStudent = async (student, event) => {
-    event.stopPropagation();
-    if (window.confirm(`Are you sure you want to delete ${student.name}?`)) {
-      try {
-        await studentService.deleteStudent(student.id);
-        logEvent('delete', 'Student', `Deleted student: ${student.name} (${student.rollNo})`);
-        // Refresh student list or provide feedback
-      } catch (error) {
-        console.error('Failed to delete student:', error);
-        alert('Failed to delete student');
+  const handleDeleteStudent = async (studentId) => {
+    try {
+      const response = await studentService.deleteStudent(studentId);
+      alert("student deleted ");
+      if (response.status === 204) {
+
+        // Remove the deleted student from the state
+        setStudents((prevStudents) => prevStudents.filter(student => student._id !== studentId));
+        setSuccessMessage('Student deleted successfully!');
+        
       }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      setErrorMessage('An error occurred while deleting the student.');
     }
   };
 
-  const handleExport = async () => {
-    try {
-      // Your export logic here
-      logEvent('export', 'StudentList', 'Exported student data');
-    } catch (error) {
-      console.error('Error exporting data:', error);
-    }
+  const handleExport = () => {
+    const csvContent = [
+      ['Name', 'Roll Number', 'Department', 'Batch', 'CGPA', '10th Marks', '12th Marks'], // Header
+      ...students.map(student => [
+        student.personalInfo.name,
+        student.personalInfo.rollNumber,
+        student.personalInfo.department,
+        student.personalInfo.batch,
+        student.academics.cgpa,
+        student.academics.tenthMarks,
+        student.academics.twelfthMarks,
+      ]),
+    ]
+      .map(e => e.join(',')) // Convert each row to a comma-separated string
+      .join('\n'); // Join all rows with a newline character
+
+    const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'students_data.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage + 1);
+    fetchStudents();
+  };
+
+  const handleRowsPerPageChange = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(1);
+    fetchStudents();
   };
 
   // Filter drawer content
@@ -373,6 +416,27 @@ const StudentList = ({ onStudentSelect }) => {
     </Box>
   );
 
+  // Apply filtering logic
+  const filteredStudents = students.filter(student => {
+    const { personalInfo, academics } = student;
+
+    // Example filter conditions
+    const matchesSearch = filters.search ? personalInfo.name.toLowerCase().includes(filters.search.toLowerCase()) : true;
+    const matchesBatch = filters.batch.length ? filters.batch.includes(academics.batch) : true;
+    const matchesBranch = filters.branch.length ? filters.branch.includes(academics.branch) : true;
+    const matchesCGPA = filters.cgpaRange ? (academics.cgpa >= filters.cgpaRange[0] && academics.cgpa <= filters.cgpaRange[1]) : true;
+
+    return matchesSearch && matchesBatch && matchesBranch && matchesCGPA;
+  });
+
+  // Filter students based on search term
+  const searchFilteredStudents = filteredStudents.filter(student => {
+    const rollNumber = String(student.personalInfo.rollNumber).toLowerCase();
+    const name = student.personalInfo.name.toLowerCase();
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return rollNumber.includes(lowerCaseSearchTerm) || name.includes(lowerCaseSearchTerm);
+  });
+
   return (
     <Grid container spacing={3}>
       {/* Search and Filters */}
@@ -382,8 +446,8 @@ const StudentList = ({ onStudentSelect }) => {
             <Box display="flex" gap={2} alignItems="center">
               <TextField
                 placeholder="Search students..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -436,6 +500,8 @@ const StudentList = ({ onStudentSelect }) => {
       <Grid item xs={12}>
         <Card>
           <CardContent>
+            {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+            {successMessage && <Alert severity="success">{successMessage}</Alert>}
             <Table>
               <TableHead>
                 <TableRow>
@@ -449,40 +515,66 @@ const StudentList = ({ onStudentSelect }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {students.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell onClick={() => onStudentSelect(student)}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Avatar>
-                          <Person />
-                        </Avatar>
-                        {student.name}
-                      </Box>
-                    </TableCell>
-                    <TableCell onClick={() => onStudentSelect(student)}>{student.rollNo}</TableCell>
-                    <TableCell onClick={() => onStudentSelect(student)}>{student.batch}</TableCell>
-                    <TableCell onClick={() => onStudentSelect(student)}>{student.branch}</TableCell>
-                    <TableCell onClick={() => onStudentSelect(student)}>{student.cgpa}</TableCell>
-                    <TableCell onClick={() => onStudentSelect(student)}>
-                      <Chip
-                        label={student.placementStatus}
-                        color={student.placementStatus === 'Placed' ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <IconButton size="small" onClick={(event) => handleEditStudent(student, event)}>
-                        <Edit />
-                      </IconButton>
-                      <IconButton size="small" onClick={(event) => handleSendEmail(student, event)}>
-                        <Mail />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={(event) => handleDeleteStudent(student, event)}>
-                        <Delete />
-                      </IconButton>
+                {searchFilteredStudents.length > 0 ? (
+                  searchFilteredStudents.map((student) => {
+                    const { personalInfo, academics } = student;
+                    return(
+                    <TableRow key={student._id}>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Avatar>
+                            <Person />
+                          </Avatar>
+                          <Typography>{student.personalInfo.name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography>{student.personalInfo.rollNumber}</Typography>
+                      </TableCell>
+                      <TableCell>
+                      <Typography>{personalInfo?.batch || "N/A"}</Typography>
+                      </TableCell>
+                      <TableCell>
+                      <Typography>{personalInfo?.department || "N/A"}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography>{student.academics.cgpa}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={student.verificationStatus || "N/A"}
+                          color={student.verificationStatus === "verified" ? "success" : "default"}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" gap={1}>
+                          <Tooltip title="Edit Student">
+                            <IconButton size="small" onClick={(event) => handleEditStudent(student, event)}>
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Send Email">
+                            <IconButton size="small" onClick={(event) => handleSendEmail(student, event)}>
+                              <Mail fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Student">
+                            <IconButton size="small" color="error" onClick={(event) => handleDeleteStudent(student._id)}>
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )})
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <Typography>No students found</Typography>
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
 
@@ -490,9 +582,9 @@ const StudentList = ({ onStudentSelect }) => {
               component="div"
               count={100}
               page={page}
-              onPageChange={(e, newPage) => setPage(newPage)}
+              onPageChange={handlePageChange}
               rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+              onRowsPerPageChange={handleRowsPerPageChange}
             />
           </CardContent>
         </Card>

@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'; 
+import axios from '../../../config/axios'; // Correct relative path
 import { Grid, Card, CardContent, Typography, Box, Avatar } from '@mui/material';
 import {
   People,
@@ -9,40 +11,49 @@ import {
 } from '@mui/icons-material';
 
 const AnalyticsCards = () => {
-  const analyticsData = [
-    {
-      title: "Total Students",
-      count: 1200,
-      percentage: 8,
-      icon: <People />,
-      color: "#1976d2",
-      trend: "up"
-    },
-    {
-      title: "Placed Students",
-      count: 850,
-      percentage: 12,
-      icon: <CheckCircle />,
-      color: "#2e7d32",
-      trend: "up"
-    },
-    {
-      title: "Companies Visited",
-      count: 45,
-      percentage: 15,
-      icon: <Business />,
-      color: "#ed6c02",
-      trend: "up"
-    },
-    {
-      title: "Average Package",
-      count: "8.5 LPA",
-      percentage: 10,
-      icon: <TrendingUp />,
-      color: "#9c27b0",
-      trend: "up"
-    }
-  ];
+  const [analyticsData, setAnalyticsData] = useState([]);
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      const response = await axios.get('/dashboard/analytics'); 
+      const data = await response.data;
+      setAnalyticsData([
+        {
+          title: "Total Students",
+          count: data.totalStudents,
+          percentage: 8,
+          icon: <People />,
+          color: "#1976d2",
+          trend: "up"
+        },
+        {
+          title: "Placed Students",
+          count: data.placedStudents,
+          percentage: 12,
+          icon: <CheckCircle />,
+          color: "#2e7d32",
+          trend: "up"
+        },
+        {
+          title: "Companies Visited",
+          count: data.companiesVisited,
+          percentage: 15,
+          icon: <Business />,
+          color: "#ed6c02",
+          trend: "up"
+        },
+        {
+          title: "Average Package",
+          count: `${data.averagePackage} LPA`, // Assuming averagePackage is a number
+          percentage: 10,
+          icon: <TrendingUp />,
+          color: "#9c27b0",
+          trend: "up"
+        }
+      ]);
+    };
+
+    fetchAnalyticsData(); // Call the fetch function
+  }, []);
 
   return (
     <Grid container spacing={3}>

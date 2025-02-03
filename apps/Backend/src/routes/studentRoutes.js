@@ -55,4 +55,22 @@ studentRouter.post("/complete-profile", (req, res) =>
   StudentController.completeProfile(req, res)
 );
 
+// // New route for fetching students with query parameters
+// studentRouter.get("/getallstudent", (req, res) =>
+//   StudentController.getStudents(req, res)
+// );
+
+// Route for fetching all students
+studentRouter.get("/getallstudent", (req, res) =>
+  StudentController.getStudents(req, res)
+);
+
+studentRouter.post("/register/admin", (req, res) =>
+  StudentController.registerStudentByAdmin(req, res)
+);
+
+studentRouter.delete("/delete/:id", (req, res) =>
+  StudentController.deleteStudent(req, res)
+);
+
 export default studentRouter;

@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, Box, Divider, LinearProgress } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import axios from '../../../config/axios';
 
 const CompanyStats = () => {
   const companyData = [

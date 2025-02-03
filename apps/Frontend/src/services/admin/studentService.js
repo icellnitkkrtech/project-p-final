@@ -3,13 +3,7 @@ import { API_BASE_URL } from '../../config/constants';
 
 const studentService = {
   getStudents: async (filters, pagination) => {
-    const response = await axios.get(`${API_BASE_URL}/students`, {
-      params: {
-        ...filters,
-        page: pagination.page,
-        limit: pagination.rowsPerPage,
-      },
-    });
+    const response = await axios.get(`${API_BASE_URL}/student/getallstudent`);
     return response.data;
   },
 
@@ -17,7 +11,10 @@ const studentService = {
     const response = await axios.get(`${API_BASE_URL}/students/${id}`);
     return response.data;
   },
-
+  registerStudentByAdmin: async (studentData) => {
+    const response = await axios.post(`${API_BASE_URL}/student/register/admin`, studentData);
+    return response.data;
+  },
   createStudent: async (studentData) => {
     const formData = new FormData();
     Object.keys(studentData).forEach(key => {
@@ -55,7 +52,7 @@ const studentService = {
   },
 
   deleteStudent: async (id) => {
-    const response = await axios.delete(`${API_BASE_URL}/students/${id}`);
+    const response = await axios.delete(`${API_BASE_URL}/student/delete/${id}`);
     return response.data;
   },
 

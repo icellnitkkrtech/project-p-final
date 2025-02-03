@@ -109,4 +109,13 @@ export default class companyModel {
         }
     }
 
+    async getTotalCompanies() {
+        try {
+            const totalCompanies = await this.company.countDocuments({});
+            return new apiResponse(200, totalCompanies, "Total companies fetched successfully");
+        } catch (error) {
+            return new apiResponse(500, null, "An error occurred while fetching total companies");
+        }
+    }
+
 }

@@ -1,6 +1,6 @@
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { SpeedInsights } from "@vercel/speed-insights/react"
+// import { SpeedInsights } from "@vercel/speed-insights/react"
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";

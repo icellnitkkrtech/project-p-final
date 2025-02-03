@@ -27,11 +27,27 @@ const JNFSchema = new Schema(
       description: String,
     },
 
-    jobProfiles: [
-      {
+    // jobProfiles: [
+    //   {
+    //     course: {
+    //       type: String,
+    //       enum: ["B.Tech", "M.Tech", "MBA", "MCA", "M.Sc", "Ph.D"],
+    //     },
+    //     designation: String,
+    //     jobDescription: String,
+    //     ctc: Number,
+    //     takeHome: Number,
+    //     perks: String,
+    //     trainingPeriod: String,
+    //     placeOfPosting: String,
+    //   },
+    // ],
+    jobProfiles: {
+      type: Map,
+      of: [{
         course: {
           type: String,
-          enum: ["B.Tech", "M.Tech", "MBA", "MCA", "M.Sc", "Ph.D"],
+          enum: ["btech", "mtech", "mba", "mca", "msc", "phd"],
         },
         designation: String,
         jobDescription: String,
@@ -40,8 +56,8 @@ const JNFSchema = new Schema(
         perks: String,
         trainingPeriod: String,
         placeOfPosting: String,
-      },
-    ],
+      }]
+    },
 
     eligibleBranches: {
       btech: [
@@ -62,6 +78,20 @@ const JNFSchema = new Schema(
         },
       ],
       mtech: [
+        {
+          department: String,
+          specialization: String,
+          eligible: Boolean,
+        },
+      ],
+      msc: [
+        {
+          department: String,
+          specialization: String,
+          eligible: Boolean,
+        },
+      ],
+      phd: [
         {
           department: String,
           specialization: String,
@@ -113,7 +143,7 @@ const JNFSchema = new Schema(
     submittedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // required: true,
     },
 
     reviewedBy: {

@@ -158,7 +158,9 @@ const StudentLogin = lazy(
 const StudentSignup = lazy(
   () => import("../components/student/auth_referal_for_student/Signup")
 );
-
+const CompanyDashboard = lazy(() => import("../components/company/CompanyDashboard"));
+const CompanyProfile = lazy(() => import("../components/company/CompanyProfile"));
+const JNFPosting = lazy(() => import("../components/company/JNFPosting/index"));
 const Loading = () => (
   <Box
     sx={{
@@ -221,15 +223,11 @@ const AppRoutes = () => {
         </Route>
 
         <Route path="/company" element={<CompanyLayout />}>
-          {routes
-            .find((r) => r.path === "/company")
-            ?.children.map((route) => (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={<route.element />}
-              />
-            ))}
+          <Route path=":id" element={<CompanyDashboard />}>
+            <Route index element={<Navigate to="post-jnf" replace />} />
+            <Route path="profile" element={<CompanyProfile />} />
+            <Route path="post-jnf" element={<JNFPosting />} />
+          </Route>
         </Route>
 
         <Route path="/student/:id" element={<StudentDashboard />}>

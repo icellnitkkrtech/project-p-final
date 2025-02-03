@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Grid } from '@mui/material';
+import { Box, Typography, Button, Grid, useTheme } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import JNFAnalytics from '../../components/admin/jnf/JNFAnalytics';
@@ -10,6 +10,7 @@ import { useModal } from '../../hooks/admin/useModal';
 
 const JNF = () => {
   // Mock data for development
+  const theme= useTheme();
   const mockData = [
     {
       id: 'JNF001',
@@ -90,11 +91,20 @@ const JNF = () => {
     setJnfs(prevJnfs => [...prevJnfs, newJNF]);
     closeModal();
   };
-
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Job Notification Forms</Typography>
+      <Typography 
+        variant="h5" 
+        gutterBottom
+        sx={{ 
+          color: theme.palette.text.primary,
+          mb: 3 
+        }}
+      >
+        Job Notification Forms
+      </Typography>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
