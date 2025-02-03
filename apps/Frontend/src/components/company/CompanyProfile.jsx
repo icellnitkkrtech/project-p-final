@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,21 +22,19 @@ import {
   CloudUpload as CloudUploadIcon,
   Business as BusinessIcon
 } from '@mui/icons-material';
-
+import { useOutletContext } from 'react-router-dom';
 const CompanyProfile = () => {
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState({
-    companyName: "Tech Solutions Inc",
-    email: "info@techsolutions.com",
-    website: "www.techsolutions.com",
-    description: "Leading technology solutions provider",
-    address: "Tech Park, Silicon Valley",
-    industry: "Information Technology",
-    founded: "2010",
-    size: "1000-5000 employees"
-  });
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
+  const { company, setCompany } = useOutletContext();
+  const [profile, setProfile] = useState(company || {});
+  
+  useEffect(() => {
+    if (company) {
+      setProfile(company);
+    }
+  }, [company]);
 
   const handleSave = async () => {
     try {
@@ -142,7 +140,7 @@ const CompanyProfile = () => {
                     disabled={!isEditing || loading}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                {/* <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Industry"
@@ -179,7 +177,7 @@ const CompanyProfile = () => {
                     onChange={(e) => setProfile({...profile, size: e.target.value})}
                     disabled={!isEditing || loading}
                   />
-                </Grid>
+                </Grid> */}
               </Grid>
 
               {isEditing && (

@@ -21,7 +21,7 @@ companyRouter.put("/update/:id", (req, res) => {
 companyRouter.delete("/remove/:id", (req, res) => {
   companyController.deleteCompany(req, res);
 });
-companyRouter.post("/:companyId/add-jnf", (req, res) => {
+companyRouter.post("/:id/add-jnf", (req, res) => {
   companyController.addJNFToCompany(req, res);
 });
 companyRouter.get("/:id/jnfs", (req, res) => {

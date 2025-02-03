@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import axios from '../axios';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Box,
@@ -41,20 +43,25 @@ const steps = [
 ];
 
 const index = () => {
+    const { id } = useParams();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const theme = useTheme();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
         // Company Details
-        name: '',
-        email: '',
-        website: '',
-        companyType: '',
-        domain: '',
-        description: '',
+        companyDetails: {
+            name: '',
+            email: '',
+            website: '',
+            companyType: '',
+            domain: '',
+            description: ''
+        },
 
         // Job Profiles
-        jobProfiles: [
-            {
+        jobProfiles: {
+            0: [{
                 course: 'btech',
                 designation: '',
                 jobDescription: '',
@@ -64,57 +71,8 @@ const index = () => {
                 trainingPeriod: '',
                 placeOfPosting: ''
             },
-            {
-                course: 'mtech',
-                designation: '',
-                jobDescription: '',
-                ctc: '',
-                takeHome: '',
-                perks: '',
-                trainingPeriod: '',
-                placeOfPosting: ''
-            },
-            {
-                course: 'mba',
-                designation: '',
-                jobDescription: '',
-                ctc: '',
-                takeHome: '',
-                perks: '',
-                trainingPeriod: '',
-                placeOfPosting: ''
-            },
-            {
-                course: 'mca',
-                designation: '',
-                jobDescription: '',
-                ctc: '',
-                takeHome: '',
-                perks: '',
-                trainingPeriod: '',
-                placeOfPosting: ''
-            },
-            {
-                course: 'msc',
-                designation: '',
-                jobDescription: '',
-                ctc: '',
-                takeHome: '',
-                perks: '',
-                trainingPeriod: '',
-                placeOfPosting: ''
-            },
-            {
-                course: 'phd',
-                designation: '',
-                jobDescription: '',
-                ctc: '',
-                takeHome: '',
-                perks: '',
-                trainingPeriod: '',
-                placeOfPosting: ''
-            }
-        ],
+            ],
+        },
 
         // Eligible Branches
         eligibleBranches: {
@@ -212,11 +170,11 @@ const index = () => {
 
         // Status and Submission Details
         status: 'draft',
-        submittedBy: '',
-        reviewedBy: '',
-        reviewComments: '',
-        submissionDate: '',
-        reviewDate: ''
+        // submittedBy: null,
+        // reviewedBy: null,
+        // reviewComments: '',
+        // submissionDate: '',
+        // reviewDate: ''
     });
 
     // Handlers
@@ -224,16 +182,17 @@ const index = () => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: value
+            companyDetails: {
+                ...prev.companyDetails,
+                [name]: value
+            }
         }));
     };
 
-    const handleJobProfileChange = (courseIndex, field, value) => {
-        setFormData((prev) => ({
+    const handleJobProfileChange = (updatedProfiles) => {
+        setFormData(prev => ({
             ...prev,
-            jobProfiles: prev.jobProfiles.map((profile, i) =>
-                i === courseIndex ? { ...profile, [field]: value } : profile
-            )
+            jobProfiles: updatedProfiles
         }));
     };
 
@@ -277,10 +236,10 @@ const index = () => {
 
     const handlePointOfContactChange = (updatedContacts) => {
         setFormData(prev => ({
-          ...prev,
-          pointOfContact: updatedContacts
+            ...prev,
+            pointOfContact: updatedContacts
         }));
-      };
+    };
 
     const handleAdditionalInfoChange = (field, value) => {
         setFormData((prev) => ({
@@ -292,8 +251,34 @@ const index = () => {
         }));
     };
 
-    const handleSubmit = () => {
-        console.log('Form submitted', formData);
+    const handleSubmit = async () => {
+        try {
+            console.log("final form data", formData);
+            setLoading(true);
+            setError(null);
+            
+            const submissionData = {
+                ...formData,
+                submittedBy: id, // Add logged in user's ID
+                submissionDate: new Date()
+            };
+
+            // Use direct fetch with correct URL
+            const response = await axios.post(`/company/${id}/add-jnf`,submissionData);
+
+            console.log("response", response);
+            
+            if (response.status === 200 || response.status === 201) {
+                console.log("response", response);
+                console.log('JNF submitted successfully');
+                // Add navigation or success message here
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to submit JNF');
+            console.error('Error submitting JNF:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderStep = () => {
@@ -372,7 +357,7 @@ const index = () => {
                     </Box>
 
                     {/* Steps Navigation */}
-                    <Box sx={{ p: 2}}>
+                    <Box sx={{ p: 2 }}>
                         <Stepper
                             activeStep={currentStep - 1}
                             alternativeLabel
@@ -467,10 +452,11 @@ const index = () => {
                             <Button
                                 variant="contained"
                                 color="success"
-                                onClick={() => console.log('Form submitted', formData)}
+                                onClick={handleSubmit}
+                                disabled={loading}
                                 sx={{ minWidth: 120 }}
                             >
-                                Submit
+                                {loading ? 'Submitting...' : 'Submit'}
                             </Button>
                         ) : (
                             <Button
