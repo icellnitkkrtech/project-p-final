@@ -26,9 +26,7 @@ const ApplicationsSection = () => {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        `/student/applications/${studentId}`
-      );
+      const response = await axios.get(`/student/applications/${studentId}`);
       setApplications(response.data.data);
       setError(null);
     } catch (err) {
@@ -60,8 +58,8 @@ const ApplicationsSection = () => {
           ? 1
           : -1
         : aVal < bVal
-        ? 1
-        : -1;
+          ? 1
+          : -1;
     });
 
   const paginatedApplications = filteredApplications.slice(
@@ -104,7 +102,7 @@ const ApplicationsSection = () => {
 
           {/* Filter Tabs */}
           <div className="mt-4 flex gap-2 overflow-x-auto pb-2 md:pb-0">
-            {["all", "pending", "accepted", "rejected"].map((status) => (
+            {["all", "applied", "accepted", "rejected"].map((status) => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}
@@ -152,8 +150,8 @@ const ApplicationsSection = () => {
                         app.status === "pending"
                           ? "bg-yellow-100 text-yellow-800"
                           : app.status === "accepted"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
                       }`}
                     >
                       {app.status}
@@ -209,8 +207,8 @@ const ApplicationsSection = () => {
                             app.status === "pending"
                               ? "bg-yellow-100 text-yellow-800"
                               : app.status === "accepted"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
                           }`}
                         >
                           {app.status}

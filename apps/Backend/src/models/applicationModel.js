@@ -35,8 +35,6 @@ export default class ApplicationModel {
       );
     }
   }
-
-
   async getApplicationsByStudent(studentId) {
     try {
       console.log("Starting query with studentId:", studentId);
@@ -46,7 +44,8 @@ export default class ApplicationModel {
         .populate({
           path: "job",
           model: "Job",
-          select: "title company salary status applicationDeadline",
+          select:
+            "title company salary status applicationDeadline description requirements eligibility",
         });
 
       if (!applications || applications.length === 0) {
