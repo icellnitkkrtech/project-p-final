@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Box,
@@ -38,9 +38,11 @@ import {
   Search as SearchIcon,
   ChevronRight as ChevronRightIcon,
   ExitToApp as LogoutIcon,
-  Email, 
+  Email,
   Phone
 } from '@mui/icons-material';
+import { Outlet, useParams, useNavigate } from "react-router-dom";
+import axios from "./axios";
 import { styled, alpha } from '@mui/material/styles';
 import CompanyProfile from './CompanyProfile';
 import JNFPosting from './JNFPosting';
@@ -100,12 +102,31 @@ const itemVariants = {
 };
 
 const CompanyDashboard = () => {
+  const { id } = useParams();
   const theme = useTheme();
+  const navigate = useNavigate();
+  const [company, setCompany] = useState(null);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchor, setNotificationAnchor] = useState(null);
+
+
+  useEffect(() => {
+    const fetchCompany = async () => {
+      try {
+        const response = await axios.get(`/company/profile/${id}`);
+        console.log(response.data.data.data);
+        setCompany(response.data.data.data);
+      } catch (error) {
+        setError(
+          error.response?.data?.message || "Failed to fetch company data"
+        );
+      }
+    };
+    fetchCompany();
+  }, [id]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -128,13 +149,23 @@ const CompanyDashboard = () => {
   };
 
   const menuItems = [
-    { text: 'Post New JNF', icon: <PostAddIcon />, index: 0 },
-    { text: 'Your Profile', icon: <BusinessIcon />, index: 1 },
+    {
+      text: 'Post New JNF',
+      icon: <PostAddIcon />,
+      path: `post-jnf`,
+      index: 0
+    },
+    {
+      text: 'Your Profile',
+      icon: <BusinessIcon />,
+      path: `profile`,
+      index: 1
+    },
   ];
 
   const drawer = (
     <Box>
-      <Toolbar sx={{ 
+      <Toolbar sx={{
         background: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
         color: 'white'
       }}>
@@ -149,8 +180,11 @@ const CompanyDashboard = () => {
             button
             key={item.text}
             selected={activeTab === item.index}
-            onClick={() => setActiveTab(item.index)}
-            sx={{ 
+            onClick={() => {
+              setActiveTab(item.index);
+              navigate(`/company/${id}/${item.path}`);
+            }}
+            sx={{
               cursor: 'pointer',
               '&.Mui-selected': {
                 background: alpha(theme.palette.primary.main, 0.1),
@@ -161,14 +195,14 @@ const CompanyDashboard = () => {
               }
             }}
           >
-            <ListItemIcon 
-              sx={{ 
+            <ListItemIcon
+              sx={{
                 color: activeTab === item.index ? 'primary.main' : 'inherit'
               }}
             >
               {item.icon}
             </ListItemIcon>
-            <ListItemText 
+            <ListItemText
               primary={item.text}
               sx={{
                 '& .MuiTypography-root': {
@@ -204,11 +238,11 @@ const CompanyDashboard = () => {
             <MenuIcon />
           </IconButton>
 
-          <Stack 
-            direction="row" 
-            spacing={3} 
+          <Stack
+            direction="row"
+            spacing={3}
             alignItems="center"
-            sx={{ 
+            sx={{
               ml: 2,
               display: { xs: 'none', sm: 'flex' } // Hide on mobile
             }}
@@ -241,14 +275,14 @@ const CompanyDashboard = () => {
                 <NotificationIcon />
               </Badge>
             </IconButton>
-            
+
             <IconButton color="inherit">
               <SettingsIcon />
             </IconButton>
 
             <Avatar
               onClick={handleProfileMenuOpen}
-              sx={{ 
+              sx={{
                 cursor: 'pointer',
                 bgcolor: alpha(theme.palette.common.white, 0.2),
                 '&:hover': { bgcolor: alpha(theme.palette.common.white, 0.3) }
@@ -262,9 +296,9 @@ const CompanyDashboard = () => {
 
       <Box
         component="nav"
-        sx={{ 
-          width: { md: drawerWidth }, 
-          flexShrink: { md: 0 } 
+        sx={{
+          width: { md: drawerWidth },
+          flexShrink: { md: 0 }
         }}
       >
         <Drawer
@@ -298,10 +332,7 @@ const CompanyDashboard = () => {
         }}
       >
         <motion.div variants={itemVariants}>
-          <Box sx={{ mb: 4 }}>
-            {activeTab === 0 && <JNFPosting />}
-            {activeTab === 1 && <CompanyProfile />}
-          </Box>
+        <Outlet context={{ company, setCompany }} />
         </motion.div>
       </Box>
 
