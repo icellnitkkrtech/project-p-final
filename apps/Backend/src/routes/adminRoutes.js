@@ -3,6 +3,7 @@ import AdminController from "../controllers/admin/Admincontroller.js";
 import AdminServices from "../services/adminServices.js";
 import Student from "../schema/student/studentSchema.js";
 import User from "../schema/userSchema.js";
+import authVerify from "../middlewares/auth.middlewares.js";
 const adminRouter = Router();
 const adminService = new AdminServices(Student, User);
 const adminController = new AdminController(adminService);
@@ -29,7 +30,12 @@ adminRouter.post("/promoteadmin", (req, res) => {
   adminController.promoteAdmin(req, res);
 });
 //remove user
+// adminRouter.post("/removeuser",(req,res)=>{
+//     adminController.removeUser(req,res);
+// });
 //remove company
-//
+
+//admin control over company
+
 
 export default adminRouter;

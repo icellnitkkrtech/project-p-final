@@ -9,11 +9,21 @@ export default class companyServices {
         this.userModel = new UserModel();
     }
 
+    async getAllCompanies() {
+        console.log("Service layer: getAllCompanies called");
+        try {
+            const response = await this.CompanyModel.getAllCompanies();
+            return new apiResponse(200, response, "Companies Fetched Successfully");
+        }
+        catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
+
     async createCompany(companyData) {
         console.log("Service layer: createCompany called");
         try {
-            if(!companyData.companyName || !companyData.email || !companyData.website || !companyData.password)
-            {
+            if (!companyData.companyName || !companyData.email || !companyData.website || !companyData.password) {
                 return new apiResponse(500, null, "Missing required Details");
             }
             const user = {
@@ -21,14 +31,14 @@ export default class companyServices {
                 password: companyData.password,
                 user_role: "company"
             };
-        
+
             const userData = await this.userModel.createUser(user);
             console.log("User creation response:", userData);
-        
+
             if (!userData.success) {
-                return new apiResponse(500, "User creation Failed", userData.message); 
+                return new apiResponse(500, "User creation Failed", userData.message);
             }
-            const response = await this.CompanyModel.createCompany(companyData,userData.data._id);
+            const response = await this.CompanyModel.createCompany(companyData, userData.data._id);
             console.log("Company creation response:", response);
 
             if (!response.success) {
@@ -50,9 +60,9 @@ export default class companyServices {
     async getCompanyById(id) {
         console.log("Service layer: getCompany called");
         try {
-        const response = await this.CompanyModel.findCompanyById(id);
+            const response = await this.CompanyModel.findCompanyById(id);
 
-        return new apiResponse(200, response, "Company Found successfully");
+            return new apiResponse(200, response, "Company Found successfully");
         }
         catch (error) {
             return new apiResponse(500, null, error.message);
@@ -61,7 +71,7 @@ export default class companyServices {
 
     async updateCompany(id, updates) {
         console.log("Service layer: updateCompany called");
-        try{
+        try {
             const response = await this.CompanyModel.updateCompany(id, updates);
             return new apiResponse(200, response, "Company Updated successfully");
         }
@@ -70,10 +80,10 @@ export default class companyServices {
         }
     }
 
-    async deleteCompany(id) {
+    async deleteCompany(id_company,id_user) {
         console.log("Service layer: deleteCompany called");
         try {
-            const response = await this.CompanyModel.deleteCompany(id);
+            const response = await this.CompanyModel.deleteCompany(id_company,id_user);
 
             if (response.success) {
                 await this.userModel.deleteUser(id);
@@ -97,9 +107,9 @@ export default class companyServices {
 
             const userId = company.user;
 
-            const response =  await this.CompanyModel.addJNFToCompany(companyId, jnfData, userId);
+            const response = await this.CompanyModel.addJNFToCompany(companyId, jnfData, userId);
 
-            console.log("added JNF",response);
+            console.log("added JNF", response);
             return new apiResponse(200, response, "JNF Added To Company Successfully");
         }
         catch (error) {
@@ -110,7 +120,7 @@ export default class companyServices {
     async getJNFsForCompany(companyId) {
         console.log("Service layer: getJNFsForCompany called");
         try {
-            const response =  await this.CompanyModel.getJNFsForCompany(companyId);
+            const response = await this.CompanyModel.getJNFsForCompany(companyId);
             return new apiResponse(200, response, "JNF Fetched Successfully");
         }
         catch (error) {
