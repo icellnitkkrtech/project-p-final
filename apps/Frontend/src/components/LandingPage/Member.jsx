@@ -10,32 +10,32 @@ const teamMembers = [
   {
     name: "Munish Sharma",
     post: "Training and Placement Officer",
-    image: "https://via.placeholder.com/150",
+    image: "./munishImage.jpg",
   },
   {
     name: "Prof. B.V. Ramana Reddy",
     post: "Director",
-    image: "https://via.placeholder.com/150",
+    image: "./directorImage.jpg",
   },
   {
     name: "Prof. R.K. Sharma",
     post: "Dean | Research & Consultancy ",
-    image: "https://via.placeholder.com/150",
+    image: "./rkSharmaImage.jpg",
   },
   {
     name: "Prof. Shelly Vadhera",
     post: "Associate Dean|Industry & International Relations ",
-    image: "https://via.placeholder.com/150",
+    image: "./shellyImage.jpg",
   },
   {
     name: "Dr. Surender Ontela",
     post: "Faculty In-charge | Training & Placement ",
-    image: "https://via.placeholder.com/150",
+    image: "./SurenderTNPImage.jpg",
   },
   {
     name: "Dr. Nidhi Gupta" ,
     post: "Associate Faculty In-charge | Training & Placement",
-    image: "https://via.placeholder.com/150",
+    image: "./NidhiTNPImage.jpg",
   },
 ];
 
