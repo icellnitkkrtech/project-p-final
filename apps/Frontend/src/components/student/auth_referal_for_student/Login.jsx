@@ -17,6 +17,10 @@ const Login = () => {
     navigate(`/student/${studentId}`);
   };
 
+  const handleSignUp = () => {
+    navigate('/auth/student/signup');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full mx-auto space-y-8">
@@ -47,15 +51,28 @@ const Login = () => {
             />
           </FormControl>
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            size="large"
-          >
-            Sign In
-          </Button>
+          <div className="space-y-3">
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              size="large"
+            >
+              Sign In
+            </Button>
+            
+            <Button
+              type="button"
+              fullWidth
+              variant="outlined"
+              color="primary"
+              size="large"
+              onClick={handleSignUp}
+            >
+              Create New Account
+            </Button>
+          </div>
         </form>
       </div>
     </div>
