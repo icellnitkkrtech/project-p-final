@@ -269,12 +269,17 @@ const JobProfilesStep = ({ formData, handleJobProfileChange }) => {
                       </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField
+                    <TextField
                         fullWidth
                         label="CTC"
-                        value={profile.ctc}
+                        type="number"
+                        inputProps={{
+                          step: "0.0001",
+                          min: 0,
+                          max: 10,
+                        }}
+                        value={profile.ctc || ''}
                         onChange={(e) => handleProfileChange(profileIndex, courseIndex, 'ctc', e.target.value)}
-                        required
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>

@@ -2,16 +2,16 @@ import axios from '../../config/axios';
 import { API_BASE_URL } from '../../config/constants';
 
 const companyService = {
-  getCompanies: async (filters, pagination) => {
-    const response = await axios.get(`${API_BASE_URL}/companies`, {
-      params: {
-        ...filters,
-        page: pagination.page,
-        limit: pagination.rowsPerPage,
-      },
-    });
-    return response.data;
+  getCompanies: async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/company/all`);
+      return response; // Return the entire response object
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      return { data: { data: [] } }; // Return an empty array in the expected structure
+    }
   },
+  
 
   getCompanyById: async (id) => {
     const response = await axios.get(`${API_BASE_URL}/companies/${id}`);
@@ -80,4 +80,4 @@ const companyService = {
   },
 };
 
-export default companyService; 
+export default companyService;

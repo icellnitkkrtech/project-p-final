@@ -14,7 +14,7 @@ companyRouter.post("/register", (req, res) => {
   companyController.createCompany(req, res);
 });
 
-companyRouter.get("/all", authVerify, (req, res) => {
+companyRouter.get("/all",authVerify, (req, res) => {
   companyController.getAllCompanies(req, res);
 });//done
 

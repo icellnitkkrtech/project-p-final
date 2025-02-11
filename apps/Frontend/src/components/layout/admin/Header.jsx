@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../hooks/admin/useLayout';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme as useAppTheme } from '../../../contexts/admin/AdminThemeContext';
+import authService from '../../../services/authService'; // Import authService
 
 const Header = () => {
   const theme = useTheme();
@@ -69,9 +70,11 @@ const Header = () => {
   const handleLogout = async () => {
     handleProfileClose();
     try {
-      await logout();
+      await authService.logout(); // Call the logout function from authService
+      navigate('/login'); // Redirect to login page after logout
     } catch (error) {
       console.error('Logout failed:', error);
+      // Optionally, show a user-friendly error message
     }
   };
 
