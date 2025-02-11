@@ -78,6 +78,8 @@ const JNFManagement = () => {
                         );
                         setSelectedJNF(null);
                     }}
+                    onDelete={handleDeleteJNF}
+                    onReview={handleReview}
                 />
             )}
 
