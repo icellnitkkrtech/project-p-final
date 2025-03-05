@@ -85,11 +85,7 @@ const PastRecruiters = () => {
               sx={{
                 maxWidth: "120px",
                 margin: "0 auto",
-                filter: "grayscale(100%)", // Optional: Grayscale effect
                 transition: "filter 0.3s ease-in-out",
-                "&:hover": {
-                  filter: "grayscale(0%)", // Highlight on hover
-                },
               }}
             />
           </Box>

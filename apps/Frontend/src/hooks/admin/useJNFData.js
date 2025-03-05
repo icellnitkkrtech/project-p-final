@@ -71,6 +71,14 @@ function useJNFData(selectedJNFId) {
           reviewComments: data.reviewComments || "",
           submissionDate: data.submissionDate || "",
           reviewDate: data.reviewDate || "",
+          assignedUser:{ 
+            name: data.assignedUser?.name || "",
+            email: data.assignedUser?.email || "",
+            designation: data.assignedUser?.designation || "",
+          },
+          assignedDate: data.assignedDate || "",
+          assignedBy: data.assignedBy || "",
+          driveStatus: data.driveStatus || "",
         });
       } catch (err) {
         setError(err.message);
@@ -121,13 +129,19 @@ function useJNFData(selectedJNFId) {
     return jnfList;
   };
 
+  const getAssignedUserDrives = async () => {
+    // Use the state instead of the imported jnfDetails
+    return jnfList.filter(jnf => (jnf.assignedUser !== null) && (jnf.status === 'accepted'));
+  };
+
   return { 
     formData, 
     setFormData, 
     addNewEntry, 
     loading, 
     error, 
-    getAcceptedJNFs, 
+    getAcceptedJNFs,
+    getAssignedUserDrives,
     getJNFById,
     getAllJNFs,
     jnfList  // Export the jnfList state

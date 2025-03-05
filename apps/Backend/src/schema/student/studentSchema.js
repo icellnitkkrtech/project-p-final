@@ -40,6 +40,10 @@ const StudentSchema = new Schema(
         type: Number,
         required: true,
       },
+      Gender: {
+        type: String,
+        enum: ["Male", "Female", "Other"],
+      },
     },
 
     academics: {

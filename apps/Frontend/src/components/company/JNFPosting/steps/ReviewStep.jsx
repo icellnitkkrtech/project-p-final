@@ -26,11 +26,16 @@ const ReviewStep = ({ formData }) => {
   const theme = useTheme();
   // ...existing helper functions...
   const isJobProfileFilled = (profile) => {
-    return (
-      profile.designation.trim() !== '' ||
-      profile.jobDescription.trim() !== '' ||
-      profile.ctc.trim() !== ''
-    );
+    return profile && Object.keys(profile).length > 0;
+  };
+  
+  const getJobProfiles = () => {
+    if (!formData.jobProfiles) return [];
+    
+    return Object.entries(formData.jobProfiles).map(([profileIndex, courses]) => ({
+      profileIndex: parseInt(profileIndex) + 1,
+      courses: courses
+    }));
   };
 
   // Helper function to get eligible branches for a course
@@ -47,7 +52,7 @@ const ReviewStep = ({ formData }) => {
   };
 
   // Get selected job profiles
-  const selectedJobProfiles = formData.jobProfiles.filter(isJobProfileFilled);
+  // const selectedJobProfiles = formData.jobProfiles.filter(isJobProfileFilled);
 
   // Get selected eligible branches
   const selectedEligibleBranches = Object.keys(formData.eligibleBranches).reduce(
@@ -138,36 +143,53 @@ const ReviewStep = ({ formData }) => {
         </Paper>
 
         {/* Job Profiles */}
-        {selectedJobProfiles.length > 0 && (
-          <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
-            <SectionTitle icon={WorkIcon} title="Job Profiles" />
-            <Stack spacing={3}>
-              {selectedJobProfiles.map((profile, index) => (
-                <Box key={index}>
-                  <Typography variant="h6" gutterBottom sx={{ textTransform: 'capitalize' }}>
-                    {profile.course} Profile
-                  </Typography>
-                  <Grid container spacing={2}>
-                    {Object.entries({
-                      Designation: profile.designation,
-                      CTC: profile.ctc,
-                      'Take Home': profile.takeHome,
-                      Perks: profile.perks,
-                      'Training Period': profile.trainingPeriod,
-                      'Place of Posting': profile.placeOfPosting
-                    }).map(([key, value]) => (
-                      <Grid item xs={12} sm={6} key={key}>
-                        <Typography variant="subtitle2" color="text.secondary">{key}</Typography>
-                        <Typography>{value || 'N/A'}</Typography>
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={WorkIcon} title="Job Profiles" />
+          <Stack spacing={4}>
+            {getJobProfiles().map(({ profileIndex, courses }) => (
+              <Box key={profileIndex}>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Job Profile {profileIndex}
+                </Typography>
+                <Stack spacing={2}>
+                  {courses.map((profile, courseIndex) => (
+                    <Paper
+                      key={courseIndex}
+                      variant="outlined"
+                      sx={{ p: 2 }}
+                    >
+                      <Typography
+                        variant="subtitle1"
+                        gutterBottom
+                        sx={{ textTransform: 'capitalize' }}
+                      >
+                        {profile.course} Profile
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {[
+                          ['Designation', profile.designation],
+                          ['Job Description', profile.jobDescription],
+                          ['CTC', profile.ctc],
+                          ['Take Home', profile.takeHome],
+                          ['Perks', profile.perks],
+                          ['Training Period', profile.trainingPeriod],
+                          ['Place of Posting', profile.placeOfPosting]
+                        ].map(([key, value]) => (
+                          <Grid item xs={12} sm={6} key={key}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              {key}
+                            </Typography>
+                            <Typography>{value || 'N/A'}</Typography>
+                          </Grid>
+                        ))}
                       </Grid>
-                    ))}
-                  </Grid>
-                  {index < selectedJobProfiles.length - 1 && <Divider sx={{ my: 2 }} />}
-                </Box>
-              ))}
-            </Stack>
-          </Paper>
-        )}
+                    </Paper>
+                  ))}
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        </Paper>
 
         {/* Eligible Branches */}
         {Object.keys(selectedEligibleBranches).length > 0 && (

@@ -1,9 +1,21 @@
 import Company  from "../schema/company/companySchema.js";
 import JNF from "../schema/company/jnfSchema.js";
+import User from "../schema/userSchema.js";
 import apiResponse from "../utils/apiResponse.js";
 
 export default class companyModel {
     company = Company;
+    user = User;
+
+    async getAllCompanies() {
+        console.log("Company Model: getAllCompanies called");
+        try {
+            const companies = await this.company.find({}).populate("JNFs");
+            return new apiResponse(200, companies, "Companies fetched successfully");
+        } catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
 
     async createCompany(companyData, userId) {
         console.log("Company Model: createCompany called");
@@ -57,10 +69,14 @@ export default class companyModel {
         }
     }
 
-    async deleteCompany(id) {
+    async deleteCompany(id_company,id_user) {
         console.log("Company Model: deleteCompany called");
         try {
-            const deletedCompany = await this.company.findByIdAndDelete(id);
+            const deletedUser = await this.user.findByIdAndDelete(id_user);
+            if (!deletedUser) {
+                return new apiResponse(404, null, "User not found");
+            }
+            const deletedCompany = await this.company.findByIdAndDelete(id_company);
             if (!deletedCompany) {
                 return new apiResponse(404, null, "Company not found");
             }

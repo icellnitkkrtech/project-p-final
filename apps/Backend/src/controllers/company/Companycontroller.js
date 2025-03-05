@@ -7,11 +7,29 @@ export default class companyController {
         this.CompanyService = new companyServices(companyModel);
     }
 
+    async getAllCompanies(req, res) {
+
+        const {user_role} = req.user;
+
+        if (user_role !== "admin") {
+            return res.status(401).json(new apiResponse(401, null, "Unauthorized request"));
+        }
+        try {
+            const response = await this.CompanyService.getAllCompanies();
+            if (!response) {
+                return res.status(404).json(new apiResponse(404, null, "Not Found"));
+            }
+            res.status(200).json(response);
+        } catch (error) {
+            res.status(500).json(new apiResponse(500, null, error.message));
+        }
+    }
+
     async createCompany(req, res) {
         try {
             const response = await this.CompanyService.createCompany(req.body);
 
-            if(!response) {
+            if (!response) {
                 new apiResponse(404, null, "Not Found");
             }
             res.status(200).json(response);
@@ -24,10 +42,10 @@ export default class companyController {
 
     async getCompany(req, res) {
         const { id } = req.params;
-    
+
         try {
             const response = await this.CompanyService.getCompanyById(id);
-            if(!response) {
+            if (!response) {
                 new apiResponse(404, null, "Not Found");
             }
             res.status(200).json(response);
@@ -47,7 +65,7 @@ export default class companyController {
         try {
             const response = await this.CompanyService.updateCompany(id, updates);
 
-            if(!response) {
+            if (!response) {
                 new apiResponse(404, null, "Not Found");
             }
             res.status(200).json(response);
@@ -58,12 +76,12 @@ export default class companyController {
     }
 
     async deleteCompany(req, res) {
-        const { id } = req.params;
+        const { id_company,id_user } = req.params;
 
         try {
-            const response = await this.CompanyService.deleteCompany(id);
+            const response = await this.CompanyService.deleteCompany(id_company,id_user);
 
-            if(!response) {
+            if (!response) {
                 new apiResponse(404, null, "Not Found");
             }
             res.status(200).json(response);
@@ -78,7 +96,7 @@ export default class companyController {
         const jnfData = req.body;
         try {
             const response = await this.CompanyService.addJNFToCompany(id, jnfData);
-            if(!response) {
+            if (!response) {
                 new apiResponse(404, null, "Not Found");
             }
             res.status(200).json(response);
@@ -92,7 +110,7 @@ export default class companyController {
         const { id } = req.params;
         try {
             const response = await this.CompanyService.getJNFsForCompany(id);
-            if(!response) {
+            if (!response) {
                 new apiResponse(404, null, "Not Found");
             }
             res.status(200).json(response);

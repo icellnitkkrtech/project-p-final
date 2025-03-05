@@ -12,13 +12,19 @@ export default class ApplicationService {
   async applyForJob(studentId, jobId) {
     try {
       const student = await this.studentServices.getStudentById(studentId);
-
+      if (!student) {
+        return new apiResponse(404, null, "Student not found");
+      }
       const job = await this.jobServices.getJobById(jobId);
+      if (!job) {
+        return new apiResponse(404, null, "Job not found");
+      }
+
       const isEligible = await this.checkEligibility(student, job);
       if (!isEligible) {
         return apiResponse(404, null, "You are not eligible for this job ");
       }
-      const application = new this.applicationModel.applyForJob(
+      const application = await this.applicationModel.applyForJob(
         studentId,
         jobId
       );
@@ -48,31 +54,42 @@ export default class ApplicationService {
       // return new apiResponse(500, null, error.message);
     }
   }
+
   async checkEligibility(student, job) {
-    if (student.academics.cgpa < job.eligibility.minCGPA) {
+    try {
+      // Check if student has required data
+      if (!student?.data?.academics?.cgpa) {
+        console.log("Missing student CGPA");
+        return false;
+      }
+
+      // Basic eligibility checks
+      const cgpa = parseFloat(student.data.academics.cgpa);
+      const requiredCGPA = job.eligibilityCriteria?.minCGPA || 0;
+
+      console.log("Checking eligibility:", {
+        studentCGPA: cgpa,
+        requiredCGPA,
+        studentDept: student.data.personalInfo.department,
+        eligibleDepts: job.departments,
+      });
+
+      if (cgpa < requiredCGPA) {
+        return false;
+      }
+
+      // Department check if specified
+      if (job.departments && job.departments.length > 0) {
+        if (!job.departments.includes(student.data.personalInfo.department)) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error checking eligibility:", error);
       return false;
     }
-    if (
-      !job.eligibility.departments.includes(student.personalInfo.department)
-    ) {
-      return false;
-    }
-    if (student.personalInfo.batch !== job.eligibility.batch) {
-      return false;
-    }
-    if (
-      job.eligibility.tenthMarks &&
-      student.academics.tenthMarks < job.eligibility.tenthMarks
-    ) {
-      return false;
-    }
-    if (
-      job.eligibility.twelfthMarks &&
-      student.academics.twelfthMarks < job.eligibility.twelfthMarks
-    ) {
-      return false;
-    }
-    return true;
   }
   async getEligibleJobs(studentId) {
     try {
@@ -82,24 +99,40 @@ export default class ApplicationService {
       }
 
       const allJobs = await this.jobServices.getAllJobs();
+      // console.log("ApplicationService allJobs:", allJobs);
 
-      const eligibleJobs = [];
-      if (!allJobs || allJobs.length === 0) {
-        return new apiResponse(200, [], "No active jobs available");
-      }
-      for (const job of allJobs) {
-        const isEligible = await this.checkEligibility(student, job);
-        if (isEligible) {
-          eligibleJobs.push(job);
-        }
+      if (!Array.isArray(allJobs)) {
+        console.error("Jobs is not an array:", allJobs);
+        return new apiResponse(200, { jobs: [] }, "No jobs available");
       }
 
+      const mappedJobs = allJobs.map((job) => ({
+        _id: job._id,
+        title: job.title,
+        company: job.company,
+        description: job.description,
+        requirements: job.requirements || [],
+        eligibility: {
+          departments: job.eligibility?.departments || [],
+          minCGPA: job.eligibility?.minCGPA || 0,
+          batch: job.eligibility?.batch,
+        },
+        salary: {
+          ctc: job.salary?.ctc || 0,
+          breakup: job.salary?.breakup || "",
+        },
+        status: job.status,
+        numberOfPositions: job.numberOfPositions,
+        deadline: job.applicationDeadline,
+      }));
+      // console.log("Mapped jobs:", mappedJobs);
       return new apiResponse(
         200,
-        eligibleJobs,
-        "Eligible jobs fetched successfully"
+        { jobs: mappedJobs },
+        "Jobs fetched successfully"
       );
     } catch (error) {
+      console.error("Error in getEligibleJobs:", error);
       return new apiResponse(500, null, error.message);
     }
   }

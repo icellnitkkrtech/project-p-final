@@ -38,9 +38,9 @@ export default class UserController {
 
     if (result.statusCode === 200) {
       const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        // httpOnly: true,
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax",
       };
 
       res

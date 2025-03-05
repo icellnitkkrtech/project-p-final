@@ -1,10 +1,3 @@
-// import axios from "axios";
-
-// const instance = axios.create({
-//   baseURL: "http://localhost:3001/api/v1",
-// });
-
-// export default instance;
 import axios from "axios";
 import { API_BASE_URL } from "../../config/constants.js";
 const instance = axios.create({

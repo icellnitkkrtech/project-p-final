@@ -1,49 +1,42 @@
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  TextField,
-  InputAdornment,
-  Avatar,
-  Rating,
-  Tooltip
+import { 
+  Card, CardContent, Typography, Box, Table, TableBody, TableCell, TableHead, TableRow, 
+  Chip, IconButton, TextField, InputAdornment, Avatar, Rating, Tooltip 
 } from '@mui/material';
-import {
-  Search,
-  FilterList,
-  MoreVert,
-  Business,
-  Visibility,
-  Edit,
-  Delete
-} from '@mui/icons-material';
-import { useState } from 'react';
+import { Search, FilterList, Business, Visibility, Edit, Delete } from '@mui/icons-material';
+import { useState, useEffect } from 'react';
+import companyService from '../../../services/admin/companyService'; // Replace with your actual API base URL
 
 const CompanyList = ({ onCompanySelect, selectedCompany }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [companies] = useState([
-    {
-      id: 1,
-      name: 'Tech Corp',
-      logo: '/path/to/logo.png',
-      industry: 'Technology',
-      rating: 4,
-      status: 'active',
-      lastVisit: '2024-02-15',
-      offersCount: 25,
-      avgPackage: '12 LPA',
-      location: 'Bangalore'
-    },
-    // Add more companies...
-  ]);
+  const [companies, setCompanies] = useState([]);
+  const [filteredCompanies, setFilteredCompanies] = useState([]);
+
+  useEffect(() => {
+    const getCompanies = async () => {
+      try {
+        const response = await companyService.getCompanies();
+        console.log("Response data:", response.data); // Debugging log
+        const companiesData = response.data.data.data; // Adjusted to match the actual response structure
+        console.log("Companies data:", companiesData); // Debugging log
+        setCompanies(companiesData); // Set companies data
+        setFilteredCompanies(companiesData); // Initially set filtered data to all companies
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+      }
+    };
+    
+    getCompanies();
+  }, []);
+
+  // Handle search on frontend
+  useEffect(() => {
+    if (Array.isArray(companies)) {
+      const filtered = companies.filter(company => 
+        company.companyName.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredCompanies(filtered);
+    }
+  }, [searchQuery, companies]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -97,65 +90,63 @@ const CompanyList = ({ onCompanySelect, selectedCompany }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {companies.map((company) => (
-              <TableRow 
-                key={company.id}
-                hover
-                selected={selectedCompany?.id === company.id}
-              >
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar src={company.logo} alt={company.name}>
-                      <Business />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle2">
-                        {company.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {company.location}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>{company.industry}</TableCell>
-                <TableCell>
-                  <Rating value={company.rating} readOnly size="small" />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={company.status}
-                    color={getStatusColor(company.status)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{company.lastVisit}</TableCell>
-                <TableCell>{company.offersCount}</TableCell>
-                <TableCell>{company.avgPackage}</TableCell>
-                <TableCell>
+          {Array.isArray(filteredCompanies) && filteredCompanies.map((company) => (
+            <TableRow key={company._id}>
+              <TableCell>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar src={company.logo} alt={company.companyName}>
+                    <Business />
+                  </Avatar>
                   <Box>
-                    <Tooltip title="View Details">
-                      <IconButton 
-                        size="small"
-                        onClick={() => onCompanySelect(company)}
-                      >
-                        <Visibility fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit">
-                      <IconButton size="small">
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton size="small">
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    <Typography variant="subtitle2">
+                      {company.companyName}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {company.location}
+                    </Typography>
                   </Box>
-                </TableCell>
-              </TableRow>
-            ))}
+                </Box>
+              </TableCell>
+              <TableCell>
+                {Array.isArray(company.JNFs) && company.JNFs.length > 0 ? company.JNFs[0].companyDetails.domain : 'N/A'}
+              </TableCell>
+              <TableCell>
+                <Rating value={company.rating} readOnly size="small" />
+              </TableCell>
+              <TableCell>
+                <Chip
+                  label={company.status}
+                  color={getStatusColor(company.status)}
+                  size="small"
+                />
+              </TableCell>
+              <TableCell>{company.lastVisit}</TableCell>
+              <TableCell>{company.offersCount}</TableCell>
+              <TableCell>{company.avgPackage}</TableCell>
+              <TableCell>
+                <Box>
+                  <Tooltip title="View Details">
+                    <IconButton 
+                      size="small"
+                      onClick={() => onCompanySelect(company)}
+                    >
+                      <Visibility fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Edit">
+                    <IconButton size="small">
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton size="small">
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </TableCell>
+            </TableRow>
+          ))}
           </TableBody>
         </Table>
       </CardContent>
@@ -163,4 +154,4 @@ const CompanyList = ({ onCompanySelect, selectedCompany }) => {
   );
 };
 
-export default CompanyList; 
+export default CompanyList;

@@ -25,21 +25,20 @@ const Placements = () => {
     { field: 'companyName', headerName: 'Company', width: 200 },
     { field: 'role', headerName: 'Role', width: 150 },
     { field: 'package', headerName: 'Package (LPA)', width: 150 },
-    { field: 'openings', headerName: 'Openings', width: 100 },
     { field: 'appliedCount', headerName: 'Applied', width: 100 },
     { field: 'selectedCount', headerName: 'Selected', width: 100 },
     { field: 'status', headerName: 'Status', width: 120 },
     { field: 'startDate', headerName: 'Start Date', width: 120 },
-    { 
-      field: 'location', 
-      headerName: 'Locations', 
-      width: 200,
-      renderCell: (params) => (
-        <Tooltip title={params.value}>
-          <span>{params.value}</span>
-        </Tooltip>
-      )
-    },
+    // { 
+    //   field: 'location', 
+    //   headerName: 'Locations', 
+    //   width: 200,
+    //   renderCell: (params) => (
+    //     <Tooltip title={params.value}>
+    //       <span>{params.value}</span>
+    //     </Tooltip>
+    //   )
+    // },
   ];
 
   // Mock data for development
@@ -49,7 +48,6 @@ const Placements = () => {
       companyName: 'Tech Corp',
       role: 'Software Engineer',
       package: '12.5',
-      openings: 10,
       appliedCount: 50,
       selectedCount: 5,
       status: 'In Progress',
@@ -60,7 +58,6 @@ const Placements = () => {
       companyName: 'Data Systems',
       role: 'Data Analyst',
       package: '8.5',
-      openings: 5,
       appliedCount: 30,
       selectedCount: 3,
       status: 'Completed',
@@ -95,7 +92,6 @@ const Placements = () => {
     branches: [],
     cgpa: '',
     backlogs: '0',
-    openings: '',
   });
 
   const [placements, setPlacements] = useState(mockData);
@@ -121,8 +117,7 @@ const Placements = () => {
       id: newId,
       companyName: newPlacement.companyName,
       role: newPlacement.role,
-      package: newPlacement.ctcTotal,
-      openings: parseInt(newPlacement.openings) || 0,
+      package: newPlacement.ctcTotal/100000,
       appliedCount: 0,
       selectedCount: 0,
       status: 'In Progress',
@@ -149,7 +144,6 @@ const Placements = () => {
       branches: [],
       cgpa: '',
       backlogs: '0',
-      openings: '',
     });
     
     setSelectedJNF('');
@@ -232,7 +226,6 @@ const Placements = () => {
             .filter(([_, value]) => value.eligible)
             .map(([branch]) => branch) || [],
           cgpa: jnfData.eligibilityCriteria?.match(/\d+(\.\d+)?/)?.[0] || '',
-          openings: jnfData.selectionProcess?.expectedRecruits || '',
         }));
       }
     }
