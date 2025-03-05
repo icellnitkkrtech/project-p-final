@@ -12,6 +12,7 @@ const Signup = () => {
       rollNumber: "",
       department: "",
       batch: "",
+      Gender: "",
     },
     academics: {
       cgpa: "",
@@ -104,6 +105,20 @@ const Signup = () => {
                   onChange={handleChange}
                   className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
+              </div>
+              <div>
+                <select
+                  name="personalInfo.Gender"
+                  required
+                  value={formData.personalInfo.Gender}
+                  onChange={handleChange}
+                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <div>
                 <select

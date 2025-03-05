@@ -16,6 +16,7 @@ export default class StudentService {
         !studentData.email ||
         !studentData.password ||
         !studentData.personalInfo?.rollNumber ||
+        !studentData.personalInfo?.Gender ||
         !studentData.personalInfo?.name ||
         !studentData.personalInfo?.department ||
         !studentData.personalInfo?.batch ||
@@ -92,6 +93,15 @@ export default class StudentService {
       return new apiResponse(500, null, error.message);
     }
   }
+
+  async getStudentByUserId(userId) {
+    try {
+      return await this.studentModel.getStudentByUserId(userId);
+    } catch (error) {
+      return new apiResponse(500, null, error.message);
+    }
+  }
+
   async getStudentById(studentId) {
     try {
       const student = await this.studentModel.getStudentById(studentId);
@@ -120,7 +130,7 @@ export default class StudentService {
           user: userId,
           personalInfo,
           academics,
-          verificationStatus: "pending"
+          verificationStatus: "pending",
         },
         { new: true, upsert: true }
       );
@@ -147,6 +157,7 @@ export default class StudentService {
       if (
         !studentData.personalInfo?.name ||
         !studentData.personalInfo?.rollNumber ||
+        !studentData.personalInfo?.Gender ||
         !studentData.personalInfo?.department ||
         !studentData.personalInfo?.batch ||
         !studentData.academics?.cgpa ||
@@ -183,7 +194,11 @@ export default class StudentService {
         password, // Include password in the student data
       });
 
-      return new apiResponse(201, newStudent, "Student registered successfully");
+      return new apiResponse(
+        201,
+        newStudent,
+        "Student registered successfully"
+      );
     } catch (error) {
       console.log("Registration error", error);
       return new apiResponse(500, null, error.message);
@@ -196,7 +211,11 @@ export default class StudentService {
       return result; // Return the result from the model
     } catch (error) {
       console.error("Error deleting student:", error);
-      return new apiResponse(500, null, "An error occurred while deleting student");
+      return new apiResponse(
+        500,
+        null,
+        "An error occurred while deleting student"
+      );
     }
   }
 }

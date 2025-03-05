@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Paper,
   Box,
@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../../../axios";
 import PersonalInfoEdit from "./PersonalInfoEdit";
 import SkillsEdit from "./SkillsEdit";
 import ProjectsEdit from "./ProjectsEdit";
@@ -20,8 +20,8 @@ import EducationEdit from "./EducationEdit";
 import AcademicsEdit from "./AcademicsEdit";
 import SecondaryEmailEdit from "./SecondaryEmailEdit";
 import SocialLinksEdit from "./SocialLinks";
-import AcademicsOverallEdit from "./AcademicsOverallEdit";
-import { useEffect } from "react";
+
+// import { useEffect } from "react";
 import { Save as SaveIcon, Cancel as CancelIcon } from "@mui/icons-material";
 import { useOutletContext } from "react-router-dom";
 
@@ -75,7 +75,7 @@ const ProfileEdit = () => {
 
     try {
       const response = await axios.put(
-        `/api/v1/student/profile/${student._id}`,
+        `/student/profile/${student._id}`,
         formData
       );
 
@@ -202,25 +202,7 @@ const ProfileEdit = () => {
               />
             </div>
           </Grow>
-          {/* overall academic  */}
-          <Grow in timeout={1200}>
-            <div>
-              <AcademicsOverallEdit
-                data={formData.academicResults}
-                isLocked={student?.academicResults?.isLocked}
-                onChange={(academicResults) => {
-                  if (academicResults.error) {
-                    setError(academicResults.error);
-                    return;
-                  }
-                  setFormData((prev) => ({
-                    ...prev,
-                    academicResults,
-                  }));
-                }}
-              />
-            </div>
-          </Grow>
+
           <Grow in timeout={1000}>
             <div>
               <SecondaryEmailEdit
