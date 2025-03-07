@@ -14,7 +14,11 @@ companyRouter.post("/register", (req, res) => {
   companyController.createCompany(req, res);
 });
 
+
 companyRouter.get("/all",authVerify, (req, res) => {
+
+companyRouter.get("/all", authVerify, (req, res) => {
+
   companyController.getAllCompanies(req, res);
 });//done
 
@@ -29,7 +33,12 @@ companyRouter.put("/update/:id", (req, res) => {
 companyRouter.delete("/delete/:id", (req, res) => {
   companyController.deleteCompany(req, res);
 });
+
 companyRouter.post("/:id/add-jnf", (req, res) => {
+
+
+companyRouter.post("/:companyId/add-jnf", (req, res) => {
+
   companyController.addJNFToCompany(req, res);
 });
 
