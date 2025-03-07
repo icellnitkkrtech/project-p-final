@@ -8,8 +8,12 @@ const studentService = {
   },
 
   getStudentById: async (id) => {
-    const response = await axios.get(`${API_BASE_URL}/students/${id}`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/students/profile/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
   registerStudentByAdmin: async (studentData) => {
     const response = await axios.post(`${API_BASE_URL}/student/register/admin`, studentData);
@@ -51,9 +55,16 @@ const studentService = {
     return response.data;
   },
 
-  deleteStudent: async (id) => {
-    const response = await axios.delete(`${API_BASE_URL}/student/delete/${id}`);
-    return response.data;
+  deleteStudent: async (studentId, reason) => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/api/v1/students/delete/${studentId}`, {
+        data: { reason }
+      });
+      return response;
+    } catch (error) {
+      console.error('Error debarring student:', error);
+      throw error;
+    }
   },
 
   bulkImport: async (fileData) => {

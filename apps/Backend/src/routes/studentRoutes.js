@@ -30,6 +30,10 @@ studentRouter.get("/profile/:id", (req, res) =>
   StudentController.getProfile(req, res)
 );
 
+studentRouter.get("/profile/user/:userId", (req, res) =>
+  StudentController.getStudentByUserId(req, res)
+);
+
 studentRouter.get("/getStudentByRollNo", (req, res) =>
   StudentController.getStudentByRollNo(req, res)
 );
