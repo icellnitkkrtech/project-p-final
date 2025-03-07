@@ -174,8 +174,9 @@ const Dashboard = lazy(() => import("../pages/admin/Dashboard"));
 const Students = lazy(() => import("../pages/admin/Students"));
 const Companies = lazy(() => import("../pages/admin/Companies"));
 const JNF = lazy(() => import("../pages/admin/JNF"));
-const JNFManagement = lazy(() => import("../pages/admin/JNFManagement"));
+const NotificationForms = lazy(() => import("../pages/admin/NotificationForms"));
 const Placements = lazy(() => import("../pages/admin/Placements"));
+const Internships = lazy(() => import("../pages/admin/Internships"));
 const Templates = lazy(() => import("../pages/admin/Templates"));
 const Reports = lazy(() => import("../pages/admin/Reports"));
 const Survey = lazy(() => import("../pages/admin/Survey"));
@@ -191,6 +192,7 @@ const Signup = lazy(() => import("../components/auth/Signup"));
 const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const ResetPassword = lazy(() => import("../pages/auth/ResetPassword"));
 const Notifications = lazy(() => import("../pages/admin/Notifications"));
+const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
 const CompanyDashboard = lazy(
   () => import("../components/company/CompanyDashboard")
 );
@@ -209,8 +211,11 @@ const routes = [
       { path: "dashboard", element: Dashboard },
       { path: "students", element: Students },
       { path: "companies", element: Companies },
-      { path: "jnf", element: JNFManagement },
-      { path: "placements", element: Placements },
+      {path: "notificationforms", element: NotificationForms},
+      // { path: "jnf", element: JNFManagement },
+      { path: "internships",element: Internships},
+      { path: "placements",element:Placements},
+      { path: 'drive', element: DriveManagement, },
       { path: 'survey', element: Survey, },
       { path: 'query', element: Query, },
       { path: "notifications", element: Notifications },

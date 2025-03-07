@@ -1,5 +1,6 @@
 import { Table, TableHead, TableRow, TableCell, TableBody, Button } from '@mui/material';
 import DataTable from '../../common/DataTable';
+import { useNavigate } from 'react-router-dom';
 
     const columns = [
         { field: 'id', headerName: 'ID', width: 90 },
@@ -22,7 +23,16 @@ import DataTable from '../../common/DataTable';
         // },
       ];
 
+
 const PlacementTable = ({ placements, mockPagination }) => {
+
+  
+  const navigate = useNavigate();
+
+  const handleNavigation = (path) => {
+    navigate(path);
+  };
+
   return (
     <DataTable
         columns={[
@@ -34,8 +44,8 @@ const PlacementTable = ({ placements, mockPagination }) => {
             renderCell: (params) => (
               <Button
                 variant="contained"
-                onClick={() => handleViewPlacement()}
-              >
+                onClick = {() => handleNavigation('/admin/drive')}
+                >
                 View
               </Button>
             ),

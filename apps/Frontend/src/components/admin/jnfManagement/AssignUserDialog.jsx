@@ -3,12 +3,13 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, List
 
 const AssignUserDialog = ({ open, onClose, onAssign, users, job }) => {
     const [selectedUser, setSelectedUser] = useState(null);
+    const [confirmAssignDialogOpen, setConfirmAssignDialogOpen] = useState(false);
 
     const handleUserClick = (user) => {
         setSelectedUser(user);
     };
 
-    const handleAssign = () => {
+    const handleConfirmAssign = () => {
         if (selectedUser) {
             const assignedTask = {
                 user: selectedUser,
@@ -19,6 +20,11 @@ const AssignUserDialog = ({ open, onClose, onAssign, users, job }) => {
             console.log('Assigned Task:', assignedTask);
             onClose();
         }
+        setConfirmAssignDialogOpen(false);
+    };
+
+    const handleAssign = () => {
+        setConfirmAssignDialogOpen(true);
     };
 
     return (
@@ -26,7 +32,7 @@ const AssignUserDialog = ({ open, onClose, onAssign, users, job }) => {
             <DialogTitle>Assign Task</DialogTitle>
             <DialogContent>
                 <Typography variant="body1" gutterBottom>
-                    Select a user to assign the task:
+                    Select a PCC to assign this drive jnf:
                 </Typography>
                 <List>
                     {users.map((user) => (
@@ -53,6 +59,17 @@ const AssignUserDialog = ({ open, onClose, onAssign, users, job }) => {
                     Assign
                 </Button>
             </DialogActions>
+
+            <Dialog open={confirmAssignDialogOpen} onClose={() => setConfirmAssignDialogOpen(false)}>
+                <DialogTitle>Confirm Assignment</DialogTitle>
+                <DialogContent>
+                    <Typography>Are you sure you want to assign this task?</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmAssignDialogOpen(false)} color="secondary">Cancel</Button>
+                    <Button onClick={handleConfirmAssign} color="primary">Confirm</Button>
+                </DialogActions>
+            </Dialog>
         </Dialog>
     );
 };

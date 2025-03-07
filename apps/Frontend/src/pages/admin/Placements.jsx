@@ -11,7 +11,7 @@ import { useTheme } from '@mui/material';
 
 
 const Placements = () => {
-  const [openDialog, setOpenDialog] = useState(false);  
+  const [openDialog, setOpenDialog] = useState(false);
   const { getAcceptedJNFs, getJNFById } = useJNFData();
   
   const theme = useTheme();
@@ -61,7 +61,7 @@ const Placements = () => {
     eligibility: '',
     branches: [],
     cgpa: '',
-    backlogs: '0',
+    backlogs: '',
   });
 
   const [placements, setPlacements] = useState(mockData);
@@ -110,7 +110,7 @@ const Placements = () => {
       eligibility: '',
       branches: [],
       cgpa: '',
-      backlogs: '0',
+      backlogs: '',
     });
     
     setSelectedJNF('');
@@ -132,6 +132,25 @@ const Placements = () => {
     // Add more branches as needed
   ];
 
+  const selectionRounds = [
+    'Aptitude Test',
+    'Group Discussion',
+    'Technical Interview',
+    'HR Interview',
+    'Coding Round',
+    'Machine Test',
+    'Case Study',
+    'Presentation',
+    'Essay Writing',
+  ];
+
+  const courses = [
+    'B.Tech',
+    'M.Tech',
+    'MBA',
+    'MCA',
+    'Ph.D',    
+  ]
   // Add this locations data (you can replace with API call)
   const locationOptions = [
     'Bangalore',
@@ -251,6 +270,8 @@ const Placements = () => {
         newPlacement={newPlacement}
         handleChange={handleChange}
         handleAddPlacement={handleAddPlacement}
+        selectionRounds={selectionRounds}
+        courses={courses}
       />
       <PlacementAnalytics 
         placements={filteredPlacements}

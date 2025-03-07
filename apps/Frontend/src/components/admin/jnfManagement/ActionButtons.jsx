@@ -7,7 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 const ActionButtons = ({ job, onView, onAssign, onDelete }) => {
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+            <>
             {job.status !== "draft" && (
                 <Tooltip title="View" arrow>
                     <IconButton
@@ -57,7 +57,7 @@ const ActionButtons = ({ job, onView, onAssign, onDelete }) => {
                     </IconButton>
                 </Tooltip>
             )}
-        </Box>
+        </>
     );
 };
 
