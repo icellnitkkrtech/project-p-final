@@ -2,13 +2,13 @@ import React from 'react';
 import { Tabs, Tab,TextField, Box, Button , Typography} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 
-const JNFHeader = ({ tab, setTab, searchTerm, setSearchTerm, onCreate }) => {
+const NFHeader = ({ tab, setTab, onCreate, title }) => {
     return (
         <Box sx={{ justifyContent: 'space-between', p: 2, mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4" color='primary'>JNF Management</Typography>
+                <Typography variant="h4" color='primary'>{title} Management</Typography>
                 <Button variant="contained" onClick={onCreate}>
-                    Create JNF
+                    Create {title}
                 </Button>
             </Box>
 
@@ -25,7 +25,7 @@ const JNFHeader = ({ tab, setTab, searchTerm, setSearchTerm, onCreate }) => {
                     <Tab label="Draft" value="draft" />
                     <Tab label="Rejected" value="rejected" />
                 </Tabs>
-                <Box>
+                {/* <Box>
                     <SearchIcon sx={{ color: '#4facfe', mr: 1 }} />
                     <TextField
                         size="small"
@@ -42,10 +42,10 @@ const JNFHeader = ({ tab, setTab, searchTerm, setSearchTerm, onCreate }) => {
                             },
                         }}
                     />
-                </Box>
+                </Box> */}
             </Box>
         </Box>
     );
 };
 
-export default JNFHeader;
+export default NFHeader;
