@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 
-const StatusButton = ({ job }) => {
+const StatusButton = ({ job, onReview }) => {
     const [open, setOpen] = useState(false);
     const [statusToUpdate, setStatusToUpdate] = useState(null);
 
@@ -61,9 +61,9 @@ const StatusButton = ({ job }) => {
     )}
     
     <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>Confirm Status Change</DialogTitle>
+                <DialogTitle>Confirm !</DialogTitle>
                 <DialogContent>
-                    Are you sure you want to {statusToUpdate} this job?
+                    Are you sure you want to get this {statusToUpdate}?
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose} color="secondary">
