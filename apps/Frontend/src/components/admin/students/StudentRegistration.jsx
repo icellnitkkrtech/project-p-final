@@ -28,7 +28,10 @@ const StudentRegistration = () => {
       name: '',
       rollNumber: '',
       department: '',
-      batch: '',
+      batchStartYear: '',
+      batchEndYear: '',
+      gender: '',
+      category: ''
     },
     academics: {
       cgpa: '',
@@ -46,6 +49,60 @@ const StudentRegistration = () => {
     },
   });
 
+  // Predefined options for dropdowns
+  const departments = [
+    { value: 'CSE', label: 'Computer Science Engineering' },
+    { value: 'ECE', label: 'Electronics & Communication Engineering' },
+    { value: 'ME', label: 'Mechanical Engineering' },
+    { value: 'CE', label: 'Civil Engineering' },
+    { value: 'EE', label: 'Electrical Engineering' },
+    { value: 'PIE', label: 'Production & Industrial Engineering' },
+    { value: 'IT', label: 'Information Technology' }
+  ];
+
+  // Predefined options for gender and category
+  const genderOptions = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  const categoryOptions = [
+    { value: 'GENERAL', label: 'General' },
+    { value: 'OBC', label: 'OBC' },
+    { value: 'SC', label: 'SC' },
+    { value: 'ST', label: 'ST' },
+    { value: 'EWS', label: 'EWS' },
+    { value: 'PWD', label: 'PWD' }
+  ];
+
+  // Generate year options (last 10 years to next 4 years)
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = -10; i <= 4; i++) {
+      years.push(currentYear + i);
+    }
+    return years.sort((a, b) => b - a); // Sort in descending order
+  };
+
+  const years = generateYearOptions();
+
+  // Handle batch year change
+  const handleBatchYearChange = (type, value) => {
+    setStudentData(prev => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        [type]: value,
+        // Automatically set end year when start year is selected
+        ...(type === 'batchStartYear' && {
+          batchEndYear: (parseInt(value) + 4).toString()
+        })
+      }
+    }));
+  };
+
   const [errorMessage, setErrorMessage] = useState('');
 
   const steps = [
@@ -59,7 +116,6 @@ const StudentRegistration = () => {
   const handleChange = (section, field, value) => {
     setStudentData((prev) => {
       if (field) {
-        // Handle nested object updates
         return {
           ...prev,
           [section]: {
@@ -68,7 +124,6 @@ const StudentRegistration = () => {
           },
         };
       } else {
-        // Handle direct field updates
         return {
           ...prev,
           [section]: value,
@@ -101,16 +156,105 @@ const StudentRegistration = () => {
         return (
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Name" value={studentData.personalInfo.name} onChange={(e) => handleChange('personalInfo', 'name', e.target.value)} required />
+              <TextField 
+                fullWidth 
+                label="Name" 
+                value={studentData.personalInfo.name} 
+                onChange={(e) => handleChange('personalInfo', 'name', e.target.value)} 
+                required 
+              />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Roll Number" value={studentData.personalInfo.rollNumber} onChange={(e) => handleChange('personalInfo', 'rollNumber', e.target.value)} required />
+              <TextField 
+                fullWidth 
+                label="Roll Number" 
+                value={studentData.personalInfo.rollNumber} 
+                onChange={(e) => handleChange('personalInfo', 'rollNumber', e.target.value)} 
+                required 
+              />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Department" value={studentData.personalInfo.department} onChange={(e) => handleChange('personalInfo', 'department', e.target.value)} required />
+              <FormControl fullWidth required>
+                <InputLabel>Department</InputLabel>
+                <Select
+                  value={studentData.personalInfo.department}
+                  onChange={(e) => handleChange('personalInfo', 'department', e.target.value)}
+                  label="Department"
+                >
+                  {departments.map((dept) => (
+                    <MenuItem key={dept.value} value={dept.value}>
+                      {dept.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Batch" value={studentData.personalInfo.batch} onChange={(e) => handleChange('personalInfo', 'batch', e.target.value)} required />
+              <FormControl fullWidth required>
+                <InputLabel>Gender</InputLabel>
+                <Select
+                  value={studentData.personalInfo.gender}
+                  onChange={(e) => handleChange('personalInfo', 'gender', e.target.value)}
+                  label="Gender"
+                >
+                  {genderOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth required>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={studentData.personalInfo.category}
+                  onChange={(e) => handleChange('personalInfo', 'category', e.target.value)}
+                  label="Category"
+                >
+                  {categoryOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth required>
+                <InputLabel>Batch Start Year</InputLabel>
+                <Select
+                  value={studentData.personalInfo.batchStartYear}
+                  onChange={(e) => handleBatchYearChange('batchStartYear', e.target.value)}
+                  label="Batch Start Year"
+                >
+                  {years.map((year) => (
+                    <MenuItem key={year} value={year.toString()}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth required>
+                <InputLabel>Batch End Year</InputLabel>
+                <Select
+                  value={studentData.personalInfo.batchEndYear}
+                  onChange={(e) => handleBatchYearChange('batchEndYear', e.target.value)}
+                  label="Batch End Year"
+                  disabled={!studentData.personalInfo.batchStartYear}
+                >
+                  {years
+                    .filter(year => year > parseInt(studentData.personalInfo.batchStartYear || 0))
+                    .map((year) => (
+                      <MenuItem key={year} value={year.toString()}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         );

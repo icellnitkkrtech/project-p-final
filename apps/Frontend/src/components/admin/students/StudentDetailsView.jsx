@@ -94,10 +94,7 @@ const StudentDetailsView = ({ studentId }) => {
       <Grid item xs={12} md={8}>
         <Table>
           <TableBody>
-            <TableRow>
-              <TableCell><strong>Registration No</strong></TableCell>
-              <TableCell>{student.registrationNo}</TableCell>
-            </TableRow>
+          
             <TableRow>
               <TableCell><strong>Batch</strong></TableCell>
               <TableCell>{student.batch}</TableCell>
@@ -136,6 +133,7 @@ const StudentDetailsView = ({ studentId }) => {
               <TableRow key={sem.semester}>
                 <TableCell>Semester {sem.semester}</TableCell>
                 <TableCell>SGPA: {sem.sgpa}</TableCell>
+                <TableCell>CGPA: {sem.cgpa}</TableCell>
                 <TableCell>Backlogs: {sem.backlogs}</TableCell>
                 <TableCell>Attendance: {sem.attendance}</TableCell>
               </TableRow>

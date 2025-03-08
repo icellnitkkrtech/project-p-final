@@ -29,13 +29,17 @@ import {
   Divider,
   InputAdornment,
   Tooltip,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   Search,
   FilterList,
   Edit,
-  Delete,
+  Block,
   Download,
   Mail,
   Person,
@@ -48,8 +52,10 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import studentService from '../../../services/admin/studentService';
 import { useAudit } from '../../../hooks/admin/useAudit';
+import StudentDetailsView from './StudentDetailsView';
+import EditStudentForm from './forms/EditStudentForm';
 
-const StudentList = ({ onStudentSelect }) => {
+const StudentList = ({ onStudentSelect, onProfileClick }) => {
   const { logEvent } = useAudit();
   // State for filters
   const [filters, setFilters] = useState({
@@ -96,6 +102,20 @@ const StudentList = ({ onStudentSelect }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Debar dialog state
+  const [openDebarDialog, setOpenDebarDialog] = useState(false);
+  const [debarReason, setDebarReason] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [detailsViewOpen, setDetailsViewOpen] = useState(false);
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [formData, setFormData] = useState({
+    personalInfo: {},
+    academics: {}
+  });
+
   // Filter options
   const filterOptions = {
     batch: ['2020-24', '2021-25', '2022-26', '2023-27'],
@@ -115,7 +135,10 @@ const StudentList = ({ onStudentSelect }) => {
     hostelStatus: ['Day Scholar', 'Hosteller']
   };
 
-  // Fetch students from the backend
+  // Add state for tracking updates
+  const [refreshData, setRefreshData] = useState(false);
+
+  // Modify the useEffect to respond to refreshData changes
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -135,7 +158,7 @@ const StudentList = ({ onStudentSelect }) => {
     };
 
     fetchStudents();
-  }, [filters, page, rowsPerPage]);
+  }, [filters, page, rowsPerPage, refreshData]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({
@@ -159,13 +182,39 @@ const StudentList = ({ onStudentSelect }) => {
     console.log('Saving filters:', filters);
   };
 
-  const handleEditStudent = async (student, event) => {
+  // Handle form input changes
+  const handleInputChange = (section, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  // Handle edit button click
+  const handleEditClick = (student, event) => {
     event.stopPropagation();
+    setSelectedStudentId(student._id);
+    setEditDialogOpen(true);
+  };
+
+  // Handle student update
+  const handleUpdateStudent = async (updatedData) => {
     try {
-      // Your existing edit logic
-      logEvent('update', 'Student', `Initiated edit for student: ${student.name} (${student.rollNo})`);
+      const response = await studentService.updateStudent(selectedStudentId, updatedData);
+      if (response.success) {
+        // Refresh the student list
+        fetchStudents();
+        setEditDialogOpen(false);
+        // Show success message
+        // You'll need to implement your own success message handling
+      }
     } catch (error) {
-      console.error('Error editing student:', error);
+      console.error('Error updating student:', error);
+      // Show error message
+      // You'll need to implement your own error message handling
     }
   };
 
@@ -179,20 +228,37 @@ const StudentList = ({ onStudentSelect }) => {
     }
   };
 
-  const handleDeleteStudent = async (studentId) => {
-    try {
-      const response = await studentService.deleteStudent(studentId);
-      alert("student deleted ");
-      if (response.status === 204) {
+  const handleDebarClick = (studentId) => {
+    setSelectedStudentId(studentId);
+    setDebarReason('');
+    setOpenDebarDialog(true);
+  };
 
-        // Remove the deleted student from the state
-        setStudents((prevStudents) => prevStudents.filter(student => student._id !== studentId));
-        setSuccessMessage('Student deleted successfully!');
-        
+  const handleCloseDebarDialog = () => {
+    setOpenDebarDialog(false);
+    setDebarReason('');
+    setSelectedStudentId(null);
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!debarReason.trim()) {
+      setErrorMessage('Please provide a reason for debarring the student.');
+      return;
+    }
+
+    try {
+      const response = await studentService.deleteStudent(selectedStudentId, debarReason);
+      
+      if (response.status === 204) {
+        setStudents((prevStudents) => 
+          prevStudents.filter(student => student._id !== selectedStudentId)
+        );
+        setSuccessMessage('Student has been debarred successfully');
+        handleCloseDebarDialog();
       }
     } catch (error) {
-      console.error('Error deleting student:', error);
-      setErrorMessage('An error occurred while deleting the student.');
+      console.error('Error debarring student:', error);
+      setErrorMessage('An error occurred while debarring the student.');
     }
   };
 
@@ -230,6 +296,11 @@ const StudentList = ({ onStudentSelect }) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(1);
     fetchStudents();
+  };
+
+  const handleProfileClick = (student) => {
+    setSelectedStudentId(student._id);
+    setDetailsViewOpen(true);
   };
 
   // Filter drawer content
@@ -500,8 +571,16 @@ const StudentList = ({ onStudentSelect }) => {
       <Grid item xs={12}>
         <Card>
           <CardContent>
-            {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
-            {successMessage && <Alert severity="success">{successMessage}</Alert>}
+            {errorMessage && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {errorMessage}
+              </Alert>
+            )}
+            {successMessage && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {successMessage}
+              </Alert>
+            )}
             <Table>
               <TableHead>
                 <TableRow>
@@ -521,11 +600,21 @@ const StudentList = ({ onStudentSelect }) => {
                     return(
                     <TableRow key={student._id}>
                       <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Avatar>
-                            <Person />
-                          </Avatar>
-                          <Typography>{student.personalInfo.name}</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Avatar 
+                            src={student.personalInfo?.photo} 
+                            alt={student.personalInfo?.name}
+                            onClick={() => handleProfileClick(student)}
+                            sx={{ 
+                              cursor: 'pointer',
+                              '&:hover': {
+                                opacity: 0.8,
+                                transform: 'scale(1.1)',
+                                transition: 'all 0.2s ease-in-out'
+                              }
+                            }}
+                          />
+                          <Typography>{student.personalInfo?.name}</Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
@@ -549,19 +638,22 @@ const StudentList = ({ onStudentSelect }) => {
                       </TableCell>
                       <TableCell>
                         <Box display="flex" gap={1}>
-                          <Tooltip title="Edit Student">
-                            <IconButton size="small" onClick={(event) => handleEditStudent(student, event)}>
-                              <Edit fontSize="small" />
+                          <Tooltip title="Edit">
+                            <IconButton onClick={(e) => handleEditClick(student, e)}>
+                              <Edit />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Send Email">
-                            <IconButton size="small" onClick={(event) => handleSendEmail(student, event)}>
-                              <Mail fontSize="small" />
+                            <IconButton onClick={(e) => handleSendEmail(student, e)}>
+                              <Mail />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Delete Student">
-                            <IconButton size="small" color="error" onClick={(event) => handleDeleteStudent(student._id)}>
-                              <Delete fontSize="small" />
+                          <Tooltip title="Debar Student">
+                            <IconButton 
+                              onClick={() => handleDebarClick(student._id)}
+                              sx={{ color: 'error.main' }}
+                            >
+                              <Block />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -598,6 +690,88 @@ const StudentList = ({ onStudentSelect }) => {
       >
         {filterDrawerContent}
       </Drawer>
+
+      {/* Debar Confirmation Dialog */}
+      <Dialog 
+        open={openDebarDialog} 
+        onClose={handleCloseDebarDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          bgcolor: 'error.main', 
+          color: 'error.contrastText',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Block /> Debar Student
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1" gutterBottom>
+            Are you sure you want to debar this student? This action cannot be undone.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Reason for Debarring"
+            fullWidth
+            multiline
+            rows={4}
+            value={debarReason}
+            onChange={(e) => setDebarReason(e.target.value)}
+            required
+            error={!debarReason.trim()}
+            helperText={!debarReason.trim() ? "Reason is required" : ""}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button 
+            onClick={handleCloseDebarDialog}
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteStudent}
+            variant="contained" 
+            color="error"
+            startIcon={<Block />}
+            disabled={!debarReason.trim()}
+          >
+            Debar Student
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add the Dialog wrapper for StudentDetailsView */}
+      <Dialog 
+        open={detailsViewOpen}
+        onClose={() => setDetailsViewOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0 }}>
+          {selectedStudentId && (
+            <StudentDetailsView 
+              studentId={selectedStudentId} 
+              onClose={() => setDetailsViewOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Form Dialog */}
+      <EditStudentForm
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setSelectedStudentId(null);
+        }}
+        studentId={selectedStudentId}
+        onUpdate={handleUpdateStudent}
+      />
     </Grid>
   );
 };

@@ -28,6 +28,12 @@ export default class StudentController {
     res.status(profile.statusCode).json(profile);
   });
 
+  getStudentByUserId = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const response = await this.studentService.getStudentByUserId(userId);
+    res.status(response.statusCode).json(response);
+  });
+
   getStudentByRollNo = asyncHandler(async (req, res) => {
     const rollNo = req.rollNo;
     const profile = await this.studentService.getStudentByRollNo(rollNo);
@@ -60,7 +66,11 @@ export default class StudentController {
         });
       }
 
-      const student = await this.studentService.completeProfile(userId, personalInfo, academics);
+      const student = await this.studentService.completeProfile(
+        userId,
+        personalInfo,
+        academics
+      );
 
       return res.status(200).json({
         success: true,
