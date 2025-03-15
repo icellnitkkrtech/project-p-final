@@ -37,4 +37,5 @@ companyRouter.get("/:id/jnfs", (req, res) => {
   companyController.getJNFsForCompany(req, res);
 });
 
+
 export default companyRouter;
