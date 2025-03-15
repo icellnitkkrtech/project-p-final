@@ -15,6 +15,10 @@ export const AuthProvider = ({ children }) => {
   const { checkAuth, isAuthenticated, isLoading, role } = useAuth();
   const { showError } = useNotification();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   useEffect(() => {
     const initAuth = async () => {

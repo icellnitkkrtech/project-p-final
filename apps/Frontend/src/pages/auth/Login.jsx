@@ -7,9 +7,12 @@ import {
   Alert,
 } from '@mui/material';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import authService from '../../services/authService';
 
 const AdminLogin = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -19,9 +22,29 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(formData);
+      await handleLogin(formData);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleLogin = async (values) => {
+    try {
+      const response = await authService.login(values);
+      if (response.success) {
+        // Store auth data
+        localStorage.setItem('authToken', response.data.authToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Update auth context
+        login(response.data);
+        
+        // Navigate to dashboard
+        navigate('/admin/dashboard', { replace: true });
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
     }
   };
 

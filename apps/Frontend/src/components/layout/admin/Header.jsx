@@ -70,11 +70,22 @@ const Header = () => {
   const handleLogout = async () => {
     handleProfileClose();
     try {
-      await authService.logout(); // Call the logout function from authService
-      navigate('/login'); // Redirect to login page after logout
+      // Clear local storage first
+      localStorage.clear();
+      
+      // Clear cookies
+      document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+      
+      // Try to call the logout API, but don't wait for it
+      authService.logout().catch(console.error);
+      
+      // Navigate immediately
+      window.location.href = '/auth/admin/login';
     } catch (error) {
       console.error('Logout failed:', error);
-      // Optionally, show a user-friendly error message
+      // Still redirect even if there's an error
+      window.location.href = '/auth/admin/login';
     }
   };
 
