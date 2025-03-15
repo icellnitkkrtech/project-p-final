@@ -47,4 +47,4 @@ const placementService = {
   },
 };
 
-export default placementService; 
+export default placementService;

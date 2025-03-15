@@ -300,7 +300,7 @@ const JNFSchema = new Schema(
           return this.jobType === "fteIntern" || this.jobType === "internPpo";
         },
       },
-      INTERNDuration: {
+      internDuration: {
         type: String,
         required: function () {
           return this.jobType === "fteIntern" || this.jobType === "internPpo";
@@ -449,10 +449,10 @@ const JNFSchema = new Schema(
         email: String,
       },
     ],
-    assignedUser: [{
+    assignedUser: {
       type: Schema.Types.ObjectId,
       ref: "User",
-    }],
+    },
     additionalInfo: {
       sponsorEvents: String,
       internshipOffered: String,

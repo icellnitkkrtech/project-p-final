@@ -1,20 +1,43 @@
-// StatusCell.js
-import React from 'react';
-import { Box, IconButton, Typography , Tooltip} from '@mui/material';
+import React, {useState} from 'react';
+import { Box, IconButton, Typography , Tooltip,  Dialog, DialogTitle, DialogContent, DialogActions, Button} from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 
 const StatusButton = ({ job, onReview }) => {
-    return job.status === 'pending' ? (
+    const [open, setOpen] = useState(false);
+    const [statusToUpdate, setStatusToUpdate] = useState(null);
+
+    const handleConfirm = (status) => {
+        setStatusToUpdate(status);
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+        setStatusToUpdate(null);
+    };
+
+    const handleReview = () => {
+        if (statusToUpdate) {
+            onReview(job.id, statusToUpdate);
+        }
+        handleClose();
+    };
+
+    return (
+    <>
+    {job.status === 'pending' ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
             <Tooltip title="Accept" arrow>
                 <IconButton
                     sx={{ padding: 0.5 }}
                     color="success"
                     size="small"
-                    onClick={() => onReview(job.id, 'accepted')}
+                    onClick={() => handleConfirm('accepted')}
                 >
-                    <CheckIcon />
+                    <CheckCircleOutlineIcon />
                 </IconButton>
             </Tooltip>
             <Tooltip title="Reject" arrow>
@@ -22,9 +45,9 @@ const StatusButton = ({ job, onReview }) => {
                     sx={{ padding: 0.5 }}
                     color="error"
                     size="small"
-                    onClick={() => onReview(job.id, 'rejected')}
+                    onClick={() => handleConfirm('rejected')}
                 >
-                    <CloseIcon />
+                    <CancelOutlinedIcon />
                 </IconButton>
             </Tooltip>
         </Box>
@@ -35,6 +58,23 @@ const StatusButton = ({ job, onReview }) => {
         >
             {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
         </Typography>
+    )}
+    
+    <Dialog open={open} onClose={handleClose}>
+                <DialogTitle>Confirm !</DialogTitle>
+                <DialogContent>
+                    Are you sure you want to get this {statusToUpdate}?
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose} color="secondary">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleReview} color="primary" autoFocus>
+                        Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 };
 

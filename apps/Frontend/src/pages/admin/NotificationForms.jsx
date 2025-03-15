@@ -1,0 +1,182 @@
+import React, { useState } from "react";
+import { Box, Button, TextField, AppBar, Toolbar, Typography, Slide, useTheme } from "@mui/material";
+import NFHeader from "../../components/admin/jnfManagement/JNFHeader";
+import CreateJNFDialog from "../../components/admin/jnfManagement/CreateJNFdialog";
+import ViewJNFDialog from "../../components/admin/jnfManagement/ViewJNFDialog";
+import JNFTable from "../../components/admin/jnfManagement/JNFTable";
+import jnfDetails from "../../components/admin/jnfManagement/jnfDetails";
+
+const JNFManagement = ({ searchTerm }) => {
+    const [selectedJNF, setSelectedJNF] = useState(null);
+    const [jnf, setJnf] = useState(jnfDetails);
+    const [tab, setTab] = useState('all');
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+    const handleViewJNF = (jnfItem) => setSelectedJNF(jnfItem);
+    const handleOpenCreateDialog = () => setIsCreateDialogOpen(true);
+    const handleCloseCreateDialog = () => setIsCreateDialogOpen(false);
+
+    const handleReview = (jobId, newStatus) => {
+        setJnf((prevJnf) =>
+            prevJnf.map((job) =>
+                job.id === jobId ? { ...job, status: newStatus } : job
+            )
+        );
+    };
+
+    const handleDeleteJNF = (jobId) => {
+        setJnf((prevJnf) => prevJnf.filter((job) => job.id !== jobId));
+    };
+
+    // Filter logic for the table
+    const filteredJnfs = jnf.filter((jnfItem) => {
+        const search = searchTerm.toLowerCase();
+        const matchesStatus = tab === 'all' || jnfItem.status === tab;
+        const matchesSearch =
+            jnfItem.name?.toLowerCase().includes(search) ||
+            jnfItem.domain?.toLowerCase().includes(search) ||
+            jnfItem.jobProfiles.some((profile) =>
+                profile.designation?.toLowerCase().includes(search)
+            );
+
+        return matchesStatus && matchesSearch;
+    });
+
+    return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', mt: 2 }}>
+            <NFHeader tab={tab} setTab={setTab} onCreate={handleOpenCreateDialog} title = {"JNF"}/>
+            <JNFTable jnfs={filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} />
+            {selectedJNF && (
+                <ViewJNFDialog
+                    selectedJNF={selectedJNF}
+                    onClose={() => setSelectedJNF(null)}
+                    onUpdateStatus={(id, status) => {
+                        setJnf((prevState) =>
+                            prevState.map((jnfItem) =>
+                                jnfItem.id === id ? { ...jnfItem, status } : jnfItem
+                            )
+                        );
+                        setSelectedJNF(null);
+                    }}
+                    onDelete={handleDeleteJNF}
+                    onReview={handleReview}
+                />
+            )}
+            <CreateJNFDialog open={isCreateDialogOpen} onClose={handleCloseCreateDialog} />
+        </Box>
+    );
+};
+
+const INFManagement = ({ searchTerm }) => {
+    const [selectedJNF, setSelectedJNF] = useState(null);
+    const [jnf, setJnf] = useState(jnfDetails);
+    const [tab, setTab] = useState('all');
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+    const handleViewJNF = (jnfItem) => setSelectedJNF(jnfItem);
+    const handleOpenCreateDialog = () => setIsCreateDialogOpen(true);
+    const handleCloseCreateDialog = () => setIsCreateDialogOpen(false);
+
+    const handleReview = (jobId, newStatus) => {
+        setJnf((prevJnf) =>
+            prevJnf.map((job) =>
+                job.id === jobId ? { ...job, status: newStatus } : job
+            )
+        );
+    };
+
+    const handleDeleteJNF = (jobId) => {
+        setJnf((prevJnf) => prevJnf.filter((job) => job.id !== jobId));
+    };
+
+    // Filter logic for the table
+    const filteredJnfs = jnf.filter((jnfItem) => {
+        const search = searchTerm.toLowerCase();
+        const matchesStatus = tab === 'all' || jnfItem.status === tab;
+        const matchesSearch =
+            jnfItem.name?.toLowerCase().includes(search) ||
+            jnfItem.domain?.toLowerCase().includes(search) ||
+            jnfItem.jobProfiles.some((profile) =>
+                profile.designation?.toLowerCase().includes(search)
+            );
+
+        return matchesStatus && matchesSearch;
+    });
+
+    return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', mt: 2 }}>
+            <NFHeader 
+            tab={tab} 
+            setTab={setTab} 
+            onCreate={handleOpenCreateDialog} 
+            title = {"INF"}/>
+            <JNFTable jnfs={filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} />
+            {selectedJNF && (
+                <ViewJNFDialog
+                    selectedJNF={selectedJNF}
+                    onClose={() => setSelectedJNF(null)}
+                    onUpdateStatus={(id, status) => {
+                        setJnf((prevState) =>
+                            prevState.map((jnfItem) =>
+                                jnfItem.id === id ? { ...jnfItem, status } : jnfItem
+                            )
+                        );
+                        setSelectedJNF(null);
+                    }}
+                    onDelete={handleDeleteJNF}
+                    onReview={handleReview}
+                />
+            )}
+            <CreateJNFDialog open={isCreateDialogOpen} onClose={handleCloseCreateDialog} />
+        </Box>
+    );
+};
+
+
+const NotificationForms = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeComponent, setActiveComponent] = useState(0);
+  const theme = useTheme();
+
+  return (
+    <Box sx={{ flexGrow: 1, padding: 2 }}>
+      <AppBar position="static" sx={{ borderRadius: 2, backgroundColor: theme.palette.mode === "dark" ? "#424242" : "#f5f5f5", color: theme.palette.text.primary }}>
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
+          <Typography variant="h5">Notification Forms</Typography>
+            <Button variant={activeComponent === 0 ? "contained" : "outlined"} onClick={() => setActiveComponent(0)} size="small">JNF</Button>
+            <Button variant={activeComponent === 1 ? "contained" : "outlined"} onClick={() => setActiveComponent(1)} size="small">INF</Button>
+          </Box>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ backgroundColor: theme.palette.mode === "dark" ? "#616161" : "#e0e0e0", borderRadius: 1, width: 200, input: { color: theme.palette.text.primary } }}
+          />
+        </Toolbar>
+      </AppBar>
+
+      <Box sx={{ marginTop: 2 }}>
+        {activeComponent === 0 && (
+            <Slide direction="left" in={true} mountOnEnter unmountOnExit>
+            <div>
+                <JNFManagement searchTerm={searchTerm} key="jnf" />
+            </div>
+            </Slide>
+        )}
+        {activeComponent === 1 && (
+            <Slide direction="right" in={true} mountOnEnter unmountOnExit>
+            <div>
+                <INFManagement searchTerm={searchTerm} key="inf" />
+            </div>
+            </Slide>
+        )}
+        </Box>
+
+    </Box>
+  );
+};
+
+export default NotificationForms;

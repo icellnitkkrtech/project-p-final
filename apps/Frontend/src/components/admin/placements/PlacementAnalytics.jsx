@@ -14,7 +14,7 @@ const PlacementAnalytics = () => {
       count: "45",
       Icon: BusinessIcon,
       color: "#1976d2",
-      trend: "+5 this month"
+      trend: "+5 this month"  
     },
     {
       title: "Students Placed",
