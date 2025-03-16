@@ -1,227 +1,483 @@
-import mongoose from 'mongoose';
-import { getRecruitmentStatus } from "../../utils/companyUtils.js";
+// import { Schema as _Schema, model } from 'mongoose';
+// const Schema = _Schema;
+// const JNFSchema = new Schema(
+//   {
+//     companyDetails: {
+//       name: { type: String, required: true },
+//       email: { type: String, required: true },
+//       website: String,
+//       companyType: {
+//         type: String,
+//         enum: ["MNC", "Start-up", "PSU", "Private", "NGO", "Other"],
+//         required: true,
+//       },
+//       domain: {
+//         type: String,
+//         enum: [
+//           "Analytics",
+//           "Consulting",
+//           "Core(Technical)",
+//           "Finance",
+//           "Management",
+//           "IT",
+//           "Other",
+//         ],
+//         required: true,
+//       },
+//       description: String,
+//     },
 
-const jnfSchema = new mongoose.Schema({
-  company: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Company',
-    required: true
-  },
-  companyDetails: {
-    name: { type: String, required: true },
-    email: { type: String, required: true },
-    website: String,
-    companyType: {
-      type: String,
-      enum: ["MNC", "Start-up", "PSU", "Private", "NGO", "Other"],
-      required: true,
-    },
-    domain: {
-      type: String,
-      enum: [
-        "Analytics",
-        "Consulting",
-        "Core(Technical)",
-        "Finance",
-        "Management",
-        "IT",
-        "Other",
-      ],
-      required: true,
-    },
-    description: String,
-  },
+//     // jobProfiles: [
+//     //   {
+//     //     course: {
+//     //       type: String,
+//     //       enum: ["B.Tech", "M.Tech", "MBA", "MCA", "M.Sc", "Ph.D"],
+//     //     },
+//     //     designation: String,
+//     //     jobDescription: String,
+//     //     ctc: Number,
+//     //     takeHome: Number,
+//     //     perks: String,
+//     //     trainingPeriod: String,
+//     //     placeOfPosting: String,
+//     //   },
+//     // ],
+//     // jobProfiles: {
+//     //   type: Map,
+//     //   of: [{
+//     //     course: {
+//     //       type: String,
+//     //       enum: ["btech", "mtech", "mba", "mca", "msc", "phd"],
+//     //     },
+//     //     designation: String,
+//     //     jobDescription: String,
+//     //     ctc: Number,
+//     //     takeHome: Number,
+//     //     perks: String,
+//     //     trainingPeriod: String,
+//     //     placeOfPosting: String,
+//     //   }]
+//     // },
 
-  jobProfiles: [{
-    profileId: {
-      type: String,
-      required: true,
-    },
-    course: {
-      type: String,
-      enum: ["btech", "mtech", "mba", "mca", "msc", "phd"],
-    },
-    designation: String,
-    jobDescription: {
-      description: String,
-      attachFile: {
-        type: Boolean,
-        default: false,
+
+//     //changed job profile
+//     jobProfiles: {
+//       type: Map,
+//       of: [{
+//         course: {
+//           type: String,
+//           enum: ["btech", "mtech", "mba", "mca", "msc", "phd"],
+//         },
+//         designation: String,
+//         jobDescription: {
+//           description: String,
+//           attachFile: {
+//             type: Boolean,
+//             default: false,
+//           },
+//           file: {
+//             type: String, // URL or path to the file
+//             required: function () {
+//               return this.jobDescription.attachFile;
+//             },
+//           },
+//         },
+//         ctc: Number,
+//         takeHome: Number,
+//         perks: String,
+//         trainingPeriod: String,
+//         placeOfPosting: String,
+//         jobType: {
+//           type: String,
+//           enum: ["fte", "fteIntern", "intern+ppo"],
+//         },
+//         stipend: {
+//           type: Number,
+//           required: function () {
+//             return this.jobType === "fteIntern" || this.jobType === "intern+ppo";
+//           },
+//         },
+//         internDuration: {
+//           type: String,
+//           required: function () {
+//             return this.jobType === "fteIntern" || this.jobType === "intern+ppo";
+//           },
+//         },
+//       }]
+//     },
+
+//     eligibleBranches: {
+//       btech: [
+//         {
+//           name: {
+//             type: String,
+//             enum: [
+//               "Computer Engineering",
+//               "Information Technology",
+//               "Electronics & Communication Engineering",
+//               "Electrical Engineering",
+//               "Mechanical Engineering",
+//               "Production & Industrial Engineering",
+//               "Civil Engineering",
+//             ],
+//           },
+//           eligible: Boolean,
+//         },
+//       ],
+//       mtech: [
+//         {
+//           department: String,
+//           specialization: String,
+//           eligible: Boolean,
+//         },
+//       ],
+//       msc: [
+//         {
+//           department: String,
+//           specialization: String,
+//           eligible: Boolean,
+//         },
+//       ],
+//       phd: [
+//         {
+//           department: String,
+//           specialization: String,
+//           eligible: Boolean,
+//         },
+//       ],
+//     },
+
+//     eligibilityCriteria: String,
+
+//     selectionProcess: {
+//       rounds: [
+//         {
+//           type: {
+//             type: String,
+//             enum: [
+//               "resumeShortlisting",
+//               "prePlacementTalk",
+//               "groupDiscussion",
+//               "onlineTest",
+//               "aptitudeTest",
+//               "technicalTest",
+//               "technicalInterview",
+//               "hrInterview",
+//               "otherRounds",
+//             ],
+//             required: true,
+//           },
+//           details: String,
+//         },
+//       ],
+//       expectedRecruits: Number,
+//       tentativeDate: Date,
+//     },
+
+//     bondDetails: {
+//       hasBond: {
+//         type: Boolean,
+//         required: true,
+//       },
+//       details: {
+//         type: String,
+//         required: function () {
+//           return this.bondDetails.hasBond;
+//         },
+//       },
+//     },
+
+
+//     pointOfContact: [
+//       {
+//         name: String,
+//         designation: String,
+//         mobile: String,
+//         email: String,
+//       },
+//     ],
+
+//     additionalInfo: {
+//       sponsorEvents: String,
+//       internshipOffered: String,
+//       internshipDuration: String,
+//       contests: String,
+//     },
+
+//     status: {
+//       type: String,
+//       enum: ["draft", "submitted", "underReview", "approved", "rejected"],
+//       default: "draft",
+//     },
+
+//     submittedBy: {
+//       type: Schema.Types.ObjectId,
+//       ref: "User",
+//       // required: true,
+//     },
+
+//     reviewedBy: {
+//       type: Schema.Types.ObjectId,
+//       ref: "User",
+//     },
+
+//     reviewComments: String,
+//     submissionDate: Date,
+//     reviewDate: Date,
+//   },
+//   { timestamps: true }
+// );
+
+// const JNF = model('JNF', JNFSchema);
+
+// export default JNF;
+
+import { Schema as _Schema, model } from 'mongoose';
+const Schema = _Schema;
+
+const JNFSchema = new Schema(
+  {
+    companyDetails: {
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      website: String,
+      companyType: {
+        type: String,
+        enum: ["MNC", "Start-up", "PSU", "Private", "NGO", "Other"],
+        required: true,
       },
-      file: {
+      domain: {
+        type: String,
+        enum: [
+          "Analytics",
+          "Consulting",
+          "Core(Technical)",
+          "Finance",
+          "Management",
+          "IT",
+          "Other",
+        ],
+        required: true,
+      },
+      description: String,
+    },
+
+    jobProfiles: [{
+      profileId: {
+        type: String,
+        required: true,
+      },
+      course: {
+        type: String,
+        enum: ["btech", "mtech", "mba", "mca", "msc", "phd"],
+      },
+      designation: String,
+      jobDescription: {
+        description: String,
+        attachFile: {
+          type: Boolean,
+          default: false,
+        },
+        file: {
+          type: String,
+          required: function () {
+            return this.jobDescription.attachFile;
+          },
+        },
+      },
+      ctc: Number,
+      takeHome: Number,
+      perks: String,
+      trainingPeriod: String,
+      placeOfPosting: String,
+      jobType: {
+        type: String,
+        enum: ["fte", "fteIntern", "internPpo"],
+      },
+      stipend: {
+        type: Number,
+        required: function () {
+          return this.jobType === "fteIntern" || this.jobType === "internPpo";
+        },
+      },
+      internDuration: {
         type: String,
         required: function () {
-          return this.jobDescription.attachFile;
+          return this.jobType === "fteIntern" || this.jobType === "internPpo";
         },
       },
-    },
-    ctc: Number,
-    takeHome: Number,
-    perks: String,
-    trainingPeriod: String,
-    placeOfPosting: String,
-    jobType: {
-      type: String,
-      enum: ["fte", "fte+intern", "intern+ppo"],
-    },
-    stipend: {
-      type: Number,
-      required: function () {
-        return this.jobType === "fte+intern" || this.jobType === "intern+ppo";
-      },
-    },
-    internDuration: {
-      type: String,
-      required: function () {
-        return this.jobType === "fte+intern" || this.jobType === "intern+ppo";
-      },
-    },
-  }],
+    }],
 
-  eligibleBranchesForProfiles: [{
-    profileId: {
-      type: String,
-      required: true,
-    },
-    branches: {
-      btech: [
-        {
-          name: {
-            type: String,
-            enum: [
-              "Computer Engineering",
-              "Information Technology",
-              "Electronics & Communication Engineering",
-              "Electrical Engineering",
-              "Mechanical Engineering",
-              "Production & Industrial Engineering",
-              "Civil Engineering",
-            ],
+    // Separate array for eligible branches per job profile
+    eligibleBranchesForProfiles: [{
+      profileId: {
+        type: String,
+        required: true,
+      },
+      branches: {
+        btech: [
+          {
+            name: {
+              type: String,
+              enum: [
+                "Computer Engineering",
+                "Information Technology",
+                "Electronics & Communication Engineering",
+                "Electrical Engineering",
+                "Mechanical Engineering",
+                "Production & Industrial Engineering",
+                "Civil Engineering",
+              ],
+            },
+            eligible: Boolean,
           },
-          eligible: Boolean,
-        },
-      ],
-      mtech: [
+        ],
+        mtech: [
+          {
+            department: {
+              type: String,
+              enum: [
+                "Computer Engineering",
+                "Electronics and Communication Engineering",
+                "Electrical Engineering",
+                "Mechanical Engineering",
+                "Civil Engineering",
+                "Physics",
+                "Master of Computer Applications (MCA)",
+                "School of Renewable Energy and Efficiency",
+                "School of VLSI Design & Embedded System",
+                "Master of Business Administration (MBA)"
+              ],
+            },
+            specialization: {
+              type: String,
+              enum: [
+                "Computer Engineering/ Cyber Security",
+                "Communication Systems",
+                "Power System",
+                "Power Electronics & Drives",
+                "Control System",
+                "Thermal Engineering",
+                "Machine Design",
+                "Production & Industrial Engineering",
+                "Environmental Engineering",
+                "Water Resources Engineering",
+                "Transportation Engineering",
+                "Structural Engineering",
+                "Geotechnical Engineering",
+                "Instrumentation",
+                "Nanomaterials and Nanotechnology",
+                "Master of Computer Applications (MCA)",
+                "Renewable Energy Systems",
+                "VLSI Design",
+                "Embedded System Design",
+                "Master of Business Administration (MBA)"
+              ],
+            },
+            eligible: Boolean,
+          },
+        ],
+        msc: [
+          {
+            department: String,
+            specialization: String,
+            eligible: Boolean,
+          },
+        ],
+        phd: [
+          {
+            department: String,
+            specialization: String,
+            eligible: Boolean,
+          },
+        ],
+      },
+    }],
+     
+    // Separate array for selection process per job profile
+    selectionProcessForProfiles: [{
+      profileId: {
+        type: String,
+        required: true,
+      },
+      rounds: [
         {
-          department: String,
-          specialization: String,
-          eligible: Boolean,
+          type: {
+            type: String,
+            roundNumber: Number,
+            enum: [
+              "resumeShortlisting",
+              "prePlacementTalk",
+              "groupDiscussion",
+              "onlineTest",
+              "aptitudeTest",
+              "technicalTest",
+              "technicalInterview",
+              "hrInterview",
+              "otherRounds",
+            ],
+            required: true,
+          },
+          details: String,
         },
       ],
-      msc: [
-        {
-          department: String,
-          specialization: String,
-          eligible: Boolean,
-        },
-      ],
-      phd: [
-        {
-          department: String,
-          specialization: String,
-          eligible: Boolean,
-        },
-      ],
+      expectedRecruits: Number,
+      tentativeDate: Date,
+    }],
+   
+    eligibilityCriteria: {
+	    minCgpa: Number, //limit from 0-10
+	    backlogAllowed: Number, //min 0
     },
-  }],
-
-  selectionProcessForProfiles: [{
-    profileId: {
-      type: String,
-      required: true,
+    bondDetails: {
+      hasBond: {
+        type: Boolean,
+        required: true,
+      },
+      details: {
+        type: String,
+        required: function () {
+          return this.hasBond;
+        },
+      }
     },
-    rounds: [
+    pointOfContact: [
       {
-        type: {
-          type: String,
-          enum: [
-            "resumeShortlisting",
-            "prePlacementTalk",
-            "groupDiscussion",
-            "onlineTest",
-            "aptitudeTest",
-            "technicalTest",
-            "technicalInterview",
-            "hrInterview",
-            "otherRounds",
-          ],
-          required: true,
-        },
-        details: String,
+        name: String,
+        designation: String,
+        mobile: String,
+        email: String,
       },
     ],
-    expectedRecruits: Number,
-    tentativeDate: Date,
-  }],
-
-  eligibilityCriteria: String,
-  bondDetails: {
-    hasBond: {
-      type: Boolean,
-      required: true,
+    assignedUser: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-    details: {
+    additionalInfo: {
+      sponsorEvents: String,
+      internshipOffered: String,
+      internshipDuration: String,
+      contests: String,
+    },
+    status: {
       type: String,
-      required: function () {
-        return this.bondDetails.hasBond;
-      },
+      enum: ["draft", "submitted", "underReview", "approved", "rejected"],
+      default: "draft",
     },
-  },
-  pointOfContact: [
-    {
-      name: String,
-      designation: String,
-      mobile: String,
-      email: String,
+    submittedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-  ],
-  additionalInfo: {
-    sponsorEvents: String,
-    internshipOffered: String,
-    internshipDuration: String,
-    contests: String,
+    reviewedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    reviewComments: String,
+    submissionDate: Date,
+    reviewDate: Date,
   },
-  placementDrive: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PlacementDrive'
-  },
-  status: {
-    type: String,
-    enum: ['draft', 'submitted', 'approved', 'rejected', 'completed'],
-    default: 'draft'
-  },
-  submittedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
-  reviewedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
-  reviewComments: String,
-  submissionDate: Date,
-  reviewDate: Date,
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-// Add middleware to update company recruitment status
-jnfSchema.post('save', async function(doc) {
-  try {
-    const Company = mongoose.model('Company');
-    const company = await Company.findById(doc.company).populate({
-      path: 'JNFs',
-      populate: {
-        path: 'placementDrive'
-      }
-    });
-    
-    if (company) {
-      // Update company recruitment status based on JNF and drive status
-      const recruitmentStatus = getRecruitmentStatus(company);
-      await Company.findByIdAndUpdate(doc.company, { recruitmentStatus });
-    }
-  } catch (error) {
-    console.error('Error updating company recruitment status:', error);
-  }
-});
-
-export default mongoose.model('JNF', jnfSchema);
+const JNF = model('JNF', JNFSchema);
+export default JNF;
