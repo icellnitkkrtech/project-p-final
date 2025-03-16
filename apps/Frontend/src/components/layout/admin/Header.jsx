@@ -73,26 +73,20 @@ const Header = () => {
     try {
       // Clear local storage first
       localStorage.clear();
-      sessionStorage.clear(); // Add this to clear session storage as well
       
-      // Clear cookies with all possible variations
-      const cookieOptions = [
-        'path=/',
-        'domain=' + window.location.hostname,
-        'expires=Thu, 01 Jan 1970 00:00:00 GMT'
-      ].join(';');
+      // Clear cookies
+      document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
       
-      document.cookie = `authToken=;${cookieOptions}`;
-      document.cookie = `refreshToken=;${cookieOptions}`;
+      // Try to call the logout API, but don't wait for it
+      authService.logout().catch(console.error);
       
-      // Call logout API
-      await authService.logout().catch(console.error);
-      
-      // Force a clean redirect that prevents back navigation
-      window.location.replace('/auth/admin/login');
+      // Navigate immediately
+      window.location.href = '/auth/admin/login';
     } catch (error) {
       console.error('Logout failed:', error);
-      window.location.replace('/auth/admin/login');
+      // Still redirect even if there's an error
+      window.location.href = '/auth/admin/login';
     }
   };
 
