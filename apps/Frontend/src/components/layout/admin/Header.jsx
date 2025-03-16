@@ -89,7 +89,7 @@ const Header = () => {
       await authService.logout().catch(console.error);
       
       // Force a clean redirect that prevents back navigation
-      window.location.replace('/auth/admin/login');
+      window.location.replace('/');
     } catch (error) {
       console.error('Logout failed:', error);
       window.location.replace('/auth/admin/login');
