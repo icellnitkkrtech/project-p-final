@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Box,
@@ -13,6 +13,10 @@ import {
   IconButton,
   Tooltip,
   Card,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   PersonAdd as PersonAddIcon,
@@ -27,6 +31,17 @@ const AdditionalDetailsStep = ({
   handleAdditionalInfoChange
 }) => {
   const theme = useTheme();
+  
+  // Initialize local state based on formData
+  const [showBondDetails, setShowBondDetails] = useState(
+    formData.bondDetails?.hasBond || false
+  );
+  
+  // Update local state if formData changes externally
+  useEffect(() => {
+    setShowBondDetails(formData.bondDetails?.hasBond || false);
+  }, [formData.bondDetails?.hasBond]);
+  
   const handleAddContact = () => {
     const newContact = {
       name: '',
@@ -53,6 +68,22 @@ const AdditionalDetailsStep = ({
     handlePointOfContactChange(updatedContacts);
   };
 
+  const handleBondOptionChange = (hasBond) => {
+    setShowBondDetails(hasBond);
+    
+    // Update bond details with hasBond property
+    // If we're turning off the bond, clear the details
+    handleBondDetailsChange(
+      hasBond,
+      hasBond ? formData.bondDetails?.details || '' : ''
+    );
+  };
+  
+  const handleBondDetailsTextChange = (details) => {
+    // Keep hasBond true when updating details
+    handleBondDetailsChange(true, details);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -64,19 +95,42 @@ const AdditionalDetailsStep = ({
       </Typography>
 
       <Stack spacing={4}>
-        {/* Bond Details */}
+        {/* Bond Details Section */}
         <Box>
           <Typography variant="subtitle1" fontWeight={500} gutterBottom>
-            Bond Details (if any)
+            Bond Details
           </Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            value={formData.bondDetails}
-            onChange={(e) => handleBondDetailsChange(e.target.value)}
-            variant="outlined"
-          />
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth variant="outlined">
+                <InputLabel>Does your company have a bond?</InputLabel>
+                <Select
+                  value={showBondDetails ? 'true' : 'false'}
+                  onChange={(e) => handleBondOptionChange(e.target.value === 'true')}
+                  label="Does your company have a bond?"
+                >
+                  <MenuItem value="false">No</MenuItem>
+                  <MenuItem value="true">Yes</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+          
+          {showBondDetails && (
+            <Box mt={2}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="Please provide details about the bond"
+                label="Bond Details"
+                value={formData.bondDetails?.details || ''}
+                onChange={(e) => handleBondDetailsTextChange(e.target.value)}
+                variant="outlined"
+                required
+              />
+            </Box>
+          )}
         </Box>
 
         {/* Point of Contact Section */}
@@ -257,7 +311,7 @@ const AdditionalDetailsStep = ({
               <TextField
                 fullWidth
                 label="Sponsor Events"
-                value={formData.additionalInfo.sponsorEvents}
+                value={formData.additionalInfo.sponsorEvents || ''}
                 onChange={(e) => handleAdditionalInfoChange('sponsorEvents', e.target.value)}
                 variant="outlined"
               />
@@ -266,7 +320,7 @@ const AdditionalDetailsStep = ({
               <TextField
                 fullWidth
                 label="Internship Offered"
-                value={formData.additionalInfo.internshipOffered}
+                value={formData.additionalInfo.internshipOffered || ''}
                 onChange={(e) => handleAdditionalInfoChange('internshipOffered', e.target.value)}
                 variant="outlined"
               />
@@ -275,7 +329,7 @@ const AdditionalDetailsStep = ({
               <TextField
                 fullWidth
                 label="Internship Duration"
-                value={formData.additionalInfo.internshipDuration}
+                value={formData.additionalInfo.internshipDuration || ''}
                 onChange={(e) => handleAdditionalInfoChange('internshipDuration', e.target.value)}
                 variant="outlined"
               />
@@ -284,7 +338,7 @@ const AdditionalDetailsStep = ({
               <TextField
                 fullWidth
                 label="Contests"
-                value={formData.additionalInfo.contests}
+                value={formData.additionalInfo.contests || ''}
                 onChange={(e) => handleAdditionalInfoChange('contests', e.target.value)}
                 variant="outlined"
               />

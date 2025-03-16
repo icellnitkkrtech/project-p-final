@@ -116,7 +116,7 @@ const CompanyDashboard = () => {
   useEffect(() => {
     const fetchCompany = async () => {
       try {
-        const response = await axios.get(`/company/profile/${id}`);
+        const response = await axios.get(`/company/getone/${id}`);
         console.log(response.data.data.data);
         setCompany(response.data.data.data);
       } catch (error) {
