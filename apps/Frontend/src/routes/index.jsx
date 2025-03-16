@@ -113,7 +113,7 @@ const AppRoutes = () => {
         <Route path="notifications" element={<NotificationsSection />} />
       </Route>
 
-      <Route path="/" element={<Navigate to="/auth/admin/login" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="*" element={<Error404 />} />
     </Routes>
   );

@@ -18,6 +18,7 @@ import {
   AccountCircle,
   Brightness4,
   Brightness7,
+  Home as HomeIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -110,6 +111,11 @@ const Header = () => {
     handleNotificationClose();
   };
 
+  const handleHomeClick = () => {
+    // Navigate to the landing page
+    window.location.href = '/';
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -136,6 +142,15 @@ const Header = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton 
+            color="inherit" 
+            onClick={handleHomeClick}
+            title="Go to Home"
+            aria-label="home"
+          >
+            <HomeIcon />
+          </IconButton>
+
           <IconButton color="inherit" onClick={toggleTheme}>
             {appTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
           </IconButton>

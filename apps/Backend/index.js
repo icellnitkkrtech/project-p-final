@@ -14,7 +14,7 @@ const whitelist = [
   "http://localhost:5178",
   "http://localhost:5179",
   "http://localhost:5184",
-  "http://localhost:5182",
+  "http://localhost:5180",
   "https://project-p-final-frontend.vercel.app",
 ];
 
