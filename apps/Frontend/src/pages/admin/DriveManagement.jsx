@@ -70,7 +70,7 @@ const DriveManagement = () => {
         {tabIndex === 1 && (
           <PlacementStudents id = {placementId}/>
         )}
-        {tabIndex === 2 && <PlacementRounds id = {placementId} />}
+        {tabIndex === 2 && <PlacementRounds placementId = {placementId} />}
         {tabIndex === 3 && <PlacementNotifications students={applicationDetails.appliedStudents} />}
       </Box>
     </Container>

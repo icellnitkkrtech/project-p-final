@@ -25,8 +25,10 @@ import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/admin/Dashboard";
 import Profile from "../pages/admin/Profile";
-const Placements = lazy(() => import("../pages/admin/Placements"));
-const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
+import Placements from "../pages/admin/Placements";
+import DriveManagement from "../pages/admin/DriveManagement";
+// const Placements = lazy(() => import("../pages/admin/Placements"));
+// const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
 
 const Loading = () => (
   <Box

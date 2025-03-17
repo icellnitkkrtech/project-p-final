@@ -19,6 +19,11 @@ const placementService = {
         const response = await axios.get(`${API_BASE_URL}/placement/${id}/getone`);
         return response.data;
     },
+
+    getRoundDetails: async (id) => {
+        const response = await axios.get(`${API_BASE_URL}/placement/${id}/getone`);
+        return response.data.roundDetails;
+    },
     
     // Update placement drive
     updatePlacement: async (id, data) => {
@@ -53,7 +58,7 @@ const placementService = {
     //7 Update round details
     updateRound: async (id, roundId, data) => {
         const response = await axios.put(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/update-round`, data);
-        return response.data;
+        return response;
     },
     
     //8 Get applicant students in a placement drive

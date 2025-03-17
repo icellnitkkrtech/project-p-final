@@ -1,6 +1,8 @@
-import { Table, TableHead, TableRow, TableCell, TableBody, Button } from '@mui/material';
+import { Table, TableHead, TableRow, TableCell, TableBody, Button, Icon } from '@mui/material';
 import DataTable from '../../common/DataTable';
 import { useNavigate } from 'react-router-dom';
+import { Delete } from '@mui/icons-material';
+import placementService from '../../../services/admin/placementService';
 
     const columns = [
         { field: '_id', headerName: 'ID', width: 90 },
@@ -32,6 +34,18 @@ const PlacementTable = ({ placements, mockPagination }) => {
     navigate(path);
   };
 
+  const handleDeletePlacement = async (id) => {
+    try {
+      const response = await placementService.deletePlacement(id);
+      console.log(response);
+        alert('Placement deleted successfully');
+        window.location.reload();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+
   return (
     <Table>
       <TableHead>
@@ -59,6 +73,9 @@ const PlacementTable = ({ placements, mockPagination }) => {
               >
                 View
               </Button>
+              <Delete
+              color='error'
+              onClick = {() => handleDeletePlacement(placement._id)} />
             </TableCell>
           </TableRow>
         ))}
