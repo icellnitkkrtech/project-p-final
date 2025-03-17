@@ -7,6 +7,7 @@ import { Search, Business, Visibility, Edit, Delete } from '@mui/icons-material'
 import { useState, useEffect } from 'react';
 import companyService from '../../../services/admin/companyService'; // Replace with your actual API base URL
 import { getCompanyStatus, getRecruitmentStatus } from '../../../utils/companyUtils'; // Add this import
+import { useTheme } from '@mui/material/styles';
 
 const CompanyList = ({ companies = [], onCompanySelect, onCompanyEdit, selectedCompany, viewMode = 'grid', onCompanyUpdate }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,6 +15,7 @@ const CompanyList = ({ companies = [], onCompanySelect, onCompanyEdit, selectedC
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
   const [error, setError] = useState(null);
+  const theme = useTheme();
 
   useEffect(() => {
     if (Array.isArray(companies)) {
@@ -74,53 +76,170 @@ const CompanyList = ({ companies = [], onCompanySelect, onCompanyEdit, selectedC
   };
 
   const CompanyCard = ({ company }) => (
-    <Card elevation={1} sx={{ height: '100%' }}>
-      <CardContent>
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <Avatar src={company.logo} alt={company.companyName}>
-            <Business />
+    <Card 
+      elevation={0}
+      sx={{
+        height: '100%',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: theme => theme.palette.mode === 'dark' 
+          ? 'rgba(255, 255, 255, 0.1)' 
+          : 'rgba(0, 0, 0, 0.08)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme => theme.palette.mode === 'dark'
+            ? '0 4px 20px rgba(0, 0, 0, 0.5)'
+            : '0 4px 20px rgba(25, 118, 210, 0.15)',
+        }
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        <Box display="flex" alignItems="center" gap={2} mb={3}>
+          <Avatar 
+            src={company.logo} 
+            alt={company.companyName}
+            sx={{
+              width: 56,
+              height: 56,
+              bgcolor: theme => theme.palette.primary.main,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            }}
+          >
+            <Business sx={{ fontSize: 28 }} />
           </Avatar>
           <Box>
-            <Typography variant="h6">{company.companyName}</Typography>
-            <Typography variant="body2" color="textSecondary">
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600,
+                mb: 0.5,
+                color: theme => theme.palette.mode === 'dark' 
+                  ? '#fff' 
+                  : '#1a1a1a'
+              }}
+            >
+              {company.companyName}
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.7)'
+                  : 'rgba(0,0,0,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5
+              }}
+            >
               {company.website}
             </Typography>
           </Box>
         </Box>
 
-        <Box display="flex" flexDirection="column" gap={1}>
+        <Box 
+          sx={{
+            display: 'grid',
+            gap: 2,
+            mb: 2,
+            p: 2,
+            borderRadius: 1,
+            bgcolor: theme => theme.palette.mode === 'dark'
+              ? 'rgba(255,255,255,0.03)'
+              : 'rgba(25, 118, 210, 0.04)'
+          }}
+        >
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="body2" color="textSecondary">
+            <Typography 
+              variant="body2"
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.7)'
+                  : 'rgba(0,0,0,0.6)'
+              }}
+            >
               Status
             </Typography>
             <Chip
               label={company.status}
               color={company.status === 'active' ? 'success' : 'default'}
               size="small"
+              sx={{ 
+                fontWeight: 500,
+                textTransform: 'capitalize',
+                '& .MuiChip-label': { px: 2 }
+              }}
             />
           </Box>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="body2" color="textSecondary">
+            <Typography 
+              variant="body2"
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.7)'
+                  : 'rgba(0,0,0,0.6)'
+              }}
+            >
               Recruitment
             </Typography>
             <Chip
               label={company.recruitmentStatus}
               color={getRecruitmentStatusColor(company.recruitmentStatus)}
               size="small"
-              sx={{ textTransform: 'capitalize' }}
+              sx={{ 
+                fontWeight: 500,
+                textTransform: 'capitalize',
+                '& .MuiChip-label': { px: 2 }
+              }}
             />
           </Box>
-          <Box display="flex" justifyContent="flex-end" mt={1}>
+        </Box>
+
+        <Box 
+          display="flex" 
+          justifyContent="flex-end" 
+          gap={1}
+          sx={{
+            '& .MuiIconButton-root': {
+              color: theme => theme.palette.mode === 'dark'
+                ? 'rgba(255,255,255,0.7)'
+                : theme.palette.primary.main,
+              '&:hover': {
+                bgcolor: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.05)'
+                  : 'rgba(25, 118, 210, 0.08)'
+              }
+            }
+          }}
+        >
+          <Tooltip title="View Details">
             <IconButton size="small" onClick={() => handleViewClick(company)}>
               <Visibility fontSize="small" />
             </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit Company">
             <IconButton size="small" onClick={() => handleEditClick(company)}>
               <Edit fontSize="small" />
             </IconButton>
-            <IconButton size="small" onClick={() => handleDeleteClick(company)}>
+          </Tooltip>
+          <Tooltip title="Delete Company">
+            <IconButton 
+              size="small" 
+              onClick={() => handleDeleteClick(company)}
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,0,0,0.7)'
+                  : theme.palette.error.main,
+                '&:hover': {
+                  bgcolor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255,0,0,0.05)'
+                    : 'rgba(255,0,0,0.08)'
+                }
+              }}
+            >
               <Delete fontSize="small" />
             </IconButton>
-          </Box>
+          </Tooltip>
         </Box>
       </CardContent>
     </Card>
