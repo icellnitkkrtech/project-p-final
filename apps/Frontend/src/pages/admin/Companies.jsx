@@ -135,51 +135,112 @@ const Companies = () => {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Paper sx={{ flexGrow: 1, mr: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Tabs 
-            value={currentTab} 
-            onChange={(e, val) => setSearchParams({ tab: val.toString() })}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab 
-              label={`Ongoing Recruitment (${tabCounts.ongoing})`}
-              sx={{ color: getTabColor(0) }}
-            />
-            <Tab 
-              label={`Upcoming Companies (${tabCounts.upcoming})`}
-              sx={{ color: getTabColor(1) }}
-            />
-            <Tab 
-              label={`Past Recruitments (${tabCounts.completed})`}
-              sx={{ color: getTabColor(2) }}
-            />
-            <Tab 
-              label={`All Companies (${tabCounts.all})`}
-              sx={{ color: getTabColor(3) }}
-            />
-          </Tabs>
-          <Box px={2}>
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              size="small"
+      <Box 
+        display="flex" 
+        justifyContent="space-between" 
+        alignItems="center" 
+        mb={3}
+        gap={2}
+      >
+        <Paper 
+          sx={{ 
+            flexGrow: 1,
+            borderRadius: 2,
+            overflow: 'hidden',
+            border: theme => `1px solid ${
+              theme.palette.mode === 'dark' 
+                ? 'rgba(255,255,255,0.1)' 
+                : 'rgba(0,0,0,0.08)'
+            }`,
+            boxShadow: 'none'
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Tabs 
+              value={currentTab} 
+              onChange={(e, val) => setSearchParams({ tab: val.toString() })}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  fontSize: '0.95rem',
+                  minHeight: 48,
+                  '&.Mui-selected': {
+                    color: theme => theme.palette.primary.main,
+                  }
+                },
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  borderRadius: '3px 3px 0 0'
+                }
+              }}
             >
-              <ToggleButton value="grid" aria-label="grid view">
-                <ViewModule />
-              </ToggleButton>
-              <ToggleButton value="list" aria-label="list view">
-                <ViewList />
-              </ToggleButton>
-            </ToggleButtonGroup>
+              <Tab 
+                label={`Ongoing Recruitment (${tabCounts.ongoing})`}
+                sx={{ color: getTabColor(0) }}
+              />
+              <Tab 
+                label={`Upcoming Companies (${tabCounts.upcoming})`}
+                sx={{ color: getTabColor(1) }}
+              />
+              <Tab 
+                label={`Past Recruitments (${tabCounts.completed})`}
+                sx={{ color: getTabColor(2) }}
+              />
+              <Tab 
+                label={`All Companies (${tabCounts.all})`}
+                sx={{ color: getTabColor(3) }}
+              />
+            </Tabs>
+            <Box 
+              px={2} 
+              sx={{ 
+                borderLeft: theme => `1px solid ${
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255,255,255,0.1)'
+                    : 'rgba(0,0,0,0.08)'
+                }`
+              }}
+            >
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={handleViewModeChange}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    border: 'none',
+                    '&.Mui-selected': {
+                      bgcolor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.08)'
+                        : 'rgba(25, 118, 210, 0.08)',
+                    }
+                  }
+                }}
+              >
+                <ToggleButton value="grid" aria-label="grid view">
+                  <ViewModule />
+                </ToggleButton>
+                <ToggleButton value="list" aria-label="list view">
+                  <ViewList />
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
           </Box>
         </Paper>
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={() => setIsRegistrationOpen(true)}
+          sx={{
+            borderRadius: 2,
+            textTransform: 'none',
+            px: 3,
+            py: 1,
+            fontWeight: 500
+          }}
         >
           Add Company
         </Button>
