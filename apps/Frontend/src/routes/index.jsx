@@ -161,6 +161,10 @@ const StudentSignup = lazy(
 const CompanyDashboard = lazy(() => import("../components/company/CompanyDashboard"));
 const CompanyProfile = lazy(() => import("../components/company/CompanyProfile"));
 const JNFPosting = lazy(() => import("../components/company/JNFPosting/index"));
+
+const Placements = lazy(() => import("../pages/admin/Placements"));
+const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
+
 const Loading = () => (
   <Box
     sx={{
@@ -220,6 +224,8 @@ const AppRoutes = () => {
               />
             ))}
           <Route path="settings" element={<Settings />} />
+          <Route path="/admin/placements" element={<Placements />} />
+          <Route path="/admin/placements/:placementId" element={<DriveManagement />} />
         </Route>
 
         <Route path="/company" element={<CompanyLayout />}>

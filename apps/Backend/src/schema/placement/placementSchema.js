@@ -167,7 +167,7 @@ const placementDriveSchema = new mongoose.Schema(
     },
 
     // Status & Applicants
-    status: { type: String, enum: ["inProgress", "closed", "hold"] },
+    status: { type: String, enum: ["inProgress", "closed", "hold"], default: "inProgress" },
     applicantStudents: { type: [mongoose.Schema.Types.ObjectId], ref: "Student", default: [] },
     selectedStudents: { type: [mongoose.Schema.Types.ObjectId], ref: "Student", default: [] },
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { 
+import {
   Box, Typography, Card, CardContent, Button, Dialog, DialogTitle, 
   DialogContent, DialogActions, TextField, Stepper, Step, StepLabel 
 } from "@mui/material";
@@ -7,8 +7,8 @@ import PlacementData from "./PlacementData";
 import { AddCardRounded } from "@mui/icons-material";
 import PlacementStudents from "./PlacementStudents";
 
-const PlacementRounds = () => {
-  const drive = PlacementData[0]; // Fetching data from DriveData
+const PlacementRounds = (id) => {
+  const drive = PlacementData[0];
   const [rounds, setRounds] = useState(drive.roundDetails.rounds);
 
   // Default to ongoing round, or last round if none are ongoing
