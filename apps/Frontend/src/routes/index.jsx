@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { CircularProgress, Box } from "@mui/material";
+import { lazy } from "react";
 import MainLayout from "../components/layout/MainLayout";
 import AuthLayout from "../components/layout/AuthLayout";
 import CompanyLayout from "../components/layout/company/CompanyLayout";
@@ -24,44 +25,9 @@ import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/admin/Dashboard";
 import Profile from "../pages/admin/Profile";
-
-<<<<<<< HEAD
-const StudentDashboard = lazy(
-  () => import("../components/student/StudentDashboard")
-);
-const ProfileEdit = lazy(
-  () => import("../components/student/sections/Profile/ProfileEdit/ProfileEdit")
-);
-const ApplicationsSection = lazy(
-  () => import("../components/student/sections/Applications/ApplicationSection")
-);
-const ResumeBuilder = lazy(
-  () => import("../components/student/sections/resume/ResumeBuilder")
-);
-const ProfileSection = lazy(
-  () => import("../components/student/sections/Profile/ProfileSection")
-);
-const JobSection = lazy(
-  () => import("../components/student/sections/jobs/JobSection")
-);
-const NotificationsSection = lazy(
-  () => import("../components/student/sections/NotificationSection")
-);
-const StudentLogin = lazy(
-  () => import("../components/student/auth_referal_for_student/Login")
-);
-const StudentSignup = lazy(
-  () => import("../components/student/auth_referal_for_student/Signup")
-);
-const CompanyDashboard = lazy(() => import("../components/company/CompanyDashboard"));
-const CompanyProfile = lazy(() => import("../components/company/CompanyProfile"));
-const JNFPosting = lazy(() => import("../components/company/JNFPosting/index"));
-
 const Placements = lazy(() => import("../pages/admin/Placements"));
 const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
 
-=======
->>>>>>> f83a5770c64c775fcb708e28d7ae19b987196e41
 const Loading = () => (
   <Box
     sx={{
