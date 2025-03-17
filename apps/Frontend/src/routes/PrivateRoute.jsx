@@ -2,29 +2,32 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const PrivateRoute = ({ allowedRoles }) => {
-  const { isAuthenticated, isLoading, role } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
-
-  if (isLoading) {
-    // You can replace this with a loading spinner component
-    return <div>Loading...</div>;
-  }
+  
+  // Check if user exists in localStorage if not in auth context
+  const storedUser = JSON.parse(localStorage.getItem('user'));
+  const authToken = localStorage.getItem('authToken');
+  
+  // Determine if user is authenticated
+  const isAuthenticated = !!(storedUser && authToken);
+  
+  // Get user role from either context or localStorage
+  const userRole = user?.user_role || storedUser?.user_role;
 
   if (!isAuthenticated) {
-    // Store the attempted URL for redirect after login
+    // Redirect to login with current location
     return <Navigate 
-      to="/auth/login" 
-      state={{ from: location.pathname }} 
+      to="/auth/admin/login" 
+      state={{ from: location }}
       replace 
     />;
   }
 
   // Check if user has required role
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    // Redirect to dashboard if user doesn't have required role
+  if (!allowedRoles.includes(userRole)) {
     return <Navigate 
-      to={`/${role}/dashboard`} 
-      state={{ from: location.pathname }} 
+      to="/auth/admin/login"
       replace 
     />;
   }

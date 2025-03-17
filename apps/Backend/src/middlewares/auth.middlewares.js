@@ -5,17 +5,29 @@ import jsonwebtoken from 'jsonwebtoken';
 const { verify } = jsonwebtoken;
 
 const authVerify = asyncHandler(async (req, res, next) => {
-    const token = req.cookies?.authToken || req.header("Authorization").replace("Bearer ", "");
+  try {
+    const token = req.cookies?.authToken || req.header("Authorization")?.replace("Bearer ", "");
+    
     if (!token) {
-        throw new apiResponse(401, null, "Unauthorized request");
+      return res.status(401).json(new apiResponse(401, null, "Unauthorized request"));
     }
+
     const decodedToken = verify(token, process.env.ACCESS_TOKEN_SECRET);
     const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
+    
     if (!user) {
-        throw new apiResponse(401, null, "Invalid token");
+      return res.status(401).json(new apiResponse(401, null, "Invalid token"));
     }
+
     req.user = user;
     next();
+  } catch (error) {
+    console.error("Auth Error:", error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json(new apiResponse(401, null, "Token expired"));
+    }
+    return res.status(401).json(new apiResponse(401, null, "Invalid token"));
+  }
 });
 
 export default authVerify;

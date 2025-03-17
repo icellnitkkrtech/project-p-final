@@ -34,13 +34,13 @@ export const useAuth = () => {
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
-      showSuccess('Logged out successfully');
-      navigate('/auth/select-role');
+      return { success: true };
     } catch (error) {
-      showError(error.message || 'Logout failed');
-      throw error;
+      console.error('Logout error:', error);
+      return { success: false, error: error.message };
     }
   };
+
 
   const checkAuth = async () => {
     try {

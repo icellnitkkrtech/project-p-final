@@ -45,7 +45,7 @@ const Error404 = () => {
             
             <Button
               variant="outlined"
-              onClick={() => navigate('/admin/dashboard')}
+              onClick={() => navigate('/')}
               sx={{ px: 4 }}
             >
               Dashboard

@@ -38,9 +38,9 @@ export default class UserController {
 
     if (result.statusCode === 200) {
       const options = {
-        // httpOnly: true,
-        // secure: process.env.NODE_ENV === "production",
-        // sameSite: "lax",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
       };
 
       res
@@ -54,16 +54,31 @@ export default class UserController {
   });
 
   logout = asyncHandler(async (req, res) => {
-    const result = await this.userService.logoutUser(req.user._id);
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
-    res
-      .status(200)
-      .clearCookie("authToken", options)
-      .clearCookie("refreshToken", options)
-      .json(result);
+    try {
+      // Clear cookies
+      res.clearCookie('authToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
+      
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Logged out successfully'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Error during logout'
+      });
+    }
   });
 
   refreshToken = asyncHandler(async (req, res) => {

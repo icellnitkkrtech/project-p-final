@@ -89,18 +89,18 @@
 //         placeOfPosting: String,
 //         jobType: {
 //           type: String,
-//           enum: ["fte", "fte+intern", "intern+ppo"],
+//           enum: ["fte", "fteIntern", "intern+ppo"],
 //         },
 //         stipend: {
 //           type: Number,
 //           required: function () {
-//             return this.jobType === "fte+intern" || this.jobType === "intern+ppo";
+//             return this.jobType === "fteIntern" || this.jobType === "intern+ppo";
 //           },
 //         },
 //         internDuration: {
 //           type: String,
 //           required: function () {
-//             return this.jobType === "fte+intern" || this.jobType === "intern+ppo";
+//             return this.jobType === "fteIntern" || this.jobType === "intern+ppo";
 //           },
 //         },
 //       }]
@@ -292,18 +292,18 @@ const JNFSchema = new Schema(
       placeOfPosting: String,
       jobType: {
         type: String,
-        enum: ["fte", "fte+intern", "intern+ppo"],
+        enum: ["fte", "fteIntern", "internPpo"],
       },
       stipend: {
         type: Number,
         required: function () {
-          return this.jobType === "fte+intern" || this.jobType === "intern+ppo";
+          return this.jobType === "fteIntern" || this.jobType === "internPpo";
         },
       },
       internDuration: {
         type: String,
         required: function () {
-          return this.jobType === "fte+intern" || this.jobType === "intern+ppo";
+          return this.jobType === "fteIntern" || this.jobType === "internPpo";
         },
       },
     }],
@@ -334,8 +334,46 @@ const JNFSchema = new Schema(
         ],
         mtech: [
           {
-            department: String,
-            specialization: String,
+            department: {
+              type: String,
+              enum: [
+                "Computer Engineering",
+                "Electronics and Communication Engineering",
+                "Electrical Engineering",
+                "Mechanical Engineering",
+                "Civil Engineering",
+                "Physics",
+                "Master of Computer Applications (MCA)",
+                "School of Renewable Energy and Efficiency",
+                "School of VLSI Design & Embedded System",
+                "Master of Business Administration (MBA)"
+              ],
+            },
+            specialization: {
+              type: String,
+              enum: [
+                "Computer Engineering/ Cyber Security",
+                "Communication Systems",
+                "Power System",
+                "Power Electronics & Drives",
+                "Control System",
+                "Thermal Engineering",
+                "Machine Design",
+                "Production & Industrial Engineering",
+                "Environmental Engineering",
+                "Water Resources Engineering",
+                "Transportation Engineering",
+                "Structural Engineering",
+                "Geotechnical Engineering",
+                "Instrumentation",
+                "Nanomaterials and Nanotechnology",
+                "Master of Computer Applications (MCA)",
+                "Renewable Energy Systems",
+                "VLSI Design",
+                "Embedded System Design",
+                "Master of Business Administration (MBA)"
+              ],
+            },
             eligible: Boolean,
           },
         ],
@@ -355,7 +393,7 @@ const JNFSchema = new Schema(
         ],
       },
     }],
-
+     
     // Separate array for selection process per job profile
     selectionProcessForProfiles: [{
       profileId: {
@@ -366,6 +404,7 @@ const JNFSchema = new Schema(
         {
           type: {
             type: String,
+            roundNumber: Number,
             enum: [
               "resumeShortlisting",
               "prePlacementTalk",
@@ -385,9 +424,11 @@ const JNFSchema = new Schema(
       expectedRecruits: Number,
       tentativeDate: Date,
     }],
-
    
-    eligibilityCriteria: String,
+    eligibilityCriteria: {
+	    minCgpa: Number, //limit from 0-10
+	    backlogAllowed: Number, //min 0
+    },
     bondDetails: {
       hasBond: {
         type: Boolean,
@@ -396,9 +437,9 @@ const JNFSchema = new Schema(
       details: {
         type: String,
         required: function () {
-          return this.bondDetails.hasBond;
+          return this.hasBond;
         },
-      },
+      }
     },
     pointOfContact: [
       {
@@ -408,6 +449,10 @@ const JNFSchema = new Schema(
         email: String,
       },
     ],
+    assignedUser: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     additionalInfo: {
       sponsorEvents: String,
       internshipOffered: String,

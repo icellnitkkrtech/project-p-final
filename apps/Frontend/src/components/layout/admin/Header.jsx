@@ -18,6 +18,7 @@ import {
   AccountCircle,
   Brightness4,
   Brightness7,
+  Home as HomeIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -70,11 +71,28 @@ const Header = () => {
   const handleLogout = async () => {
     handleProfileClose();
     try {
-      await authService.logout(); // Call the logout function from authService
-      navigate('/login'); // Redirect to login page after logout
+      // Clear local storage first
+      localStorage.clear();
+      sessionStorage.clear(); // Add this to clear session storage as well
+      
+      // Clear cookies with all possible variations
+      const cookieOptions = [
+        'path=/',
+        'domain=' + window.location.hostname,
+        'expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      ].join(';');
+      
+      document.cookie = `authToken=;${cookieOptions}`;
+      document.cookie = `refreshToken=;${cookieOptions}`;
+      
+      // Call logout API
+      await authService.logout().catch(console.error);
+      
+      // Force a clean redirect that prevents back navigation
+      window.location.replace('/');
     } catch (error) {
       console.error('Logout failed:', error);
-      // Optionally, show a user-friendly error message
+      window.location.replace('/auth/admin/login');
     }
   };
 
@@ -97,6 +115,11 @@ const Header = () => {
   const handleViewAll = () => {
     navigate('/admin/notifications');
     handleNotificationClose();
+  };
+
+  const handleHomeClick = () => {
+    // Navigate to the landing page
+    window.location.href = '/';
   };
 
   return (
@@ -125,6 +148,15 @@ const Header = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton 
+            color="inherit" 
+            onClick={handleHomeClick}
+            title="Go to Home"
+            aria-label="home"
+          >
+            <HomeIcon />
+          </IconButton>
+
           <IconButton color="inherit" onClick={toggleTheme}>
             {appTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
