@@ -57,12 +57,13 @@ export default class PlacementModel {
     async addRound(id, roundData) {
         console.log("Placement Model: addRound called");
         try {
-            return await this.placement.findByIdAndUpdate(id, { $push: { rounds: roundData } }, { new: true });
+            return await this.placement.findByIdAndUpdate(id, { $push: { "roundDetails.rounds": roundData } }, { new: true });
         } catch (error) {
             console.error("Error in addRound:", error);
             throw error;
         }
     }
+
     async deleteRound(id, roundId) {
         console.log("Placement Model: deleteRound called");
         try {
@@ -75,18 +76,19 @@ export default class PlacementModel {
     async getRound(id, roundId) {
         console.log("Placement Model: getRound called");
         try {
-            return await this.placement.findOne({ _id: id, "rounds._id": roundId }, { "rounds.$": 1 });
+            return await this.placement.findOne({ _id: id, "roundDetails.rounds._id": roundId }, { "roundDetails.rounds.$": 1 });
         } catch (error) {
             console.error("Error in getRound:", error);
             throw error;
         }
     }
+    
     async updateRound(id, roundId, updates) {
         console.log("Placement Model: updateRound called");
         try {
             return await this.placement.findOneAndUpdate(
-                { _id: id, "rounds._id": roundId },
-                { $set: { "rounds.$": updates } },
+                { _id: id, "roundDetails.rounds._id": roundId },
+                { $set: { "roundDetails.rounds.$": updates } },
                 { new: true }
             );
         } catch (error) {
@@ -169,6 +171,7 @@ export default class PlacementModel {
     async updateSelectedStudents(id, roundId, studentId) {
         console.log("Placement Model: updateSelectedStudents called");
         try {
+            console.log(studentId);
             return await this.placement.findOneAndUpdate(
                 { _id: id, "roundDetails.rounds._id": roundId },
                 { $push: { "roundDetails.rounds.$.selectedStudents": studentId } },
@@ -182,9 +185,10 @@ export default class PlacementModel {
     async declareResult(id, roundId, resultData) {
         console.log("Placement Model: declareResult called");
         try {
+            const {resultMessage, resultDescription} = resultData;
             return await this.placement.findOneAndUpdate(
                 { _id: id, "roundDetails.rounds._id": roundId },
-                { $set: { "roundDetails.rounds.$.resultMessage": resultData.message, "roundDetails.rounds.$.resultDescription": resultData.description } },
+                { $set: { "roundDetails.rounds.$.resultMessage": resultMessage, "roundDetails.rounds.$.resultDescription": resultDescription } },
                 { new: true }
             );
         } catch (error) {
@@ -255,6 +259,15 @@ export default class PlacementModel {
             return await this.placement.findByIdAndUpdate(id, { $pull: { notificationLogs: { _id: notificationId } } }, { new: true });
         } catch (error) {
             console.error("Error in deleteNotification:", error);
+            throw error;
+        }
+    }
+    async getAllRounds(id) {
+        console.log("Placement Model: getAllRounds called");
+        try {
+            return await this.placement.findById(id, { "roundDetails.rounds": 1 });
+        } catch (error) {
+            console.error("Error in getAllRounds:", error);
             throw error;
         }
     }

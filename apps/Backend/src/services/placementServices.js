@@ -169,4 +169,11 @@ export default class PlacementService {
             throw new Error("Error deleting notification: " + error.message);
         }
     }
+    async getAllRounds(id){
+        try {
+            return await this.placementModel.getAllRounds(id);
+        } catch (error) {
+            throw new Error("Error fetching rounds: " + error.message);
+        }
+    }
 }
