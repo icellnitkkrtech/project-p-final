@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Container,Dialog, DialogActions, DialogContent, DialogTitle, Box, TextField, Button, MenuItem, Typography, Grid,Stepper, Step, StepLabel, Checkbox, FormControlLabel, Stack, Paper, Grid2, Snackbar, Alert } from "@mui/material";
 import placementService from "../../../services/admin/placementService";
+import { time } from "framer-motion";
 
 const JOB_TYPES = {
   FTE: "fte",
@@ -57,55 +58,49 @@ const btech = [
 ];
 
 const mtech = [
-  { department: "Computer Engineering", specialization: ["Computer Engineering", "Information Technology"] },
-  { department: "Electronics & Communication Engineering", specialization: ["Electronics & Communication Engineering", "VLSI Design"] },
-  { department: "Electrical Engineering", specialization: ["Electrical Engineering", "Power Electronics & Drives"] },
-  { department: "Mechanical Engineering", specialization: ["Mechanical Engineering", "Production & Industrial Engineering"] },
-  { department: "Civil Engineering", specialization: ["Civil Engineering", "Construction Management"] },
+  { dept: "Computer Engineering", spl: "Machine Learning" },
+  { dept: "Information Technology", spl: "Data Science" },
+  { dept: "Electronics & Communication Engineering",spl: "VLSI Design" },
+  { dept: "Electrical Engineering", spl: "Power System" },
+  { dept: "Mechanical Engineering", spl: "Automobile Design" },
+  { dept: "Civil Engineering", spl: "Structural Engineering" },
+  { dept: "Production & Industrial Engineering", spl: "Manufacturing Engineering" }
 ];
 
 const msc = [
-  { department: "Computer Science", specialization: ["Computer Science", "Information Technology"] },
-  { department: "Electronics", specialization: ["Electronics", "VLSI Design"] },
-  { department: "Mathematics", specialization: ["Mathematics", "Statistics"] },
-  { department: "Physics", specialization: ["Physics", "Material Science"] },
-  { department: "Chemistry", specialization: ["Chemistry", "Organic Chemistry"] },
-  { department: "Biotechnology", specialization: ["Biotechnology", "Bioinformatics"] },
+  { dept: "Computer Engineering", spl: "Machine Learning" },
+  { dept: "Information Technology", spl: "Data Science" },
+  { dept: "Electronics & Communication Engineering",spl: "VLSI Design" },
+  { dept: "Electrical Engineering", spl: "Power System" },
+  { dept: "Mechanical Engineering", spl: "Automobile Design" },
+  { dept: "Civil Engineering", spl: "Structural Engineering" },
+  { dept: "Production & Industrial Engineering", spl: "Manufacturing Engineering" }
 ];
 
 const phd = [
-  { department: "Computer Science", specialization: ["Computer Science", "Information Technology"] },
-  { department: "Electronics", specialization: ["Electronics", "VLSI Design"] },
-  { department: "Mathematics", specialization: ["Mathematics", "Statistics"] },
-  { department: "Physics", specialization: ["Physics", "Material Science"] },
-  { department: "Chemistry", specialization: ["Chemistry", "Organic Chemistry"] },
-  { department: "Biotechnology", specialization: ["Biotechnology", "Bioinformatics"] },
+  { dept: "Computer Engineering", spl: "Machine Learning" },
+  { dept: "Information Technology", spl: "Data Science" },
+  { dept: "Electronics & Communication Engineering",spl: "VLSI Design" },
+  { dept: "Electrical Engineering", spl: "Power System" },
+  { dept: "Mechanical Engineering", spl: "Automobile Design" },
+  { dept: "Civil Engineering", spl: "Structural Engineering" },
+  { dept: "Production & Industrial Engineering", spl: "Manufacturing Engineering" }
 ];
-
-
-
-// const mtech = [
-
-
-const Branches = {
-  btech: btech.map(branch => ({ name: branch, eligible: false })),
-
-  
-}
 
 const steps = ["Company Details", "Job Details", "Eligiblity Details", "Selection & POC Details", "Additional Details"];
 
 const AddPlacementDialog = ({ open, handleClose }) => {
   const [activeStep, setActiveStep] = useState(0);
+  const [confirmDialog, setConfirmDialog] = useState(false);
   const [formData, setFormData] = useState({
     placementDrive_title: "",
     companyDetails: { name: "", email: "", website: "", companyType: "", domain: "", description: "" },
     jobProfile: { profileId: "negnek", course: "", designation: "", jobDescription: { description: "", attachFile: false, file: "" }, ctc: "", takeHome: "", perks: "", trainingPeriod: "", placeOfPosting: "", jobType: "", stipend: "", internDuration: "" },
     eligibleBranchesForProfiles: [{ profileId: "negnek", branches: { 
       btech: btech.map(branch => ({ name: branch, eligible: false })), 
-      // mtech: mtech.map(({ department, specialization }) => ({ department, specialization: specialization.map(s => ({ name: s, eligible: false })) })), 
-      // msc: msc.map(({ department, specialization }) => ({ department, specialization: specialization.map(s => ({ name: s, eligible: false })) })), 
-      // phd: phd.map(({ department, specialization }) => ({ department, specialization: specialization.map(s => ({ name: s, eligible: false })) })) 
+      mtech: mtech.map(({ dept, spl }) => ({ department:dept, specialization:spl, eligible:false})), 
+      msc: msc.map(({ dept, spl }) => ({ department:dept, specialization:spl, eligible:false})), 
+      phd: phd.map(({ dept, spl }) => ({ department:dept, specialization:spl, eligible:false}))
     }}],
     selectionProcess: [{ profileId: "negnek", rounds: [{ roundNumber: 1, roundName: "", details: "" }], expectedRecruits: "", tentativeDate: "" }],
     eligibilityCriteria: { minCgpa: "", backlogAllowed: "" },
@@ -198,18 +193,19 @@ const AddPlacementDialog = ({ open, handleClose }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleConfirm = async (e) => {
     e.preventDefault();
     if (!validateStep()) return;
 
     try {
       await placementService.createPlacementDrive(formData);
+      handleClose();
+      setConfirmDialog(false);
       setNotification({
         open: true,
         message: "Placement drive created successfully!",
         severity: "success"
       });
-      handleClose();
     } catch (error) {
       console.error("Error submitting form:", error);
       let errorMessage = "Error creating placement drive. ";
@@ -229,8 +225,14 @@ const AddPlacementDialog = ({ open, handleClose }) => {
     }
   };
 
+  const handleSubmit =  ()=> {
+      setConfirmDialog(true);
+  };
+
+
   const handleNotificationClose = () => {
     setNotification(prev => ({ ...prev, open: false }));
+    window.location.reload();
   };
 
   const handleBack = () => setActiveStep(prev => prev - 1);
@@ -362,48 +364,72 @@ const AddPlacementDialog = ({ open, handleClose }) => {
                           label={branch.name}
                         />
                       ))}
-{/* 
-                    {formData.jobProfile.course === COURSES.MTECH &&
-                      profile.branches.mtech.map((dept, deptIndex) => (
-                        <Box key={dept.department} sx={{ mb: 2 }}>
-                          <Typography variant="h6" color="secondary">{dept.department}</Typography>
-                          {dept.specialization.map((spec, specIndex) => (
+                    {formData.jobProfile.course === COURSES.MTECH && (
+                      profile?.branches?.mtech?.length > 0 ? (
+                        profile.branches.mtech.map(({ department, specialization, eligible }, deptIndex) => (
+                          <Box key={department} sx={{ mb: 2 }}>
+                            <Typography variant="h6" color="secondary">{department}</Typography>
                             <FormControlLabel
-                              key={spec.name}
+                              key={specialization}
                               control={
                                 <Checkbox
-                                  checked={spec.eligible}
+                                  checked={eligible || false} // Ensure eligible is not undefined
                                   onChange={(e) =>
-                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.mtech.${deptIndex}.specialization.${specIndex}.eligible`)
+                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.mtech.${deptIndex}.eligible`)
                                   }
                                 />
                               }
-                              label={spec.name}
+                              label={specialization} // Display specialization name as label
                             />
-                          ))}
-                        </Box>
-                      ))}
+                          </Box>
+                        ))
+                      ) : (
+                        <Typography variant="body1" color="textSecondary">
+                          No M.Tech branches available.
+                        </Typography>
+                      )
+                    )}
 
-                    {formData.jobProfile.course === COURSES.MSC &&
-                      profile.branches.msc.map((dept, deptIndex) => (
-                        <Box key={dept.department} sx={{ mb: 2 }}>
-                          <Typography variant="h6" color="secondary">{dept.department}</Typography>
-                          {dept.specialization.map((spec, specIndex) => (
+                    {formData.jobProfile.course === COURSES.MSC && (
+                        profile.branches.msc.map(({ department, specialization, eligible }, deptIndex) => (
+                          <Box key={department} sx={{ mb: 2 }}>
+                            <Typography variant="h6" color="secondary">{department}</Typography>
                             <FormControlLabel
-                              key={spec.name}
+                              key={specialization}
                               control={
                                 <Checkbox
-                                  checked={spec.eligible}
+                                  checked={eligible || false} // Ensure eligible is not undefined
                                   onChange={(e) =>
-                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.msc.${deptIndex}.specialization.${specIndex}.eligible`)
+                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.msc.${deptIndex}.eligible`)
                                   }
                                 />
                               }
-                              label={spec.name}
+                              label={specialization} // Display specialization name as label
                             />
-                          ))}
-                        </Box>
-                      ))} */}
+                          </Box>
+                        ))
+                    )}
+                    
+                    {formData.jobProfile.course === COURSES.PHD && (
+                        profile.branches.phd.map(({ department, specialization, eligible }, deptIndex) => (
+                          <Box key={department} sx={{ mb: 2 }}>
+                            <Typography variant="h6" color="secondary">{department}</Typography>
+                            <FormControlLabel
+                              key={specialization}
+                              control={
+                                <Checkbox
+                                  checked={eligible || false} // Ensure eligible is not undefined
+                                  onChange={(e) =>
+                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.phd.${deptIndex}.eligible`)
+                                  }
+                                />
+                              }
+                              label={specialization} // Display specialization name as label
+                            />
+                          </Box>
+                        ))
+                    )}
+
 
                     {/* {formData.jobProfile.course === COURSES.PHD &&
                       profile.branches.phd.map((dept, deptIndex) => (
@@ -537,6 +563,17 @@ const AddPlacementDialog = ({ open, handleClose }) => {
           {notification.message}
         </Alert>
       </Snackbar>
+
+      <Dialog open={confirmDialog} onClose={() => setConfirmDialog(false)}>
+        <DialogTitle>Confirm Placement Drive</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to create this placement drive?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog(false)} color="secondary">Cancel</Button>
+          <Button onClick={handleConfirm} color="primary">Confirm</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

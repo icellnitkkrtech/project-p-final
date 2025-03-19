@@ -75,7 +75,7 @@ export default class PlacementModel {
     async getRound(id, roundId) {
         console.log("Placement Model: getRound called");
         try {
-            return await this.placement.findOne({ _id: id, "rounds._id": roundId }, { "rounds.$": 1 });
+            return await this.placement.findOne({ _id: id, "roundDetails.rounds._id": roundId }, { "rounds.$": 1 });
         } catch (error) {
             console.error("Error in getRound:", error);
             throw error;
@@ -85,7 +85,7 @@ export default class PlacementModel {
         console.log("Placement Model: updateRound called");
         try {
             return await this.placement.findOneAndUpdate(
-                { _id: id, "rounds._id": roundId },
+                { _id: id, "roundDetails.rounds._id": roundId },
                 { $set: { "rounds.$": updates } },
                 { new: true }
             );
@@ -159,7 +159,7 @@ export default class PlacementModel {
     async getPlacementDriveByRoundId(roundId) {
         console.log("Placement Model: getPlacementDriveByRoundId called");
         try {
-            return await this.placement.findOne({ "rounds._id": roundId });
+            return await this.placement.findOne({ "roundDetails.rounds._id": roundId });
         } catch (error) {
             console.error("Error in getPlacementDriveByRoundId:", error);
             throw error;
