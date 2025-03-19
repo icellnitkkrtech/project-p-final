@@ -69,5 +69,15 @@ import apiResponse from "../utils/apiResponse.js";
                     }
                     }
                     
+        async getAvailableStatuses() {
+            try {  
+                const statuses = await this.jnf.distinct('status');
+                return new apiResponse(200, statuses, "statuses fetched successfully"); 
+                } catch (error) {
+                    return new apiResponse(500, null, error.message);
+                    }
+                    
+
+
                 }
-                
+            }

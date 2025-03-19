@@ -193,6 +193,21 @@ export default class userModel {
             return new ApiResponse(500, null, "An error occurred while deleting user");
         }
     }
+    //to get all  pcc userRoleAsAdmin: { type: String, enum: ['owner', 'admin', 'pcc', 'superadmin', 'none'], required: false },
+    async getPCC() {    
+        try {
+           
+            const user = await this.user.find({ userRoleAsAdmin: 'pcc' });
+           
+           if (!user) {
+                return new ApiResponse(404, null, "PCC not found");
+            }
+            return new ApiResponse(200, user, "PCCs found successfully");
+        } catch (error) {
+            return new ApiResponse(500, null, "An error occurred while finding PCCs");
+        }
+    }
+       
     
     promoteAdmin = asyncHandler(async (userId, userRoleAsAdmin) => {
         const updatedUser = await this.user.findByIdAndUpdate(
@@ -244,4 +259,6 @@ export default class userModel {
         }
         return new apiResponse(200, updatedUser, "User profile Unlocked");
     })
+
+    
 }

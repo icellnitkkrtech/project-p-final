@@ -5,7 +5,11 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const ActionButtons = ({ job, onView, onAssign, onDelete }) => {
+const ActionButtons = ({ job,jobId, onView, onAssign, onDelete }) => {
+
+    console.log(job);
+    console.log(jobId);
+    
     return (
             <>
             {job.status !== "draft" && (
@@ -20,14 +24,14 @@ const ActionButtons = ({ job, onView, onAssign, onDelete }) => {
                     </IconButton>
                 </Tooltip>
             )}
-            {((job.status === "accepted") || (job.status === "pending")) && (
+            {((job.status === "approved") || (job.status === "pending")) && (
                 <Tooltip title="Assign" arrow>
                     <IconButton
                         color="secondary"
                         size="small"
                         onClick={() => onAssign(job)}
                         sx={{ padding: 0.5 }}
-                        disabled={job.status !== "accepted"}
+                        disabled={job.status !== "approved" }
                     >
                         <EditNoteIcon fontSize="small" />
                     </IconButton>
@@ -45,18 +49,18 @@ const ActionButtons = ({ job, onView, onAssign, onDelete }) => {
                     </IconButton>
                 </Tooltip>
             )}
-            {((job.status === 'rejected') || (job.status === "draft")) && (
+            {/* {((job.status === 'rejected') || (job.status === "draft")) && (
                 <Tooltip title="Delete" arrow>
                     <IconButton
                         color="error"
                         size="small"
-                        onClick={() => onDelete(job)}
+                        onClick={() => onDelete(job._id)}
                         sx={{ padding: 0.5 }}
                     >
                         <DeleteIcon fontSize="small" />
                     </IconButton>
                 </Tooltip>
-            )}
+            )} */}
         </>
     );
 };

@@ -135,7 +135,7 @@ const StudentCGPABulkUpload = () => {
 
   const handleDownloadTemplate = () => {
     const link = document.createElement('a');
-    link.href = `${API_BASE_URL}/api/v1/students/cgpa-template`;
+    link.href = `${API_BASE_URL}/student/cgpa-template`;
     link.setAttribute('download', 'cgpa_update_template.xlsx');
     document.body.appendChild(link);
     link.click();

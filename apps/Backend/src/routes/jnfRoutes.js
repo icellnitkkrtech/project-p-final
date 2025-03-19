@@ -40,6 +40,13 @@ jnfRouter.delete("/delete/:id", (req, res) => {
 jnfRouter.post("/create", (req, res) => {
   jnfController.createJNF(req, res);
 });//done
-//update specially status of the jnf
+//update getAvailableStatuses
+jnfRouter.get("/getAvailableStatuses", (req, res) => {  
+  jnfController.getAvailableStatuses(req, res);
+});//done
+//get user who is pcc
+jnfRouter.get("/getPCC", (req, res) => {
+  jnfController.getPCC(req, res);
+});//done
 
 export default jnfRouter;

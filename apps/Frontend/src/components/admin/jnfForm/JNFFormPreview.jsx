@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -13,7 +12,7 @@ import {
   ListItemText,
   Divider,
   useTheme,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
@@ -21,39 +20,48 @@ import {
   Work as WorkIcon,
   School as SchoolIcon,
   Assignment as AssignmentIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
 } from '@mui/icons-material';
 import useJNFData from '../../../hooks/admin/useJNFData';
 
 const JNFFormPreview = ({ selectedJNF }) => {
   const theme = useTheme();
-  const {getJNFById} = useJNFData();
-    
-  const [jnfPreview, setjnfPreview] = useState([]);
-  
-    // Add state for JNF selection  
-    useEffect(() => {
-      const fetchJNFs = async () => {
-        const jnf = await getJNFById(selectedJNF.id);
-        setjnfPreview(jnf);
-      };
-      fetchJNFs();
-    }, [selectedJNF]);
+  const { getJNFById } = useJNFData();
+  const [jnfPreview, setjnfPreview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-//   if (loading) return <CircularProgress />;
-//   if (error) return <Typography color="error">{error}</Typography>;
+  useEffect(() => {
+    const fetchJNFs = async () => {
+      try {
+        setLoading(true);
+        const jnf = await getJNFById(selectedJNF._id);
+        setjnfPreview(jnf);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedJNF?._id) {
+      fetchJNFs();
+    }
+  }, [selectedJNF]);
+
+  if (loading) return <CircularProgress />;
+  if (error) return <Typography color="error">{error}</Typography>;
   if (!jnfPreview) return <Typography>No data found</Typography>;
 
-    const SectionTitle = ({ icon: Icon, title }) => (
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3 }}>
-        <Icon color="primary" />
-        <Typography variant="h6" color="primary" fontWeight={600}>
-          {title}
-        </Typography>
-      </Stack>
-    );
+  const SectionTitle = ({ icon: Icon, title }) => (
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3 }}>
+      <Icon color="primary" />
+      <Typography variant="h6" color="primary" fontWeight={600}>
+        {title}
+      </Typography>
+    </Stack>
+  );
 
-     // Mapping of selection process keys to user-friendly labels
   const selectionProcessLabels = {
     resumeShortlisting: 'Resume Shortlisting',
     prePlacementTalk: 'Pre-Placement Talk',
@@ -68,197 +76,202 @@ const JNFFormPreview = ({ selectedJNF }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Stack spacing={4}>
+      <Stack spacing={4}>
 
-            {/* Company Details */}
-                    <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
-                      <SectionTitle icon={BusinessIcon} title="Company Details" />
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                          <Stack spacing={2}>
-                            <Box>
-                              <Typography variant="subtitle2" color="text.secondary">Company Name</Typography>
-                              <Typography>{jnfPreview.name || 'N/A'}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography variant="subtitle2" color="text.secondary">Email</Typography>
-                              <Typography>{jnfPreview.email || 'N/A'}</Typography>
-                            </Box>
-                          </Stack>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                          <Stack spacing={2}>
-                            <Box>
-                              <Typography variant="subtitle2" color="text.secondary">Website</Typography>
-                              <Typography>{jnfPreview.website || 'N/A'}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography variant="subtitle2" color="text.secondary">Company Type</Typography>
-                              <Typography>{jnfPreview.companyType || 'N/A'}</Typography>
-                            </Box>
-                          </Stack>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Typography variant="subtitle2" color="text.secondary">Description</Typography>
-                          <Typography>{jnfPreview.description || 'N/A'}</Typography>
-                        </Grid>
-                      </Grid>
-                    </Paper>
+        {/* Company Details */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={BusinessIcon} title="Company Details" />
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Company Name</Typography>
+                  <Typography>{jnfPreview.companyDetails?.name || 'N/A'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Email</Typography>
+                  <Typography>{jnfPreview.companyDetails?.email || 'N/A'}</Typography>
+                </Box>
+              </Stack>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Website</Typography>
+                  <Typography>{jnfPreview.companyDetails?.website || 'N/A'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Company Type</Typography>
+                  <Typography>{jnfPreview.companyDetails?.companyType || 'N/A'}</Typography>
+                </Box>
+              </Stack>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">Description</Typography>
+              <Typography>{jnfPreview.companyDetails?.description || 'N/A'}</Typography>
+            </Grid>
+          </Grid>
+        </Paper>
 
-                    {/* Job Profiles */}
-                      <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
-                        <SectionTitle icon={WorkIcon} title="Job Profiles" />
-                        <Grid>
-                          {jnfPreview.jobProfiles?.map((profile) => (
-                              <Grid container spacing={2}>
-                              <Grid item xs={12} md={6}>
-                                <Stack spacing={2}>
-                                  <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Job Profile</Typography>
-                                    <Typography>{profile.designation || 'N/A'}</Typography>
-                                  </Box>
-                                  <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Location</Typography>
-                                    <Typography>{profile.placeOfPosting || 'N/A'}</Typography>
-                                  </Box>
-                                </Stack>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Stack spacing={2}>
-                                  <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">CTC</Typography>
-                                    <Typography>{profile.ctc} LPA</Typography>
-                                  </Box>
-                                  <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Take Home Salary</Typography>
-                                    <Typography>{profile.takeHome || 'N/A'}</Typography>
-                                  </Box>
-                                </Stack>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Stack spacing={2}>
-                                  <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Training Period</Typography>
-                                    <Typography>{profile.trainingPeriod || 'N/A'}</Typography>
-                                  </Box>
-                                  <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Perks</Typography>
-                                    <Typography>{profile.perks || 'N/A'}</Typography>
-                                  </Box>
-                                </Stack>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Typography variant="subtitle2" color="text.secondary">Description</Typography>
-                                <Typography>{profile.jobDescription || 'N/A'}</Typography>
-                              </Grid>
-                            </Grid>
-                          ))}
-                        </Grid>
-                      </Paper>
+        {/* Job Profiles */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={WorkIcon} title="Job Profiles" />
+          <Grid container spacing={3}>
+            {jnfPreview.jobProfiles?.map((profile, index) => (
+              <Grid item xs={12} key={index}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary">Designation</Typography>
+                        <Typography>{profile.designation || 'N/A'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary">Location</Typography>
+                        <Typography>{profile.placeOfPosting || 'N/A'}</Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary">CTC</Typography>
+                        <Typography>{profile.ctc ? `${profile.ctc / 100000} LPA` : 'N/A'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary">Take Home</Typography>
+                        <Typography>{profile.takeHome ? `${profile.takeHome / 100000} LPA` : 'N/A'}</Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="text.secondary">Job Description</Typography>
+                    <Typography>{profile.jobDescription?.description || 'N/A'}</Typography>
+                  </Grid>
+                </Grid>
+                {index < jnfPreview.jobProfiles.length - 1 && <Divider sx={{ my: 2 }} />}
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
 
-                    <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
-                    <SectionTitle icon={SchoolIcon} title="Courses & Branches" />
-                    <Grid>
-                        <Grid container spacing={2}>
-                            <Grid item xs={12} md={6}>
-                            <Stack spacing={2}>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    B.Tech
-                                </Typography>
-                                <Typography>CS, IT, EC, EE</Typography>
-                                </Box>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                       MBA
-                                </Typography>
-                                <Typography>All Branches</Typography>
-                                </Box>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Eligibility Criteria
-                                </Typography>
-                                <Typography>CGPA greater than 7.5 with No Active BackLogs</Typography>
-                                </Box>
-                            </Stack>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                    </Paper>
-                    
-                   {/* Selection Process */}
-                    <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
-                    <SectionTitle icon={AssignmentIcon} title="Selection Process" />
-                    <List>
-                        {jnfPreview.selectionProcess &&
-                        Object.entries(jnfPreview.selectionProcess) // Convert object to key-value pairs
-                            .filter(([_, value]) => value === true) // Only keep true values
-                            .map(([key], index) => (
-                            <ListItem key={index}>
-                                <ListItemIcon>
-                                <CheckIcon color="success" />
-                                </ListItemIcon>
-                                <ListItemText primary={selectionProcessLabels[key] || key} />
-                            </ListItem>
-                            ))}
-                    </List>
-                        <Grid item xs={12} md={6} ml={2}>
-                            <Stack spacing={2}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Expected Recruits</Typography>
-                                    <Typography>{jnfPreview.selectionProcess?.expectedRecruits || 'N/A'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">TentativeDate</Typography>
-                                    <Typography>{jnfPreview.selectionProcess?.tentativeDate || 'N/A'}</Typography>
-                                </Box>
-                            </Stack>
-                        </Grid>
-                    </Paper>
+        {/* Eligibility Criteria */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={SchoolIcon} title="Eligibility Criteria" />
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">Minimum CGPA</Typography>
+                <Typography>{jnfPreview.eligibilityCriteria?.minCgpa || 'N/A'}</Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">No Active Backlogs</Typography>
+                <Typography>{jnfPreview.eligibilityCriteria?.backlogAllowed === false ? 'Not Allowed' : 'Allowed'}</Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
 
-                    {/*Bond Details & POC*/}
-                    <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
-                    <SectionTitle icon={InfoIcon} title="Bond Details & POC" />
-                    <Grid>
-                        <Grid container spacing={2}>
-                            <Grid item xs={12} md={6}>
-                            <Stack spacing={2}>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Bond Details
-                                </Typography>
-                                <Typography>{jnfPreview.bondDetails || 'N/A'}</Typography>
-                                </Box>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Name
-                                </Typography>
-                                <Typography>{jnfPreview.pointOfContact?.name || 'N/A'}</Typography>
-                                </Box>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Designation
-                                </Typography>
-                                <Typography>{jnfPreview.pointOfContact?.designation || 'N/A'}</Typography>
-                                </Box>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Mobile
-                                </Typography>
-                                <Typography>{jnfPreview.pointOfContact?.mobile || 'N/A'}</Typography>
-                                </Box>
-                                <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Email
-                                </Typography>
-                                <Typography>{jnfPreview.pointOfContact?.email || 'N/A'}</Typography>
-                                </Box>
-                            </Stack>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                    </Paper>
-            </Stack>
+        {/* Eligible Branches */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={SchoolIcon} title="Eligible Courses & Branches" />
+          {jnfPreview.eligibleBranchesForProfiles?.map((item, i) => (
+            <Box key={i} sx={{ mb: 2 }}>
+              {Object.entries(item.branches).map(([course, branches]) => (
+                branches?.length > 0 && (
+                  <Box key={course} sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary">{course.toUpperCase()}</Typography>
+                    <Typography>{branches.map(b => b.name).join(', ') || 'N/A'}</Typography>
+                  </Box>
+                )
+              ))}
+            </Box>
+          ))}
+        </Paper>
+
+        {/* Selection Process */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={AssignmentIcon} title="Selection Process" />
+          <List>
+            {jnfPreview.selectionProcessForProfiles?.map((process, i) => (
+              <Box key={i}>
+                {process.rounds.map((round, index) => (
+                  <ListItem key={index}>
+                    <ListItemIcon>
+                      <CheckIcon color="success" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={selectionProcessLabels[round.type] || round.type}
+                      secondary={round.details}
+                    />
+                  </ListItem>
+                ))}
+                <Box sx={{ mt: 2, ml: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary">Expected Recruits</Typography>
+                  <Typography>{process.expectedRecruits || 'N/A'}</Typography>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Tentative Date</Typography>
+                  <Typography>{process.tentativeDate ? new Date(process.tentativeDate).toLocaleDateString() : 'N/A'}</Typography>
+                </Box>
+              </Box>
+            ))}
+          </List>
+        </Paper>
+
+        {/* Bond Details */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={InfoIcon} title="Bond Details" />
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">Bond Duration</Typography>
+                <Typography>{jnfPreview.bondDetails?.bondDuration || 'N/A'}</Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">Penalty</Typography>
+                <Typography>{jnfPreview.bondDetails?.penaltyAmount || 'N/A'}</Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* Point of Contact */}
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <SectionTitle icon={InfoIcon} title="Point of Contact" />
+          {jnfPreview.pointOfContact?.map((contact, index) => (
+            <Grid container spacing={2} key={index}>
+              <Grid item xs={12} md={6}>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">Name</Typography>
+                    <Typography>{contact.name || 'N/A'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">Designation</Typography>
+                    <Typography>{contact.designation || 'N/A'}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">Email</Typography>
+                    <Typography>{contact.email || 'N/A'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">Mobile</Typography>
+                    <Typography>{contact.mobile || 'N/A'}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+            </Grid>
+          ))}
+        </Paper>
+
+      </Stack>
     </motion.div>
   );
 };
