@@ -49,7 +49,7 @@ const index = () => {
     const theme = useTheme();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
-        // Company Details
+        // Company Details - structure mostly the same
         companyDetails: {
             name: '',
             email: '',
@@ -59,100 +59,113 @@ const index = () => {
             description: ''
         },
 
-        // Job Profiles
-        jobProfiles: {
-            0: [{
+        // Job Profiles - now an array with profileId
+        jobProfiles: [
+            {
+                profileId: "profile-0",
                 course: 'btech',
                 designation: '',
-                jobDescription: '',
+                jobDescription: {
+                    description: '',
+                    attachFile: false,
+                    file: ''
+                },
                 ctc: '',
                 takeHome: '',
                 perks: '',
                 trainingPeriod: '',
-                placeOfPosting: ''
-            },
-            ],
+                placeOfPosting: '',
+                jobType: 'fte'
+            }
+        ],
+
+        // Eligible Branches - now linked to job profiles
+        eligibleBranchesForProfiles: [
+            {
+                profileId: "profile-0",
+                branches: {
+                    btech: [
+                        { name: 'Computer Engineering', eligible: false },
+                        { name: 'Information Technology', eligible: false },
+                        { name: 'Electronics & Communication Engineering', eligible: false },
+                        { name: 'Electrical Engineering', eligible: false },
+                        { name: 'Mechanical Engineering', eligible: false },
+                        { name: 'Production & Industrial Engineering', eligible: false },
+                        { name: 'Civil Engineering', eligible: false }
+                    ],
+                    mtech: [
+                        { department: 'Computer Engineering', specialization: 'Cyber Security', eligible: false },
+                        { department: 'Electronics and Communication Engineering', specialization: 'Communication Systems', eligible: false },
+                        { department: 'Electronics and Communication Engineering', specialization: 'Transportation Engineering', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Power System', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Power Electronics & Drives', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Structural Engineering', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Geotechnical Engineering', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Control System', eligible: false },
+                        { department: 'Mechanical Engineering', specialization: 'Thermal Engineering', eligible: false },
+                        { department: 'Mechanical Engineering', specialization: 'Machine Design', eligible: false },
+                        { department: 'Mechanical Engineering', specialization: 'Production & Industrial Engineering', eligible: false },
+                        { department: 'School of Renewable Energy and Efficiency', specialization: 'Renewable Energy Systems', eligible: false },
+                        { department: 'School of VLSI Design & Embedded System', specialization: 'VLSI Design', eligible: false },
+                        { department: 'School of VLSI Design & Embedded System', specialization: 'Embedded System Design', eligible: false },
+                        { department: 'Civil Engineering', specialization: 'Environmental Engineering', eligible: false },
+                        { department: 'Civil Engineering', specialization: 'Water Resources Engineering', eligible: false },
+                        { department: 'Physics', specialization: 'Instrumentation', eligible: false },
+                        { department: 'Physics', specialization: 'Nanomaterials and Nanotechnology', eligible: false },
+                        { department: 'Master of Computer Applications (MCA)', eligible: false },
+                        { department: 'Master of Business Administration (MBA)', eligible: false },
+                    ],
+                    phd: [
+                        { department: 'Computer Science & Engineering', specialization: 'Artificial Intelligence & Machine Learning', eligible: false },
+                        { department: 'Computer Science & Engineering', specialization: 'Data Science', eligible: false },
+                        { department: 'Computer Science & Engineering', specialization: 'Cybersecurity', eligible: false },
+                        { department: 'Electronics & Communication', specialization: 'VLSI Design', eligible: false },
+                        { department: 'Electronics & Communication', specialization: 'Communication Systems', eligible: false },
+                        { department: 'Electronics & Communication', specialization: 'Signal Processing', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Power Systems', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Control Systems', eligible: false },
+                        { department: 'Electrical Engineering', specialization: 'Renewable Energy', eligible: false },
+                        { department: 'Mechanical Engineering', specialization: 'Thermal Engineering', eligible: false },
+                        { department: 'Mechanical Engineering', specialization: 'Manufacturing Systems', eligible: false },
+                        { department: 'Mechanical Engineering', specialization: 'Robotics', eligible: false },
+                        { department: 'Civil Engineering', specialization: 'Structural Engineering', eligible: false },
+                        { department: 'Civil Engineering', specialization: 'Environmental Engineering', eligible: false },
+                        { department: 'Civil Engineering', specialization: 'Transportation Engineering', eligible: false },
+                        { department: 'Physics', specialization: 'Quantum Computing', eligible: false },
+                        { department: 'Physics', specialization: 'Materials Science', eligible: false },
+                        { department: 'Chemistry', specialization: 'Polymer Chemistry', eligible: false },
+                        { department: 'Chemistry', specialization: 'Analytical Chemistry', eligible: false },
+                        { department: 'Mathematics', specialization: 'Applied Mathematics', eligible: false },
+                        { department: 'Mathematics', specialization: 'Computational Mathematics', eligible: false }
+                    ]
+                }
+            }
+        ],
+
+        // Eligibility Criteria - now an object
+        eligibilityCriteria: {
+            minCgpa: '',
+            backlogAllowed: 0
         },
 
-        // Eligible Branches
-        eligibleBranches: {
-            btech: [
-                { name: 'Computer Engineering', eligible: false },
-                { name: 'Information Technology', eligible: false },
-                { name: 'Electronics & Communication Engineering', eligible: false },
-                { name: 'Electrical Engineering', eligible: false },
-                { name: 'Mechanical Engineering', eligible: false },
-                { name: 'Production & Industrial Engineering', eligible: false },
-                { name: 'Civil Engineering', eligible: false }
-            ],
-            mtech: [
-                { department: 'Computer Engineering', specialization: 'Cyber Security', eligible: false },
-                { department: 'Electronics and Communication Engineering', specialization: 'Communication Systems', eligible: false },
-                { department: 'Electronics and Communication Engineering', specialization: 'Transportation Engineering', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Power System', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Power Electronics & Drives', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Structural Engineering', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Geotechnical Engineering', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Control System', eligible: false },
-                { department: 'Mechanical Engineering', specialization: 'Thermal Engineering', eligible: false },
-                { department: 'Mechanical Engineering', specialization: 'Machine Design', eligible: false },
-                { department: 'Mechanical Engineering', specialization: 'Production & Industrial Engineering', eligible: false },
-                { department: 'School of Renewable Energy and Efficiency', specialization: 'Renewable Energy Systems', eligible: false },
-                { department: 'School of VLSI Design & Embedded System', specialization: 'VLSI Design', eligible: false },
-                { department: 'School of VLSI Design & Embedded System', specialization: 'Embedded System Design', eligible: false },
-                { department: 'Civil Engineering', specialization: 'Environmental Engineering', eligible: false },
-                { department: 'Civil Engineering', specialization: 'Water Resources Engineering', eligible: false },
-                { department: 'Physics', specialization: 'Instrumentation', eligible: false },
-                { department: 'Physics', specialization: 'Nanomaterials and Nanotechnology', eligible: false },
-                { department: 'Master of Computer Applications (MCA)', eligible: false },
-                { department: 'Master of Business Administration (MBA)', eligible: false },
-            ],
-            phd: [
-                { department: 'Computer Science & Engineering', specialization: 'Artificial Intelligence & Machine Learning', eligible: false },
-                { department: 'Computer Science & Engineering', specialization: 'Data Science', eligible: false },
-                { department: 'Computer Science & Engineering', specialization: 'Cybersecurity', eligible: false },
-                { department: 'Electronics & Communication', specialization: 'VLSI Design', eligible: false },
-                { department: 'Electronics & Communication', specialization: 'Communication Systems', eligible: false },
-                { department: 'Electronics & Communication', specialization: 'Signal Processing', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Power Systems', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Control Systems', eligible: false },
-                { department: 'Electrical Engineering', specialization: 'Renewable Energy', eligible: false },
-                { department: 'Mechanical Engineering', specialization: 'Thermal Engineering', eligible: false },
-                { department: 'Mechanical Engineering', specialization: 'Manufacturing Systems', eligible: false },
-                { department: 'Mechanical Engineering', specialization: 'Robotics', eligible: false },
-                { department: 'Civil Engineering', specialization: 'Structural Engineering', eligible: false },
-                { department: 'Civil Engineering', specialization: 'Environmental Engineering', eligible: false },
-                { department: 'Civil Engineering', specialization: 'Transportation Engineering', eligible: false },
-                { department: 'Physics', specialization: 'Quantum Computing', eligible: false },
-                { department: 'Physics', specialization: 'Materials Science', eligible: false },
-                { department: 'Chemistry', specialization: 'Polymer Chemistry', eligible: false },
-                { department: 'Chemistry', specialization: 'Analytical Chemistry', eligible: false },
-                { department: 'Mathematics', specialization: 'Applied Mathematics', eligible: false },
-                { department: 'Mathematics', specialization: 'Computational Mathematics', eligible: false }
-            ]
+        // Selection Process - now linked to job profiles
+        selectionProcessForProfiles: [
+            {
+                profileId: "profile-0",
+                rounds: [
+                    // Will be populated based on selections
+                ],
+                expectedRecruits: '',
+                tentativeDate: ''
+            }
+        ],
+
+        // Bond Details - now an object with hasBond and details
+        bondDetails: {
+            hasBond: false,
+            details: ''
         },
 
-        // Eligibility Criteria
-        eligibilityCriteria: '',
-
-        // Selection Process
-        selectionProcess: {
-            resumeShortlisting: false,
-            prePlacementTalk: false,
-            groupDiscussion: false,
-            onlineTest: false,
-            aptitudeTest: false,
-            technicalTest: false,
-            technicalInterview: false,
-            hrInterview: false,
-            otherRounds: '',
-            expectedRecruits: '',
-            tentativeDate: '',
-            accommodationRequired: false
-        },
-
-        // Additional Details
-        bondDetails: '',
         pointOfContact: [
             {
                 name: '',
@@ -161,6 +174,7 @@ const index = () => {
                 email: ''
             },
         ],
+
         additionalInfo: {
             sponsorEvents: '',
             internshipOffered: '',
@@ -168,13 +182,7 @@ const index = () => {
             contests: ''
         },
 
-        // Status and Submission Details
         status: 'draft',
-        // submittedBy: null,
-        // reviewedBy: null,
-        // reviewComments: '',
-        // submissionDate: '',
-        // reviewDate: ''
     });
 
     // Handlers
@@ -190,47 +198,201 @@ const index = () => {
     };
 
     const handleJobProfileChange = (updatedProfiles) => {
-        setFormData(prev => ({
+        setFormData(prev => {
+            // Get list of new profile IDs that need corresponding entries
+            const existingProfileIds = prev.eligibleBranchesForProfiles.map(p => p.profileId);
+            const updatedProfileIds = updatedProfiles.map(p => p.profileId);
+            
+            // Find new profiles that need entries created
+            const newProfileIds = updatedProfileIds.filter(id => !existingProfileIds.includes(id));
+            
+            // Find removed profiles that need entries removed
+            const removedProfileIds = existingProfileIds.filter(id => !updatedProfileIds.includes(id));
+            
+            // Create new eligible branches entries for new profiles
+            const newEligibleBranches = newProfileIds.map(profileId => ({
+                profileId,
+                branches: {
+                    btech: JSON.parse(JSON.stringify(prev.eligibleBranchesForProfiles[0].branches.btech)),
+                    mtech: JSON.parse(JSON.stringify(prev.eligibleBranchesForProfiles[0].branches.mtech)),
+                    phd: JSON.parse(JSON.stringify(prev.eligibleBranchesForProfiles[0].branches.phd))
+                }
+            }));
+            
+            // Create new selection process entries for new profiles
+            const newSelectionProcess = newProfileIds.map(profileId => ({
+                profileId,
+                rounds: [],
+                expectedRecruits: '',
+                tentativeDate: ''
+            }));
+            
+            return {
+                ...prev,
+                jobProfiles: updatedProfiles,
+                // Update eligible branches, filtering out removed profiles and adding new ones
+                eligibleBranchesForProfiles: [
+                    ...prev.eligibleBranchesForProfiles.filter(p => !removedProfileIds.includes(p.profileId)),
+                    ...newEligibleBranches
+                ],
+                // Update selection process, filtering out removed profiles and adding new ones
+                selectionProcessForProfiles: [
+                    ...prev.selectionProcessForProfiles.filter(p => !removedProfileIds.includes(p.profileId)),
+                    ...newSelectionProcess
+                ]
+            };
+        });
+    };
+
+    const handleEligibleBranchChange = (profileId, program, index, checked) => {
+        setFormData((prev) => ({
             ...prev,
-            jobProfiles: updatedProfiles
+            eligibleBranchesForProfiles: prev.eligibleBranchesForProfiles.map(profile => 
+                profile.profileId === profileId 
+                ? {
+                    ...profile,
+                    branches: {
+                        ...profile.branches,
+                        [program]: profile.branches[program].map((branch, i) =>
+                            i === index ? { ...branch, eligible: checked } : branch
+                        )
+                    }
+                }
+                : profile
+            )
         }));
     };
 
-    const handleEligibleBranchChange = (program, index, checked) => {
-        setFormData((prev) => ({
-            ...prev,
-            eligibleBranches: {
-                ...prev.eligibleBranches,
-                [program]: prev.eligibleBranches[program].map((branch, i) =>
-                    i === index ? { ...branch, eligible: checked } : branch
-                )
-            }
-        }));
+    const handleSelectionProcess = (profileId, field, value) => {
+        // Add a new case for complete round updates (reordering)
+        if (field === 'updateAllRounds' || field === 'reorderRounds') {
+            setFormData((prev) => {
+                const profileIndex = prev.selectionProcessForProfiles.findIndex(p => p.profileId === profileId);
+                
+                if (profileIndex === -1) return prev;
+                
+                const updatedProfiles = [...prev.selectionProcessForProfiles];
+                updatedProfiles[profileIndex] = {
+                    ...updatedProfiles[profileIndex],
+                    rounds: value
+                };
+                
+                console.log("Updated profiles with reordered rounds:", updatedProfiles);
+                
+                return {
+                    ...prev,
+                    selectionProcessForProfiles: updatedProfiles
+                };
+            });
+            return;
+        }
+        
+        // Handle selection process with rounds structure
+        if (['resumeShortlisting', 'prePlacementTalk', 'groupDiscussion', 'onlineTest', 
+             'aptitudeTest', 'technicalTest', 'technicalInterview', 'hrInterview'].includes(field)) {
+            
+            setFormData((prev) => {
+                const profileIndex = prev.selectionProcessForProfiles.findIndex(p => p.profileId === profileId);
+                
+                if (profileIndex === -1) return prev;
+                
+                const updatedProfile = {...prev.selectionProcessForProfiles[profileIndex]};
+                
+                if (value) {
+                    // Add the round if it's checked
+                    const existingRoundIndex = updatedProfile.rounds.findIndex(r => r.type === field);
+                    
+                    if (existingRoundIndex === -1) {
+                        updatedProfile.rounds = [...updatedProfile.rounds, { 
+                            type: field,
+                            roundNumber: updatedProfile.rounds.length + 1,
+                            details: '' 
+                        }];
+                    }
+                } else {
+                    // Remove the round if unchecked
+                    updatedProfile.rounds = updatedProfile.rounds.filter(round => round.type !== field);
+                }
+                
+                const updatedProfiles = [...prev.selectionProcessForProfiles];
+                updatedProfiles[profileIndex] = updatedProfile;
+                
+                return {
+                    ...prev,
+                    selectionProcessForProfiles: updatedProfiles
+                };
+            });
+        } else if (field === 'otherRounds') {
+            // Handle other rounds details
+            setFormData((prev) => {
+                const profileIndex = prev.selectionProcessForProfiles.findIndex(p => p.profileId === profileId);
+                
+                if (profileIndex === -1) return prev;
+                
+                const updatedProfile = {...prev.selectionProcessForProfiles[profileIndex]};
+                const otherRoundIndex = updatedProfile.rounds.findIndex(r => r.type === 'otherRounds');
+                
+                if (otherRoundIndex === -1 && value) {
+                    updatedProfile.rounds = [...updatedProfile.rounds, { 
+                        type: 'otherRounds',
+                        roundNumber: updatedProfile.rounds.length + 1,
+                        details: value 
+                    }];
+                } else if (otherRoundIndex !== -1) {
+                    updatedProfile.rounds[otherRoundIndex].details = value;
+                    // Remove if empty
+                    if (!value) {
+                        updatedProfile.rounds = updatedProfile.rounds.filter((_, i) => i !== otherRoundIndex);
+                    }
+                }
+                
+                const updatedProfiles = [...prev.selectionProcessForProfiles];
+                updatedProfiles[profileIndex] = updatedProfile;
+                
+                return {
+                    ...prev,
+                    selectionProcessForProfiles: updatedProfiles
+                };
+            });
+        } else if (field === 'expectedRecruits' || field === 'tentativeDate') {
+            // Handle regular fields
+            setFormData((prev) => {
+                const profileIndex = prev.selectionProcessForProfiles.findIndex(p => p.profileId === profileId);
+                
+                if (profileIndex === -1) return prev;
+                
+                const updatedProfiles = [...prev.selectionProcessForProfiles];
+                updatedProfiles[profileIndex] = {
+                    ...updatedProfiles[profileIndex],
+                    [field]: value
+                };
+                
+                return {
+                    ...prev,
+                    selectionProcessForProfiles: updatedProfiles
+                };
+            });
+        }
     };
 
-    const handleSelectionProcess = (field, value) => {
+    const handleEligibilityCriteria = (field, value) => {
         setFormData((prev) => ({
             ...prev,
-            selectionProcess: {
-                ...prev.selectionProcess,
+            eligibilityCriteria: {
+                ...prev.eligibilityCriteria,
                 [field]: value
             }
         }));
     };
 
-    const handleEligibilityCriteria = (value) => {
+    // New handlers for bond details
+    const handleBondDetailsChange = (hasBond, details = '') => {
         setFormData((prev) => ({
             ...prev,
-            eligibilityCriteria: value
-        }));
-    };
-
-
-    // New handlers for Additional Details
-    const handleBondDetailsChange = (value) => {
-        setFormData((prev) => ({
-            ...prev,
-            bondDetails: value
+            bondDetails: {
+                hasBond,
+                details: hasBond ? details : ''
+            }
         }));
     };
 
@@ -253,26 +415,23 @@ const index = () => {
 
     const handleSubmit = async () => {
         try {
-            console.log("final form data", formData);
             setLoading(true);
             setError(null);
             
-            const submissionData = {
+            // Format job profiles for submission
+            const formattedData = {
                 ...formData,
-                submittedBy: id, // Add logged in user's ID
+                submittedBy: id,
                 submissionDate: new Date()
             };
 
-            // Use direct fetch with correct URL
-            const response = await axios.post(`/company/${id}/add-jnf`,submissionData);
-
-            console.log("response", response);
+            console.log("Final formatted data for submission:", formattedData);
+            
+            const response = await axios.post(`/company/${id}/add-jnf`, formattedData);
             
             if (response.status === 200 || response.status === 201) {
                 alert('JNF submitted successfully');
                 console.log("response", response);
-                console.log('JNF submitted successfully');
-                // Add navigation or success message here
             }
         } catch (err) {
             alert('Failed to submit JNF');
@@ -282,7 +441,7 @@ const index = () => {
             setLoading(false);
         }
     };
-
+  
     const renderStep = () => {
         switch (currentStep) {
             case 1:

@@ -1,34 +1,22 @@
 import { 
   Card, CardContent, Typography, Box, Table, TableBody, TableCell, TableHead, TableRow, 
-  Chip, IconButton, TextField, InputAdornment, Avatar, Rating, Tooltip 
+  Chip, IconButton, TextField, InputAdornment, Avatar, Rating, Tooltip, Grid,
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Alert
 } from '@mui/material';
-import { Search, FilterList, Business, Visibility, Edit, Delete } from '@mui/icons-material';
+import { Search, Business, Visibility, Edit, Delete } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import companyService from '../../../services/admin/companyService'; // Replace with your actual API base URL
+import { getCompanyStatus, getRecruitmentStatus } from '../../../utils/companyUtils'; // Add this import
+import { useTheme } from '@mui/material/styles';
 
-const CompanyList = ({ onCompanySelect, selectedCompany }) => {
+const CompanyList = ({ companies = [], onCompanySelect, onCompanyEdit, selectedCompany, viewMode = 'grid', onCompanyUpdate }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [companies, setCompanies] = useState([]);
   const [filteredCompanies, setFilteredCompanies] = useState([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState(null);
+  const [error, setError] = useState(null);
+  const theme = useTheme();
 
-  useEffect(() => {
-    const getCompanies = async () => {
-      try {
-        const response = await companyService.getCompanies();
-        console.log("Response data:", response.data); // Debugging log
-        const companiesData = response.data.data.data; // Adjusted to match the actual response structure
-        console.log("Companies data:", companiesData); // Debugging log
-        setCompanies(companiesData); // Set companies data
-        setFilteredCompanies(companiesData); // Initially set filtered data to all companies
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-      }
-    };
-    
-    getCompanies();
-  }, []);
-
-  // Handle search on frontend
   useEffect(() => {
     if (Array.isArray(companies)) {
       const filtered = companies.filter(company => 
@@ -42,8 +30,6 @@ const CompanyList = ({ onCompanySelect, selectedCompany }) => {
     switch (status) {
       case 'active':
         return 'success';
-      case 'pending':
-        return 'warning';
       case 'inactive':
         return 'error';
       default:
@@ -51,106 +37,335 @@ const CompanyList = ({ onCompanySelect, selectedCompany }) => {
     }
   };
 
-  return (
-    <Card>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h6">Registered Companies</Typography>
-          <Box display="flex" gap={2}>
-            <TextField
-              size="small"
-              placeholder="Search companies..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
+  const getRecruitmentStatusColor = (status) => {
+    switch (status) {
+      case 'ongoing':
+        return 'success';
+      case 'upcoming':
+        return 'info';
+      case 'completed':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const handleViewClick = (company) => {
+    onCompanySelect(company);
+  };
+
+  const handleEditClick = (company) => {
+    onCompanyEdit(company);
+  };
+
+  const handleDeleteClick = (company) => {
+    setCompanyToDelete(company);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await companyService.deleteCompany(companyToDelete._id);
+      onCompanyUpdate(); // This will trigger a refresh of the companies list
+      setDeleteDialogOpen(false);
+      setCompanyToDelete(null);
+    } catch (err) {
+      setError('Failed to delete company');
+      console.error(err);
+    }
+  };
+
+  const CompanyCard = ({ company }) => (
+    <Card 
+      elevation={0}
+      sx={{
+        height: '100%',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: theme => theme.palette.mode === 'dark' 
+          ? 'rgba(255, 255, 255, 0.1)' 
+          : 'rgba(0, 0, 0, 0.08)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme => theme.palette.mode === 'dark'
+            ? '0 4px 20px rgba(0, 0, 0, 0.5)'
+            : '0 4px 20px rgba(25, 118, 210, 0.15)',
+        }
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        <Box display="flex" alignItems="center" gap={2} mb={3}>
+          <Avatar 
+            src={company.logo} 
+            alt={company.companyName}
+            sx={{
+              width: 56,
+              height: 56,
+              bgcolor: theme => theme.palette.primary.main,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            }}
+          >
+            <Business sx={{ fontSize: 28 }} />
+          </Avatar>
+          <Box>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600,
+                mb: 0.5,
+                color: theme => theme.palette.mode === 'dark' 
+                  ? '#fff' 
+                  : '#1a1a1a'
               }}
-            />
-            <IconButton>
-              <FilterList />
-            </IconButton>
+            >
+              {company.companyName}
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.7)'
+                  : 'rgba(0,0,0,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5
+              }}
+            >
+              {company.website}
+            </Typography>
           </Box>
         </Box>
 
+        <Box 
+          sx={{
+            display: 'grid',
+            gap: 2,
+            mb: 2,
+            p: 2,
+            borderRadius: 1,
+            bgcolor: theme => theme.palette.mode === 'dark'
+              ? 'rgba(255,255,255,0.03)'
+              : 'rgba(25, 118, 210, 0.04)'
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography 
+              variant="body2"
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.7)'
+                  : 'rgba(0,0,0,0.6)'
+              }}
+            >
+              Status
+            </Typography>
+            <Chip
+              label={company.status}
+              color={company.status === 'active' ? 'success' : 'default'}
+              size="small"
+              sx={{ 
+                fontWeight: 500,
+                textTransform: 'capitalize',
+                '& .MuiChip-label': { px: 2 }
+              }}
+            />
+          </Box>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography 
+              variant="body2"
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.7)'
+                  : 'rgba(0,0,0,0.6)'
+              }}
+            >
+              Recruitment
+            </Typography>
+            <Chip
+              label={company.recruitmentStatus}
+              color={getRecruitmentStatusColor(company.recruitmentStatus)}
+              size="small"
+              sx={{ 
+                fontWeight: 500,
+                textTransform: 'capitalize',
+                '& .MuiChip-label': { px: 2 }
+              }}
+            />
+          </Box>
+        </Box>
+
+        <Box 
+          display="flex" 
+          justifyContent="flex-end" 
+          gap={1}
+          sx={{
+            '& .MuiIconButton-root': {
+              color: theme => theme.palette.mode === 'dark'
+                ? 'rgba(255,255,255,0.7)'
+                : theme.palette.primary.main,
+              '&:hover': {
+                bgcolor: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.05)'
+                  : 'rgba(25, 118, 210, 0.08)'
+              }
+            }
+          }}
+        >
+          <Tooltip title="View Details">
+            <IconButton size="small" onClick={() => handleViewClick(company)}>
+              <Visibility fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit Company">
+            <IconButton size="small" onClick={() => handleEditClick(company)}>
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete Company">
+            <IconButton 
+              size="small" 
+              onClick={() => handleDeleteClick(company)}
+              sx={{ 
+                color: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255,0,0,0.7)'
+                  : theme.palette.error.main,
+                '&:hover': {
+                  bgcolor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255,0,0,0.05)'
+                    : 'rgba(255,0,0,0.08)'
+                }
+              }}
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h6">
+          {filteredCompanies.length} Companies
+        </Typography>
+        <Box display="flex" gap={2}>
+          <TextField
+            size="small"
+            placeholder="Search companies..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+      </Box>
+
+      {viewMode === 'grid' ? (
+        <Grid container spacing={3}>
+          {filteredCompanies.map((company) => (
+            <Grid item xs={12} sm={6} md={4} key={company._id}>
+              <CompanyCard company={company} />
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Company</TableCell>
               <TableCell>Industry</TableCell>
-              <TableCell>Rating</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Last Visit</TableCell>
-              <TableCell>Offers Made</TableCell>
-              <TableCell>Avg Package</TableCell>
+              <TableCell>Recruitment</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-          {Array.isArray(filteredCompanies) && filteredCompanies.map((company) => (
-            <TableRow key={company._id}>
-              <TableCell>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar src={company.logo} alt={company.companyName}>
-                    <Business />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="subtitle2">
-                      {company.companyName}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      {company.location}
-                    </Typography>
+            {filteredCompanies.map((company) => (
+              <TableRow key={company._id}>
+                <TableCell>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Avatar src={company.logo} alt={company.companyName}>
+                      <Business />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle2">
+                        {company.companyName}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {company.website}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              </TableCell>
-              <TableCell>
-                {Array.isArray(company.JNFs) && company.JNFs.length > 0 ? company.JNFs[0].companyDetails.domain : 'N/A'}
-              </TableCell>
-              <TableCell>
-                <Rating value={company.rating} readOnly size="small" />
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={company.status}
-                  color={getStatusColor(company.status)}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>{company.lastVisit}</TableCell>
-              <TableCell>{company.offersCount}</TableCell>
-              <TableCell>{company.avgPackage}</TableCell>
-              <TableCell>
-                <Box>
-                  <Tooltip title="View Details">
-                    <IconButton 
-                      size="small"
-                      onClick={() => onCompanySelect(company)}
-                    >
+                </TableCell>
+                <TableCell>
+                  {company.industry || 'N/A'}
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={company.status}
+                    color={company.status === 'active' ? 'success' : 'default'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={company.recruitmentStatus}
+                    color={getRecruitmentStatusColor(company.recruitmentStatus)}
+                    size="small"
+                    sx={{ textTransform: 'capitalize' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Box display="flex" gap={1}>
+                    <IconButton size="small" onClick={() => handleViewClick(company)}>
                       <Visibility fontSize="small" />
                     </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Edit">
-                    <IconButton size="small">
+                    <IconButton size="small" onClick={() => handleEditClick(company)}>
                       <Edit fontSize="small" />
                     </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton size="small">
+                    <IconButton size="small" onClick={() => handleDeleteClick(company)}>
                       <Delete fontSize="small" />
                     </IconButton>
-                  </Tooltip>
-                </Box>
-              </TableCell>
-            </TableRow>
-          ))}
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Company</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete {companyToDelete?.companyName}? This action cannot be undone.
+          </Typography>
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 

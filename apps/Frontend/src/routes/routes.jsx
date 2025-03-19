@@ -192,7 +192,7 @@ const Signup = lazy(() => import("../components/auth/Signup"));
 const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const ResetPassword = lazy(() => import("../pages/auth/ResetPassword"));
 const Notifications = lazy(() => import("../pages/admin/Notifications"));
-const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
+// const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
 const CompanyDashboard = lazy(
   () => import("../components/company/CompanyDashboard")
 );
@@ -214,8 +214,15 @@ const routes = [
       {path: "notificationforms", element: NotificationForms},
       // { path: "jnf", element: JNFManagement },
       { path: "internships",element: Internships},
-      { path: "placements",element:Placements},
-      { path: 'drive', element: DriveManagement, },
+      // { path: "placements",
+      //   element:Placements,
+      //   children: [
+      //     {
+      //     path: ':placementId',
+      //     element: lazy(() => import("../pages/admin/DriveManagement")),
+      //     },
+      //   ],
+      // },
       { path: 'survey', element: Survey, },
       { path: 'query', element: Query, },
       { path: "notifications", element: Notifications },

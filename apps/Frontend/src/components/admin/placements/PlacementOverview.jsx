@@ -1,82 +1,155 @@
-import React, { useState } from "react";
-import { Card, CardContent, Typography, Divider, Collapse, IconButton, Box } from "@mui/material";
-import { ExpandMore, ExpandLess } from "@mui/icons-material";
-import PlacementData from "./PlacementData";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, Typography, Divider, Box } from "@mui/material";
+import { Business, Work, School, Link as LinkIcon, ListAlt , Gavel} from "@mui/icons-material";
+import placementService from "../../../services/admin/placementService";
 
-const PlacementOverview = () => {
-  const drive = PlacementData[0];
-  const jobProfile = drive.jobProfiles[0];
-  
-  const [showEligibility, setShowEligibility] = useState(false);
-  const [showSelectionProcess, setShowSelectionProcess] = useState(false);
+const PlacementOverview = ({ id }) => {
+  const [placementData, setPlacementData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPlacement = async () => {
+      try {
+        setLoading(true);
+        const data = await placementService.getPlacement(id);
+        setPlacementData(data);
+      } catch (err) {
+        setError("Failed to load placement data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlacement();
+  }, [id]);
+
+  if (loading) return <Typography>Loading...</Typography>;
+  if (error) return <Typography color="error">{error}</Typography>;
+  if (!placementData) return <Typography>No placement data available.</Typography>;
+
+  const {
+    placementDrive_title,
+    companyDetails,
+    jobProfile,
+    eligibilityCriteria,
+    selectionProcess,
+    applicationDetails,
+    eligibleBranchesForProfiles,
+    bondDetails,
+  } = placementData;
 
   return (
-    <Card sx={{maxWidth: "90%", margin: "20px auto", padding: 3, boxShadow: 3, borderRadius: 2 }}>
+    <Card sx={{ maxWidth: "95%", margin: "20px auto", padding: 2, boxShadow: 3, borderRadius: 2 }}>
       <CardContent>
-        <Typography variant="h5" gutterBottom align="center">
-          {drive.title}
+        <Typography variant="h5" gutterBottom align="center" color="primary">
+          {placementDrive_title}
         </Typography>
-        
+
         <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="h6">Company Name</Typography>
-        <Typography variant="subtitle1" color="textSecondary">
-          {drive.companyName} ({drive.companyType})
-        </Typography>
-        
-        <Typography variant="h6" sx={{ mt: 2 }}>Company Description</Typography>
-        <Typography variant="subtitle1" color="textSecondary" paragraph>
-          {drive.companyDescription}
-        </Typography>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="h6">Job Profile</Typography>
-        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mt: 1 }}>
-          <Typography variant="body1"><strong>Role:</strong> {jobProfile.jobRole}</Typography>
-          <Typography variant="body1"><strong>Location:</strong> {jobProfile.location}</Typography>
-          <Typography variant="body1"><strong>CTC:</strong> ₹{jobProfile.ctc}</Typography>
-          <Typography variant="body1"><strong>Base Salary:</strong> ₹{jobProfile.baseSalary}</Typography>
-          <Typography variant="body1"><strong>Stipend:</strong> ₹{jobProfile.stipend}</Typography>
-          <Typography variant="body1"><strong>Joining Date:</strong> {jobProfile.expectedJoiningDate}</Typography>
+
+        <Box >
+        {/* Main Title */}
+        <Box display="flex" alignItems="center" gap={1} mb={1}>
+          <Business color="primary" />
+          <Typography variant="h5" color="primary" fontWeight="bold">
+            Company Details
+          </Typography>
         </Box>
-        
+          
+        {/* Company Information */}
+          <Typography variant="body1">
+          <strong>Name:</strong>{companyDetails?.name}
+          </Typography>
+          <Typography variant="body1">
+          <strong>Description:</strong>{companyDetails?.description}
+          </Typography>
+          <Typography variant="body1">
+            <strong>Domain:</strong> {companyDetails?.domain}
+          </Typography>
+          <Typography variant="body1">
+            <strong>Type:</strong> {companyDetails?.companyType}
+          </Typography>
+      </Box>
+
         <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="h6" onClick={() => setShowEligibility(!showEligibility)} sx={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
-          Eligibility Criteria
-          <IconButton size="small">{showEligibility ? <ExpandLess /> : <ExpandMore />}</IconButton>
-        </Typography>
-        <Collapse in={showEligibility}>
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, pl: 2 }}>
-            {Object.entries(jobProfile.eligibility).map(([key, value]) => (
-              <Typography key={key} variant="body1">
-                <strong>{key.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, (char) => char.toUpperCase())}:</strong> {value}
-              </Typography>
-            ))}
-          </Box>
-        </Collapse>
-        
+        <Box display="flex" alignItems="center" gap={1} mt={2}>
+          <Work color="primary" />
+          <Typography variant="h6" color="primary">Job Profile</Typography>
+        </Box>
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", mt: 1 }}>
+          <Typography variant="body1"><strong>Role:</strong> {jobProfile?.designation}</Typography>
+          <Typography variant="body1"><strong>Location:</strong> {jobProfile?.placeOfPosting}</Typography>
+          <Typography variant="body1"><strong>Job Type:</strong> {jobProfile?.jobType}</Typography>
+          <Typography variant="body1"><strong>CTC:</strong> ₹{jobProfile?.ctc}</Typography>
+          <Typography variant="body1"><strong>Take Home Salary:</strong> ₹{jobProfile?.takeHome}</Typography>
+          {jobProfile?.stipend && (
+            <Typography variant="body1"><strong>Stipend:</strong> ₹{jobProfile?.stipend}</Typography>
+          )}
+          <Typography variant="body1"><strong>Training Period:</strong> {jobProfile?.trainingPeriod}</Typography>
+        </Box>
+
         <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="h6" onClick={() => setShowSelectionProcess(!showSelectionProcess)} sx={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
-          Selection Process
-          <IconButton size="small">{showSelectionProcess ? <ExpandLess /> : <ExpandMore />}</IconButton>
+
+        {/* Eligibility Criteria */}
+        <Box display="flex" alignItems="center" gap={1}>
+          <School color="primary" />
+          <Typography variant="h6" color="primary">Eligibility Criteria</Typography>
+        </Box>
+        <Typography variant="body1"><strong>Minimum CGPA:</strong> {eligibilityCriteria?.minCgpa}</Typography>
+        <Typography variant="body1"><strong>Backlogs Allowed:</strong> {eligibilityCriteria?.backlogAllowed}</Typography>
+        <Typography variant="body1"><strong>Eligible Courses:</strong> {jobProfile?.course}</Typography>
+        <Typography variant="body1"><strong>Eligible Branches:</strong> {
+          eligibleBranchesForProfiles?.map(profile => 
+            profile.branches?.[jobProfile?.course]?.map(branch => branch.name).join(", ")
+          ).join(", ")
+        }</Typography>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Application Details */}
+        <Box display="flex" alignItems="center" gap={1}>
+          <LinkIcon color="primary" />
+          <Typography variant="h6" color="primary">Application Details</Typography>
+        </Box>
+        <Typography variant="body1"><strong>Deadline:</strong> {applicationDetails?.applicationDeadline}</Typography>
+        <Typography variant="body1"><strong>Link:</strong>
+          <a 
+            href={applicationDetails?.applicationLink}
+            target="_blank"
+            rel="noopener noreferrer" 
+            style={{ color: "blue", textDecoration: "underline" }}
+          >
+            {applicationDetails?.applicationLink || "N/A"}
+          </a>
         </Typography>
-        <Collapse in={showSelectionProcess}>
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, pl: 2 }}>
-            {Object.entries(jobProfile.selectionRounds).map(([key, value]) => (
-              value && key !== "otherRoundsDescription" ? (
-                <Typography key={key} variant="body1">
-                  <strong>{key.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, (char) => char.toUpperCase())}:</strong>
-                </Typography>
-              ) : null
-            ))}
-            {jobProfile.selectionRounds.otherRounds && (
-              <Typography variant="body1"><strong>Other Rounds:</strong> {jobProfile.selectionRounds.otherRoundsDescription}</Typography>
-            )}
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Selection Process */}
+        <Box display="flex" alignItems="center" gap={1}>
+          <ListAlt color="primary" />
+          <Typography variant="h6" color="primary">Selection Process</Typography>
+        </Box>
+        {selectionProcess?.[0]?.rounds?.length > 0 ? (
+          selectionProcess[0].rounds.map((round, index) => (
+            <Typography key={index} variant="body1">
+              <strong>Round {round.roundNumber}:</strong> {round.roundName} - {round.details}
+            </Typography>
+          ))
+        ) : (
+          <Typography variant="body1">No selection rounds specified.</Typography>
+        )}
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Bond Details */}
+        <Box>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Gavel color="primary" />
+            <Typography variant="h6" sx={{ color: "#1976d2" }}>Bond Details</Typography>
           </Box>
-        </Collapse>
+          <Typography>{bondDetails?.details}</Typography>
+        </Box>
       </CardContent>
     </Card>
   );

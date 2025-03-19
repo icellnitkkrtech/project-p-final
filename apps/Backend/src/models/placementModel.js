@@ -161,7 +161,7 @@ export default class PlacementModel {
     async getPlacementDriveByRoundId(roundId) {
         console.log("Placement Model: getPlacementDriveByRoundId called");
         try {
-            return await this.placement.findOne({ "rounds._id": roundId });
+            return await this.placement.findOne({ "roundDetails.rounds._id": roundId });
         } catch (error) {
             console.error("Error in getPlacementDriveByRoundId:", error);
             throw error;

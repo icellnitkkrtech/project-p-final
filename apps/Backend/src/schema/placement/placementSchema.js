@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getRecruitmentStatus } from "../../utils/companyUtils.js";
 
 const placementDriveSchema = new mongoose.Schema(
   {
@@ -167,7 +168,7 @@ const placementDriveSchema = new mongoose.Schema(
     },
 
     // Status & Applicants
-    status: { type: String, enum: ["inProgress", "closed", "hold"] },
+    status: { type: String, enum: ["inProgress", "closed", "hold"], default: "inProgress" },
     applicantStudents: { type: [mongoose.Schema.Types.ObjectId], ref: "Student", default: [] },
     selectedStudents: { type: [mongoose.Schema.Types.ObjectId], ref: "Student", default: [] },
 
@@ -209,6 +210,33 @@ const placementDriveSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Add this middleware to update company status when drive status changes
+placementDriveSchema.post('save', async function(doc) {
+  try {
+    const Company = mongoose.model('Company');
+    const JNF = mongoose.model('JNF');
+
+    // Find the associated JNF and company
+    const jnf = await JNF.findOne({ placementDrive: doc._id });
+    if (jnf && jnf.company) {
+      const company = await Company.findById(jnf.company).populate({
+        path: 'JNFs',
+        populate: {
+          path: 'placementDrive'
+        }
+      });
+      
+      if (company) {
+        // Update company recruitment status
+        const recruitmentStatus = getRecruitmentStatus(company);
+        await Company.findByIdAndUpdate(jnf.company, { recruitmentStatus });
+      }
+    }
+  } catch (error) {
+    console.error('Error updating company recruitment status:', error);
+  }
+});
 
 const placementDrive = mongoose.model("PlacementDrive", placementDriveSchema);
 
