@@ -58,5 +58,22 @@ export default class jnfServices {
             return new apiResponse(500, null, error.message);
         }
     }
+    async getAvailableStatuses() {
+        try {
+            const response = await this.jnfModel.getAvailableStatuses();
+            return new apiResponse(200, response, "Statuses Fetched Successfully");
+        } catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
+ 
+    async getPCC() {
+        try {
+            const response = await this.userModel.getPCC();
+            return new apiResponse(200, response, "PCC Fetched Successfully");
+        } catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
     
 }

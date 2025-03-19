@@ -60,4 +60,22 @@ export default class JNFController {
             res.status(500).json(new apiResponse(500, null, error.message));
         }
     }
+    // controller/jnfController.js
+async getAvailableStatuses(req, res) {
+    try {
+        const response = await this.JNFService.getAvailableStatuses();
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json(new apiResponse(500, null, error.message));
+    }
+
+}
+async getPCC(req, res) {
+    try {
+        const response = await this.JNFService.getPCC();
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json(new apiResponse(500, null, error.message));
+    }  
+}
 }

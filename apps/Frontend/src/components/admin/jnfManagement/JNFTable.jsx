@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, IconButton, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
+    Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow, Paper, Typography, IconButton, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Box
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -9,7 +9,8 @@ import AssignUserDialog from './AssignUserDialog';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import StatusButton from './StatusButton';
 import ActionButtons from './ActionButtons';
-
+import { Delete } from '@mui/icons-material';
+import jnfService from '../../../services/admin/jnfService';
 const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const [expanded, setExpanded] = useState(null);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -29,16 +30,26 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const handleDeleteClick = (job) => {
         setSelectedJob(job);
         setDeleteDialogOpen(true);
+        console.log("delete this job or not???",job);
     };
 
     const handleAssign = (assignedTask) => {
         setAssignedTasks((prev) => ({
             ...prev,
-            [assignedTask.job.id]: {
+            [assignedTask.job._id]: {
                 user: assignedTask.user,
                 date: assignedTask.date,
             },
         }));
+    };
+
+    const handleDelete = async (jobId) => {
+        try {
+            await jnfService.delete(jobId);
+            // setJnf((prevJnf) => prevJnf.filter((job) => job._id !== jobId));
+        } catch (error) {
+            console.error("Error deleting JNF:", error);
+        }
     };
 
     return (
@@ -61,29 +72,42 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                         </TableHead>
                         <TableBody>
                             {jnfs.map((job) => (
-                                <React.Fragment key={job.id}>
+                                <React.Fragment key={job._id}>
                                     <TableRow hover>
-                                        <TableCell>{job.id}</TableCell>
-                                        <TableCell>{job.name}</TableCell>
-                                        <TableCell>{job.domain}</TableCell>
+                                        <TableCell>{job._id}</TableCell>
+                                        <TableCell>{job.companyDetails.name}</TableCell>
+                                        <TableCell>{job.companyDetails.domain}</TableCell>
                                         <TableCell align="center">
                                             <StatusButton job={job} onReview={onReview} />
                                         </TableCell>
                                         <TableCell align="center" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <ActionButtons
-                                                job={job}
+                                                jobId={job._id}
+                                                job = {job}
                                                 onView={onView}
                                                 onAssign={handleAssignClick}
                                                 onDelete={handleDeleteClick}
                                             />
-                                            <IconButton onClick={() => handleExpandClick(job.id)}>
-                                                {expanded === job.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                            {((job.status === 'rejected') || (job.status === "draft")) && (
+                                                <Tooltip title="Delete" arrow>
+                                                    <IconButton
+                                                        color="error"
+                                                        size="small"
+                                                        onClick={() => handleDelete(job._id)}
+                                                        sx={{ padding: 0.5 }}
+                                                    >
+                                                        <Delete fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            <IconButton onClick={() => handleExpandClick(job._id)}>
+                                                {expanded === job._id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                                             </IconButton>
                                         </TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell colSpan={5} style={{ paddingBottom: 1, paddingTop: 1 }}>
-                                            <Collapse in={expanded === job.id} timeout="auto" unmountOnExit>
+                                            <Collapse in={expanded === job._id} timeout="auto" unmountOnExit>
                                                 <Box sx={{ p: 2 }}>
                                                     <Typography variant="subtitle1" gutterBottom><b>Job Profiles:</b></Typography>
                                                     {job.jobProfiles.map((profile, index) => (
@@ -91,9 +115,9 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                                                             - {profile.designation} (CTC: {profile.ctc})
                                                         </Typography>
                                                     ))}
-                                                    {assignedTasks[job.id] && (
+                                                    {assignedTasks[job._id] && (
                                                         <Typography variant="body2" color="textSecondary" mt={1}>
-                                                            <b>Assigned to:</b> {assignedTasks[job.id].user.name} ({assignedTasks[job.id].user.email}) on {assignedTasks[job.id].date}
+                                                            <b>Assigned to:</b> {assignedTasks[job._id].user.name} ({assignedTasks[job._id].user.email}) on {assignedTasks[job._id].date}
                                                         </Typography>
                                                     )}
                                                     </Box>
