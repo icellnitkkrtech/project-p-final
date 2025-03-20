@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Box } from '@mui/material';
-import JNFFormPreview from '../jnfForm/JNFFormPreview';
+import JNFFormPreview from '../JNFPosting/JNFFormPreview';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 

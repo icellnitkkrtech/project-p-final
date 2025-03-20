@@ -12,6 +12,7 @@ export default class CompanyController {
         this.getPlacedStudents = this.getPlacedStudents.bind(this);
         this.getJobProfiles = this.getJobProfiles.bind(this);
         this.getCompanyById = this.getCompanyById.bind(this);
+        this.addJNFToCompany = this.addJNFToCompany.bind(this);
     }
 
     getAllCompanies = asyncHandler(async (req, res) => {
@@ -156,20 +157,27 @@ export default class CompanyController {
         }
     });
 
-    async addJNFToCompany(req, res) {
-        const { id } = req.params;
-        const jnfData = req.body;
+    addJNFToCompany = asyncHandler(async (req, res) => {
         try {
-            const response = await this.companyServices.addJNFToCompany(id, jnfData);
-            if (!response) {
-                new apiResponse(404, null, "Not Found");
+            const { id } = req.params;
+            console.log("Controller: Adding JNF to company:", id);
+            
+            const jnfData = req.body;
+            
+            const result = await this.companyServices.addJNFToCompany(id, jnfData);
+            
+            if (!result.success) {
+                return res.status(404).json(result);
             }
-            res.status(200).json(response);
+            
+            return res.status(200).json(result);
+        } catch (error) {
+            console.error("Error in addJNFToCompany controller:", error);
+            return res.status(500).json(
+                new apiResponse(500, null, error.message || "Internal Server Error")
+            );
         }
-        catch (error) {
-            new apiResponse(500, null, error.message);
-        }
-    }
+    });
 
     async getJNFsForCompany(req, res) {
         const { id } = req.params;

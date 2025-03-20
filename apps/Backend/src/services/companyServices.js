@@ -136,21 +136,33 @@ export default class companyServices {
     async addJNFToCompany(companyId, jnfData) {
         console.log("Service layer: addJNFToCompany called");
         try {
-            const company = await this.CompanyModel.findCompanyById(companyId);
+            // Validate required fields
+            if (!jnfData.companyDetails || !jnfData.jobProfiles || jnfData.jobProfiles.length === 0) {
+                return new apiResponse(400, null, "Missing required JNF details");
+            }
+            
+            // Find the company to ensure it exists and get the user ID
+            const company = await Company.findById(companyId);
+            
             if (!company) {
                 console.error(`Company with ID ${companyId} does not exist`);
-                return null;
+                return new apiResponse(404, null, "Company not found");
             }
-
+            
             const userId = company.user;
-
+            
             const response = await this.CompanyModel.addJNFToCompany(companyId, jnfData, userId);
-
-            console.log("added JNF", response);
+            
+            if (!response) {
+                return new apiResponse(500, null, "Failed to add JNF to company");
+            }
+            
+            console.log("Added JNF:", response);
             return new apiResponse(200, response, "JNF Added To Company Successfully");
         }
         catch (error) {
-            return new apiResponse(500, null, error.message);
+            console.error("Error in addJNFToCompany service:", error);
+            return new apiResponse(500, null, error.message || "Internal Server Error");
         }
     }
 

@@ -26,18 +26,23 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
   const theme = useTheme();
   const [isOtherDomain, setIsOtherDomain] = useState(false);
 
+  // Access data through companyDetails property
+  const companyDetails = formData.companyDetails || {};
+
   useEffect(() => {
-    if (!predefinedDomains.includes(formData.domain) && formData.domain !== '') {
+    // Check if the current domain is not in predefined list
+    if (!predefinedDomains.includes(companyDetails.domain) && companyDetails.domain !== '') {
       setIsOtherDomain(true);
     } else {
       setIsOtherDomain(false);
     }
-  }, [formData.domain]);
+  }, [companyDetails.domain]);
 
   const handleDomainChange = (e) => {
     const selectedDomain = e.target.value;
     if (selectedDomain === 'Other') {
       setIsOtherDomain(true);
+      // Clear the domain when selecting "Other"
       handleCompanyInputChange({
         target: { name: 'domain', value: '' }
       });
@@ -64,9 +69,10 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
             fullWidth
             label="Company Name"
             name="name"
-            value={formData.name}
+            value={companyDetails.name || ''}
             onChange={handleCompanyInputChange}
             variant="outlined"
+            required
           />
 
           {/* Email Address */}
@@ -75,9 +81,10 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
             label="Email Address"
             name="email"
             type="email"
-            value={formData.email}
+            value={companyDetails.email || ''}
             onChange={handleCompanyInputChange}
             variant="outlined"
+            required
           />
 
           {/* Website */}
@@ -86,17 +93,17 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
             label="Website"
             name="website"
             type="url"
-            value={formData.website}
+            value={companyDetails.website || ''}
             onChange={handleCompanyInputChange}
             variant="outlined"
           />
 
           {/* Company Type */}
-          <FormControl fullWidth>
+          <FormControl fullWidth required>
             <InputLabel>Company Type</InputLabel>
             <Select
               name="companyType"
-              value={formData.companyType}
+              value={companyDetails.companyType || ''}
               onChange={handleCompanyInputChange}
               label="Company Type"
             >
@@ -111,7 +118,7 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
           </FormControl>
 
           {/* Other Company Type */}
-          {formData.companyType === 'Other' && (
+          {companyDetails.companyType === 'Other' && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -121,7 +128,7 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
                 fullWidth
                 label="Specify Company Type"
                 name="companyType"
-                value={formData.companyType}
+                value={companyDetails.companyType || ''}
                 onChange={handleCompanyInputChange}
                 variant="outlined"
               />
@@ -129,11 +136,11 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
           )}
 
           {/* Domain */}
-          <FormControl fullWidth>
+          <FormControl fullWidth required>
             <InputLabel>Domain</InputLabel>
             <Select
               name="domain"
-              value={isOtherDomain ? 'Other' : formData.domain}
+              value={isOtherDomain ? 'Other' : (companyDetails.domain || '')}
               onChange={handleDomainChange}
               label="Domain"
             >
@@ -156,7 +163,7 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
                 fullWidth
                 label="Specify Domain"
                 name="domain"
-                value={formData.domain}
+                value={companyDetails.domain || ''}
                 onChange={handleCompanyInputChange}
                 variant="outlined"
               />
@@ -168,7 +175,7 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
             fullWidth
             label="Description"
             name="description"
-            value={formData.description}
+            value={companyDetails.description || ''}
             onChange={handleCompanyInputChange}
             multiline
             rows={4}

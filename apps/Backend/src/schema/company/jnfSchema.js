@@ -119,7 +119,7 @@ const JNFSchema = new Schema(
             specialization: {
               type: String,
               enum: [
-                "Computer Engineering/ Cyber Security",
+                "Cyber Security",
                 "Communication Systems",
                 "Power System",
                 "Power Electronics & Drives",
