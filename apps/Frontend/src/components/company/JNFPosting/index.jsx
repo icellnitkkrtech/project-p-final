@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import axios from '../axios';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { 
+    Snackbar, 
+    Alert, 
+    CircularProgress, 
+    Backdrop, 
+    AlertTitle 
+} from '@mui/material';
 import {
     Box,
     Container,
@@ -44,6 +52,12 @@ const steps = [
 
 const index = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
+    const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info'
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const theme = useTheme();
@@ -413,29 +427,203 @@ const index = () => {
         }));
     };
 
+    const validateJNF = () => {
+        const errors = [];
+    
+        // Check company details (required fields)
+        if (!formData.companyDetails?.name) {
+            errors.push("Company Name is required");
+        }
+        if (!formData.companyDetails?.email) {
+            errors.push("Company Email is required");
+        }
+        if (!formData.companyDetails?.companyType) {
+            errors.push("Company Type is required");
+        }
+        if (!formData.companyDetails?.domain) {
+            errors.push("Company Domain is required");
+        }
+    
+        // Check job profiles
+        if (!formData.jobProfiles || formData.jobProfiles.length === 0) {
+            errors.push("At least one job profile is required");
+        } else {
+            formData.jobProfiles.forEach((profile, index) => {
+                if (!profile.profileId) {
+                    errors.push(`Job Profile ${index + 1}: Profile ID is required`);
+                }
+                
+                // Check required fields for job type
+                if (profile.jobType === "fte+intern" || profile.jobType === "intern+ppo") {
+                    if (!profile.stipend) {
+                        errors.push(`Job Profile ${index + 1}: Intern Stipend is required for ${profile.jobType}`);
+                    }
+                    if (!profile.internDuration) {
+                        errors.push(`Job Profile ${index + 1}: Internship Duration is required for ${profile.jobType}`);
+                    }
+                }
+                
+                // Check if job description file is required
+                if (profile.jobDescription?.attachFile && !profile.jobDescription?.file) {
+                    errors.push(`Job Profile ${index + 1}: Job Description file is required when attachment is enabled`);
+                }
+            });
+        }
+    
+        // Check eligibleBranchesForProfiles
+        if (!formData.eligibleBranchesForProfiles || formData.eligibleBranchesForProfiles.length === 0) {
+            errors.push("Eligible branches information is required");
+        } else {
+            formData.eligibleBranchesForProfiles.forEach((profileBranches, index) => {
+                if (!profileBranches.profileId) {
+                    errors.push(`Eligible Branches for Profile ${index + 1}: Profile ID is required`);
+                }
+            });
+        }
+    
+        // Check selectionProcessForProfiles
+        if (!formData.selectionProcessForProfiles || formData.selectionProcessForProfiles.length === 0) {
+            errors.push("Selection process information is required");
+        } else {
+            formData.selectionProcessForProfiles.forEach((profileSelection, index) => {
+                if (!profileSelection.profileId) {
+                    errors.push(`Selection Process for Profile ${index + 1}: Profile ID is required`);
+                }
+                
+                if (profileSelection.rounds && profileSelection.rounds.length > 0) {
+                    profileSelection.rounds.forEach((round, roundIndex) => {
+                        if (!round.type) {
+                            errors.push(`Selection Process for Profile ${index + 1}, Round ${roundIndex + 1}: Round type is required`);
+                        }
+                    });
+                }
+            });
+        }
+    
+        // Check eligibilityCriteria - should be a string
+        if (typeof formData.eligibilityCriteria === 'object') {
+            // Convert to string if it's an object
+            formData.eligibilityCriteria = JSON.stringify(formData.eligibilityCriteria);
+        }
+    
+        // Check bond details
+        if (formData.bondDetails) {
+            if (formData.bondDetails.hasBond === undefined || formData.bondDetails.hasBond === null) {
+                errors.push("Bond information (Yes/No) is required");
+            }
+            
+            if (formData.bondDetails.hasBond && !formData.bondDetails.details) {
+                errors.push("Bond details are required when bond is set to Yes");
+            }
+        } else {
+            errors.push("Bond information is required");
+        }
+    
+        // Check point of contact
+        if (!formData.pointOfContact || formData.pointOfContact.length === 0) {
+            errors.push("At least one point of contact is required");
+        }
+    
+        return {
+            valid: errors.length === 0,
+            errors
+        };
+    };
+    
+    // LoadingOverlay component
+    const LoadingOverlay = () => (
+        <Backdrop
+            sx={{
+                color: '#fff',
+                zIndex: (theme) => theme.zIndex.drawer + 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                backdropFilter: 'blur(3px)',
+                gap: 2
+            }}
+            open={loading}
+        >
+            <CircularProgress color="primary" size={60} thickness={4} />
+            <Typography variant="h6" component="div" sx={{ mt: 2, fontWeight: 500 }}>
+                Submitting your JNF...
+            </Typography>
+            <Typography variant="body2" color="inherit" sx={{ maxWidth: 300, textAlign: 'center' }}>
+                Please wait while we process your Job Notification Form
+            </Typography>
+        </Backdrop>
+    );
+
+    // Format error messages from array to readable text
+    const formatErrorMessages = (errors) => {
+        if (!errors || !errors.length) return '';
+        
+        if (errors.length === 1) return errors[0];
+        
+        return (
+            <React.Fragment>
+                <AlertTitle sx={{ fontWeight: 'bold', mb: 1 }}>Please fix the following issues:</AlertTitle>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    {errors.map((err, index) => (
+                        <li key={index}>{err}</li>
+                    ))}
+                </ul>
+            </React.Fragment>
+        );
+    };
+
+    // Then use this in your handleSubmit function:
     const handleSubmit = async () => {
         try {
+            const validation = validateJNF();
+            if (!validation.valid) {
+                setSnackbar({
+                    open: true,
+                    message: formatErrorMessages(validation.errors),
+                    severity: 'error'
+                });
+                return;
+            }
+    
             setLoading(true);
             setError(null);
             
-            // Format job profiles for submission
+            // Make sure eligibilityCriteria is a string
             const formattedData = {
                 ...formData,
                 submittedBy: id,
-                submissionDate: new Date()
+                submissionDate: new Date(),
+                eligibilityCriteria: typeof formData.eligibilityCriteria === 'object' 
+                    ? JSON.stringify(formData.eligibilityCriteria) 
+                    : formData.eligibilityCriteria
             };
-
+      
             console.log("Final formatted data for submission:", formattedData);
             
             const response = await axios.post(`/company/${id}/add-jnf`, formattedData);
-            
+            console.log(response);
             if (response.status === 200 || response.status === 201) {
-                alert('JNF submitted successfully');
-                console.log("response", response);
+                setSnackbar({
+                    open: true,
+                    message: 'JNF submitted successfully!',
+                    severity: 'success'
+                });
+                
+                // // Optionally navigate to success page or dashboard after delay
+                // setTimeout(() => {
+                //     navigate(`/company/${id}/dashboard`);
+                // }, 2000);
             }
         } catch (err) {
-            alert('Failed to submit JNF');
-            setError(err.response?.data?.message || 'Failed to submit JNF');
+            const errorMessage = err.response?.data?.message || 'Failed to submit JNF';
+            
+            setSnackbar({
+                open: true,
+                message: errorMessage,
+                severity: 'error'
+            });
+            
+            setError(errorMessage);
             console.error('Error submitting JNF:', err);
         } finally {
             setLoading(false);
@@ -491,6 +679,9 @@ const index = () => {
 
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
+            {/* Loading Overlay */}
+            <LoadingOverlay />
+            
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -602,7 +793,7 @@ const index = () => {
                     >
                         <Button
                             variant="outlined"
-                            disabled={currentStep === 1}
+                            disabled={currentStep === 1 || loading}
                             onClick={() => setCurrentStep(prev => Math.max(prev - 1, 1))}
                             sx={{ minWidth: 120 }}
                         >
@@ -615,14 +806,31 @@ const index = () => {
                                 color="success"
                                 onClick={handleSubmit}
                                 disabled={loading}
-                                sx={{ minWidth: 120 }}
+                                sx={{ 
+                                    minWidth: 120,
+                                    position: 'relative'
+                                }}
                             >
-                                {loading ? 'Submitting...' : 'Submit'}
+                                {loading ? (
+                                    <>
+                                        <CircularProgress 
+                                            size={24} 
+                                            color="inherit" 
+                                            sx={{ 
+                                                position: 'absolute',
+                                                left: '50%',
+                                                marginLeft: '-12px'
+                                            }}
+                                        />
+                                        <span style={{ visibility: 'hidden' }}>Submit</span>
+                                    </>
+                                ) : 'Submit'}
                             </Button>
                         ) : (
                             <Button
                                 variant="contained"
                                 onClick={() => setCurrentStep(prev => Math.min(prev + 1, 6))}
+                                disabled={loading}
                                 sx={{ minWidth: 120 }}
                             >
                                 Next
@@ -631,6 +839,64 @@ const index = () => {
                     </Stack>
                 </Paper>
             </motion.div>
+            
+            {/* Enhanced Snackbar for errors and success messages */}
+            <Snackbar 
+                open={snackbar.open} 
+                autoHideDuration={snackbar.severity === 'error' ? 10000 : 6000} 
+                onClose={() => setSnackbar({...snackbar, open: false})}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                sx={{ 
+                    '& .MuiAlert-root': {
+                        width: '100%', 
+                        maxWidth: snackbar.severity === 'error' ? 400 : 300,
+                        boxShadow: 3
+                    } 
+                }}
+            >
+                <Alert 
+                    onClose={() => setSnackbar({...snackbar, open: false})} 
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ 
+                        width: '100%',
+                        '& .MuiAlert-message': {
+                            maxHeight: '300px',
+                            overflow: 'auto'
+                        }
+                    }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+            
+            {/* Show persistent error if needed */}
+            {error && (
+                <Paper 
+                    elevation={3} 
+                    sx={{ 
+                        position: 'fixed', 
+                        bottom: 16, 
+                        left: '50%', 
+                        transform: 'translateX(-50%)',
+                        bgcolor: 'error.light',
+                        color: 'error.contrastText',
+                        p: 2,
+                        borderRadius: 2,
+                        maxWidth: '80%',
+                        zIndex: 1000
+                    }}
+                >
+                    <Typography variant="body1">{error}</Typography>
+                    <Button 
+                        size="small" 
+                        sx={{ color: 'inherit', mt: 1 }}
+                        onClick={() => setError(null)}
+                    >
+                        Dismiss
+                    </Button>
+                </Paper>
+            )}
         </Container>
     );
 };
