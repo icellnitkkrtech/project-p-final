@@ -22,8 +22,8 @@ export default class PlacementController {
             const response = await this.placementService.getAllPlacements();
             let placementDrives = [];
             response.forEach((placementDrive) => {
-                const { _id, companyData, jobProfile, status, assignedUser, createdBy, placementDrive_title, applicantStudents, selectedStudents, createdAt, updatedAt } = placementDrive;
-                placementDrives.push({ _id, companyData, jobProfile, status, assignedUser, createdBy, placementDrive_title, applicantStudents, selectedStudents, createdAt, updatedAt });
+                const { _id, companyDetails, jobProfile, status, assignedUser, createdBy, placementDrive_title, applicantStudents, selectedStudents, createdAt, updatedAt } = placementDrive;
+                placementDrives.push({ _id, companyDetails, jobProfile, status, assignedUser, createdBy, placementDrive_title, applicantStudents, selectedStudents, createdAt, updatedAt });
             });
             res.status(200).json({ data: placementDrives });
         } catch (error) {

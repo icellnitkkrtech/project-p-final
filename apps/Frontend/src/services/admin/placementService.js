@@ -21,7 +21,7 @@ const placementService = {
     },
 
     getRoundDetails: async (id) => {
-        const response = await axios.get(`${API_BASE_URL}/placement/${id}/getone`);
+        const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/all`);
         return response.data.roundDetails;
     },
     

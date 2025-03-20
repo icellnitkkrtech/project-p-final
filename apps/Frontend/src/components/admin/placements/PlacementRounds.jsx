@@ -80,7 +80,7 @@ const PlacementRounds = ({ placementId }) => {
       roundNumber: rounds.length + 1,
       roundName: "",
       roundType: "online",
-      roundDate: Date.now(),
+      roundDate:"",
       roundDuration: "",
       venue: "",
       roundStatus: "upcoming",
@@ -97,18 +97,18 @@ const PlacementRounds = ({ placementId }) => {
 
     try {
       const roundData = {
-        user_id: userId,
-        placementDrive_id: placementId,
-        round: {
+        // user_id: userId,
+        // placementDrive_id: placementId,
+        // round: {
           roundNumber: rounds.length + 1,
           roundName: newRound.roundName,
           details: newRound.details || "",
-          roundType: newRound.roundType.toLowerCase(), // ensure 'online' or 'offline'
+          roundType: newRound.roundType, // ensure 'online' or 'offline'
           roundDate: new Date(newRound.roundDate).toISOString(), // Convert to ISO timestamp
           roundDuration: newRound.roundDuration,
           roundStatus: "upcoming",
           venue: newRound.venue || "" // Optional field
-        }
+        // }
       };
 
       const response = await placementService.addRound(placementId, roundData);
@@ -140,8 +140,8 @@ const PlacementRounds = ({ placementId }) => {
           round_id: selectedRound._id,
           roundNumber: selectedRound.roundNumber,
           roundName: selectedRound.roundName,
-          roundType: selectedRound.roundType.toLowerCase(),
-          roundDate: selectedRound.roundDate 
+          roundType: selectedRound.roundType,
+          roundDate: selectedRound.roundDate
           ? new Date(selectedRound.roundDate).toISOString().split("T")[0] 
           : "",
           venue: selectedRound.venue || ""
@@ -169,7 +169,7 @@ const PlacementRounds = ({ placementId }) => {
       const resultData = {
         placementDrive_id: placementId,
         round_id: selectedRound._id,
-        user_id: userId,
+        // user_id: userId,
         roundStatus: "completed", // Update status to completed
         resultTitle: roundResult.resultTitle,
         resultDescription: roundResult.resultDescription
@@ -195,7 +195,7 @@ const PlacementRounds = ({ placementId }) => {
   const handleUpdateSelectedStudents = async (selectedStudents) => {
     try {
       const data = {
-        user_id: userId,
+        // user_id: userId,
         placementDrive_id: placementId,
         round_id: selectedRound._id,
         selectedStudents
