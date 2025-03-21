@@ -19,10 +19,22 @@ const StudentSchema = new Schema(
       ref: "User",
       required: true,
     },
-
+    isDeboured: {
+      type: Boolean,
+      default: false,
+    },
+    debourDetails: {
+      reason: String,
+      debouredAt: Date,
+      debouredBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    },
     // Locked fields with verification
     personalInfo: {
       isLocked: { type: Boolean, default: false },
+
       name: {
         type: String,
         required: true,
@@ -168,6 +180,17 @@ StudentSchema.pre("save", function (next) {
   next();
 });
 
+// Add a middleware to prevent actions if student is deboured
+StudentSchema.pre(["save", "updateOne", "findOneAndUpdate"], function (next) {
+  if (this.isDeboured && !this._update?.isDeboured) {
+    const error = new Error(
+      "Student is deboured and cannot perform any actions"
+    );
+    error.statusCode = 403;
+    return next(error);
+  }
+  next();
+});
 const Student = model("Student", StudentSchema);
 
 export default Student;
