@@ -1,20 +1,32 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Button, TextField, AppBar, Toolbar, Typography, Slide, useTheme } from "@mui/material";
 import NFHeader from "../../components/admin/jnfManagement/JNFHeader";
 import CreateJNFDialog from "../../components/admin/jnfManagement/CreateJNFdialog";
 import ViewJNFDialog from "../../components/admin/jnfManagement/ViewJNFDialog";
 import JNFTable from "../../components/admin/jnfManagement/JNFTable";
 import jnfDetails from "../../components/admin/jnfManagement/jnfDetails";
+import axios from "../../config/axios";
+import jnfService from "../../services/admin/jnfService";
 
 const JNFManagement = ({ searchTerm }) => {
     const [selectedJNF, setSelectedJNF] = useState(null);
-    const [jnf, setJnf] = useState(jnfDetails);
+    const [jnf, setJnf] = useState([]);
     const [tab, setTab] = useState('all');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     const handleViewJNF = (jnfItem) => setSelectedJNF(jnfItem);
     const handleOpenCreateDialog = () => setIsCreateDialogOpen(true);
     const handleCloseCreateDialog = () => setIsCreateDialogOpen(false);
+
+    useEffect(() => {
+        const fetchAllJNFs = async () => {
+            const response = await jnfService.getAll();
+            setJnf(response.data);
+        };
+        fetchAllJNFs();
+        }, []);
+        console.log(jnf);
+
 
     const handleReview = (jobId, newStatus) => {
         setJnf((prevJnf) =>
@@ -24,8 +36,13 @@ const JNFManagement = ({ searchTerm }) => {
         );
     };
 
-    const handleDeleteJNF = (jobId) => {
-        setJnf((prevJnf) => prevJnf.filter((job) => job.id !== jobId));
+    const handleDeleteJNF = async (jobId) => {
+        try {
+            await jnfService.delete(jobId);
+            setJnf((prevJnf) => prevJnf.filter((job) => job._id !== jobId));
+        } catch (error) {
+            console.error("Error deleting JNF:", error);
+        }
     };
 
     // Filter logic for the table
@@ -45,7 +62,7 @@ const JNFManagement = ({ searchTerm }) => {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', mt: 2 }}>
             <NFHeader tab={tab} setTab={setTab} onCreate={handleOpenCreateDialog} title = {"JNF"}/>
-            <JNFTable jnfs={filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} />
+            <JNFTable jnfs= {filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} />
             {selectedJNF && (
                 <ViewJNFDialog
                     selectedJNF={selectedJNF}
@@ -76,6 +93,22 @@ const INFManagement = ({ searchTerm }) => {
     const handleViewJNF = (jnfItem) => setSelectedJNF(jnfItem);
     const handleOpenCreateDialog = () => setIsCreateDialogOpen(true);
     const handleCloseCreateDialog = () => setIsCreateDialogOpen(false);
+    const [availableStatuses, setAvailableStatuses] = useState([]);
+    useEffect(() => {
+        const fetchAllJNFs = async () => {
+            const response = await jnfService.getAll();
+            setJnf(response.data);
+        };
+
+        const fetchStatuses = async () => {
+            const res = await jnfService.getAvailableStatuses();
+            const statuses = res?.data?.data || [];
+            setAvailableStatuses(statuses);
+        };
+
+        fetchAllJNFs();
+        fetchStatuses();
+    }, []);
 
     const handleReview = (jobId, newStatus) => {
         setJnf((prevJnf) =>
@@ -105,11 +138,14 @@ const INFManagement = ({ searchTerm }) => {
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', mt: 2 }}>
-            <NFHeader 
-            tab={tab} 
-            setTab={setTab} 
-            onCreate={handleOpenCreateDialog} 
-            title = {"INF"}/>
+           <NFHeader
+    tab={tab}
+    setTab={setTab}
+    onCreate={handleOpenCreateDialog}
+    title="JNF"
+    availableStatuses={availableStatuses}
+/>
+
             <JNFTable jnfs={filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} />
             {selectedJNF && (
                 <ViewJNFDialog

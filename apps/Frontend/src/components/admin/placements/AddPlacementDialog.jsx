@@ -1,459 +1,582 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Stepper,
-  Step,
-  StepLabel,
-  Box,
-  Typography,
-  Autocomplete,
-  Chip,
-} from "@mui/material";
-import { useState } from 'react';
-import { AssignPlacementDialog } from "./AssignedPlacement.jsx";
-import PlacementData from "./PlacementData";
+import React, { useState } from "react";
+import { Container,Dialog, DialogActions, DialogContent, DialogTitle, Box, TextField, Button, MenuItem, Typography, Grid,Stepper, Step, StepLabel, Checkbox, FormControlLabel, Stack, Paper, Grid2, Snackbar, Alert } from "@mui/material";
+import placementService from "../../../services/admin/placementService";
+import { time } from "framer-motion";
 
-const steps = ["Placement Type","Company Details", "Job Details", "Eligibility Criteria", "Rounds & Application Details"];
+const JOB_TYPES = {
+  FTE: "fte",
+  FTE_INTERN: "fteIntern",
+  INTERN_PPO: "internPpo"
+};
 
-const AddPlacementDialog = ({ open, handleClose, courses, selectionRounds, handleChange, handleAddPlacement, newPlacement, handleJNFSelect, selectedJNF, acceptedJNFs, locationOptions, branchOptions}) => {
-  
-  const [errors, setErrors] = useState({});
+const COMPANY_TYPES = {
+  MNC: "MNC",
+  STARTUP: "Start-up",
+  PSU: "PSU",
+  PRIVATE: "Private",
+  NGO: "NGO",
+  OTHER: "Other"
+};
+
+const COMPANY_DOMAINS = {
+  ANALYTICS: "Analytics",
+  CONSULTING: "Consulting",
+  CORE_TECHNICAL: "Core(Technical)",
+  FINANCE: "Finance",
+  MANAGEMENT: "Management",
+  IT: "IT",
+  OTHER: "Other"
+};
+
+const SELECTION_PROCESS_ROUNDS = {
+  RESUME_SHORTLISTING: "resumeShortlisting",
+  PRE_PLACEMENT_TALK: "prePlacementTalk",
+  GROUP_DISCUSSION: "groupDiscussion",
+  ONLINE_TEST: "onlineTest",
+  APTITUDE_TEST: "aptitudeTest",
+  TECHNICAL_TEST: "technicalTest",
+  TECHNICAL_INTERVIEW: "technicalInterview",
+  HR_INTERVIEW: "hrInterview",
+  OTHER_ROUNDS: "otherRounds"
+};
+
+const branches = [
+  "Computer Engineering", "Information Technology", "Electronics & Communication Engineering",
+  "Electrical Engineering", "Mechanical Engineering", "Production & Industrial Engineering", "Civil Engineering"
+];
+
+const COURSES = {
+  BTECH: "btech",
+  MTECH: "mtech",
+  MSC: "msc",
+  PHD: "phd"
+};
+
+const btech = [
+  "Computer Engineering", "Information Technology", "Electronics & Communication Engineering",
+  "Electrical Engineering", "Mechanical Engineering", "Production & Industrial Engineering", "Civil Engineering"
+];
+
+const mtech = [
+  { dept: "Computer Engineering", spl: "Machine Learning" },
+  { dept: "Information Technology", spl: "Data Science" },
+  { dept: "Electronics & Communication Engineering",spl: "VLSI Design" },
+  { dept: "Electrical Engineering", spl: "Power System" },
+  { dept: "Mechanical Engineering", spl: "Automobile Design" },
+  { dept: "Civil Engineering", spl: "Structural Engineering" },
+  { dept: "Production & Industrial Engineering", spl: "Manufacturing Engineering" }
+];
+
+const msc = [
+  { dept: "Computer Engineering", spl: "Machine Learning" },
+  { dept: "Information Technology", spl: "Data Science" },
+  { dept: "Electronics & Communication Engineering",spl: "VLSI Design" },
+  { dept: "Electrical Engineering", spl: "Power System" },
+  { dept: "Mechanical Engineering", spl: "Automobile Design" },
+  { dept: "Civil Engineering", spl: "Structural Engineering" },
+  { dept: "Production & Industrial Engineering", spl: "Manufacturing Engineering" }
+];
+
+const phd = [
+  { dept: "Computer Engineering", spl: "Machine Learning" },
+  { dept: "Information Technology", spl: "Data Science" },
+  { dept: "Electronics & Communication Engineering",spl: "VLSI Design" },
+  { dept: "Electrical Engineering", spl: "Power System" },
+  { dept: "Mechanical Engineering", spl: "Automobile Design" },
+  { dept: "Civil Engineering", spl: "Structural Engineering" },
+  { dept: "Production & Industrial Engineering", spl: "Manufacturing Engineering" }
+];
+
+const steps = ["Company Details", "Job Details", "Eligiblity Details", "Selection & POC Details", "Additional Details"];
+
+const AddPlacementDialog = ({ open, handleClose }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    placementDrive_title: "",
+    companyDetails: { name: "", email: "", website: "", companyType: "", domain: "", description: "" },
+    jobProfile: { profileId: "negnek", course: "", designation: "", jobDescription: { description: "", attachFile: false, file: "" }, ctc: "", takeHome: "", perks: "", trainingPeriod: "", placeOfPosting: "", jobType: "", stipend: "", internDuration: "" },
+    eligibleBranchesForProfiles: [{ profileId: "negnek", branches: { 
+      btech: btech.map(branch => ({ name: branch, eligible: false })), 
+      mtech: mtech.map(({ dept, spl }) => ({ department:dept, specialization:spl, eligible:false})), 
+      msc: msc.map(({ dept, spl }) => ({ department:dept, specialization:spl, eligible:false})), 
+      phd: phd.map(({ dept, spl }) => ({ department:dept, specialization:spl, eligible:false}))
+    }}],
+    selectionProcess: [{ profileId: "negnek", rounds: [{ roundNumber: 1, roundName: "", details: "" }], expectedRecruits: "", tentativeDate: "" }],
+    eligibilityCriteria: { minCgpa: "", backlogAllowed: "" },
+    bondDetails: { hasBond: false, details: "" },
+    pointOfContact: [{ name: "", designation: "", mobile: "", email: "" }],
+    applicationDetails: { applicationDeadline: "", applicationLink: "" },
+    createdBy: "345678987653456789876534",
+    assignedUser: "345678987653456789876534",
+  });
 
-  const assignedDrives = PlacementData[0];
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success"
+  });
 
-  const validateForm = () => {
-    let tempErrors = {};
-
-    // Required Fields
-    if (!newPlacement.companyName) tempErrors.companyName = "Company Name is required";
-    if (!newPlacement.role) tempErrors.role = "Role is required";
-    if (!newPlacement.expectedJoiningDate) tempErrors.expectedJoiningDate = "Joining Date is required";
-    if (!newPlacement.aboutRole) tempErrors.aboutRole = "Role description is required";
-    if (!newPlacement.aboutCompany) tempErrors.aboutCompany = "Company description is required";
-    if (!newPlacement.eligibility) tempErrors.eligibility = "Eligibility criteria is required";
-
-    // Numeric Validations
-    if (!newPlacement.cgpa || isNaN(newPlacement.cgpa) || newPlacement.cgpa < 0 || newPlacement.cgpa > 10) {
-      tempErrors.cgpa = "Enter a valid CGPA (0-10)";
-    }
-    if (!newPlacement.backlogs || isNaN(newPlacement.backlogs) || newPlacement.backlogs < 0) {
-      tempErrors.backlogs = "Enter a valid number of backlogs (min 0)";
-    }
-
-    // Set errors and return validation status
-    setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0;
+  const handleChange = (e, path) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => {
+      const newData = { ...prev };
+      const keys = path.split(".");
+      let obj = newData;
+      for (let i = 0; i < keys.length - 1; i++) {
+        obj = obj[keys[i]];
+      }
+      obj[keys[keys.length - 1]] = type === "checkbox" ? checked : value;
+      return { ...newData };
+    });
   };
 
-  // Handle Submit with Validation
-  const handleSubmit = () => {
-    if (validateForm()) {
-      setConfirmDialogOpen(true);}
+  const validateStep = () => {
+    switch (activeStep) {
+      case 0:
+        if (!formData.companyDetails.name || !formData.companyDetails.email || !formData.companyDetails.companyType || !formData.companyDetails.domain) {
+          setNotification({
+            open: true,
+            message: "Please fill all required company details",
+            severity: "error"
+          });
+          return false;
+        }
+        break;
+      case 1:
+        if (!formData.jobProfile.profileId || !formData.jobProfile.course || !formData.jobProfile.jobType) {
+          setNotification({
+            open: true,
+            message: "Please fill all required job details",
+            severity: "error"
+          });
+          return false;
+        }
+        break;
+      case 2:
+        if (!formData.eligibilityCriteria.minCgpa || !formData.eligibilityCriteria.backlogAllowed) {
+          setNotification({
+            open: true,
+            message: "Please fill all eligibility criteria",
+            severity: "error"
+          });
+          return false;
+        }
+        break;
+      case 3:
+        if (!formData.pointOfContact[0].name || !formData.pointOfContact[0].email) {
+          setNotification({
+            open: true,
+            message: "Please fill at least one point of contact",
+            severity: "error"
+          });
+          return false;
+        }
+        break;
+      case 4:
+        if (!formData.placementDrive_title || !formData.applicationDetails.applicationDeadline) {
+          setNotification({
+            open: true,
+            message: "Please fill drive title and application deadline",
+            severity: "error"
+          });
+          return false;
+        }
+        break;
+    }
+    return true;
   };
 
   const handleNext = () => {
-    if (activeStep === steps.length - 1) {
-      if (validateForm()) handleAddPlacement();
-    } else {
-      setActiveStep((prevStep) => prevStep + 1);
+    if (validateStep()) {
+      setActiveStep(prev => prev + 1);
     }
   };
 
-  const handleBack = () => {
-    setActiveStep((prevStep) => prevStep - 1);
+  const handleConfirm = async (e) => {
+    e.preventDefault();
+    if (!validateStep()) return;
+
+    try {
+      await placementService.createPlacementDrive(formData);
+      handleClose();
+      setConfirmDialog(false);
+      setNotification({
+        open: true,
+        message: "Placement drive created successfully!",
+        severity: "success"
+      });
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      let errorMessage = "Error creating placement drive. ";
+      
+      // Handle specific error cases
+      if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else {
+        errorMessage += "Please try again.";
+      }
+
+      setNotification({
+        open: true,
+        message: errorMessage,
+        severity: "error"
+      });
+    }
   };
 
-  const handleConfirm = () => {
-    setConfirmDialogOpen(false);
-    handleAddPlacement();
+  const handleSubmit =  ()=> {
+      setConfirmDialog(true);
   };
 
-  const handleAssign = () => {
-    setAssignDialogOpen(true);
+
+  const handleNotificationClose = () => {
+    setNotification(prev => ({ ...prev, open: false }));
+    window.location.reload();
   };
+
+  const handleBack = () => setActiveStep(prev => prev - 1);
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Add Placement Drive</DialogTitle>
-      <DialogContent>
-        <Stepper activeStep={activeStep} alternativeLabel>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-        {activeStep === 0 && (
-          <Box>
-        <FormControl fullWidth margin="dense" size='small'>
-          <InputLabel>Select JNF</InputLabel>
-          <Select value={selectedJNF} onChange={handleJNFSelect} label="Select JNF">
-            {acceptedJNFs.map((jnf) => (
-              <MenuItem key={jnf.id} value={jnf.id}>{jnf.name} - {jnf.jobProfiles[0]?.designation}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <TextField
-          margin="dense"
-          name="title"
-          label="Title"
-          fullWidth
-          required
-          value={newPlacement.title}
-          onChange={handleChange}
-          error={!!errors.title}
-          helperText={errors.title}
-        />
-
-        <FormControl fullWidth margin="dense" size='small'>
-          <InputLabel>Placement Type</InputLabel>
-          <Select value={newPlacement.type} onChange={handleChange} label="Placement Type">
-            <MenuItem value="FullTime">Full Time</MenuItem>
-            <MenuItem value="FullTime + Internship">Full Time + Internship</MenuItem>
-            <MenuItem value="Internship + PPO">Internship + PPO</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl fullWidth margin="dense" size='small'>
-          <InputLabel>Program</InputLabel>
-          <Select value={newPlacement.program} onChange={handleChange} label="Program">
-            <MenuItem value="B.Tech">UG</MenuItem>
-            <MenuItem value="M.Tech">PG</MenuItem>
-            <MenuItem value="MCA">PHD</MenuItem>
-          </Select>
-        </FormControl>
-
-        <Autocomplete
-          multiple
-          options={courses}
-          value={newPlacement.courses}
-          onChange={(e, newValue) => handleChange({ target: { name: 'courses', value: newValue } })}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => (
-              <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-            ))
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              margin="dense"
-              label="Courses"
-              placeholder="Select Courses"
-            />
-          )}
-        />
-  
-        <FormControl fullWidth margin="dense" size='small'>
-          <InputLabel>Year</InputLabel>
-          <Select value={newPlacement.year} onChange={handleChange} label="Year">
-            <MenuItem value="3">3rd Year</MenuItem>
-            <MenuItem value="4">4th Year</MenuItem>
-          </Select>
-        </FormControl>
-        </Box>
-        )}
-
-        {activeStep === 1 && (
-        <>
-        <Typography variant="h5" sx={{ mt: 2 , mb: 1}}>
-          Company Details
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2,}}>
-        <TextField
-          width= '50%'
-          autoFocus
-          margin="dense"
-          name="companyName"
-          label="Company Name"
-          required
-          value={newPlacement.companyName}
-          onChange={handleChange}
-          error={!!errors.companyName}
-          helperText={errors.companyName}
-        />
-        <TextField
-          autoFocus
-          width= '50%'
-          margin="dense"
-          name="companyType"
-          label="Company Type"
-          required
-          value={newPlacement.companyType}
-          onChange={handleChange}
-          error={!!errors.companyType}
-          helperText={errors.companyType}
-        />
-
-        </Box>
-
-        <TextField
-          margin="dense"
-          name="companyDescription"
-          label="Company Description"
-          multiline
-          rows={4}
-          fullWidth
-          required
-          value={newPlacement.companyDescription}
-          onChange={handleChange}
-          error={!!errors.companyDescription}
-          helperText={errors.companyDescription}
-        />
-        </>
-        )}
-        {activeStep === 2 && (
-        <>
-        <Typography variant="h5" sx={{ mt: 2 , mb: 1}}>
-          Job Details
-        </Typography>
-
-        <FormControl fullWidth margin="dense" size='small'>
-          <InputLabel>Job Role</InputLabel>
-          <Select value={newPlacement.jobRole} onChange={handleChange} label="Job Role">
-            <MenuItem value="Software Developer">Software Developer</MenuItem>
-            <MenuItem value="Data Analyst">Data Analyst</MenuItem>
-          </Select>
-        </FormControl>
-
-      <TextField
-          margin="dense"
-          name="aboutRole"
-          label="About the Role"
-          multiline
-          rows={4}
-          fullWidth
-          required
-          value={newPlacement.aboutRole}
-          onChange={handleChange}
-          error={!!errors.aboutRole}
-          helperText={errors.aboutRole}
-        />
-
-        <FormControl
-           fullWidth margin="dense" size='small'
-        >
-          <InputLabel>Job Location</InputLabel>
-          <Select
-            value={newPlacement.location}
-            onChange={handleChange}
-            error={!!errors.location}
-            helperText={errors.location}
-            label="Job Location"
-          >
-            {locationOptions.map((location) => (
-              <MenuItem key={location} value={location}>{location}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField margin="dense" name="ctc" label="CTC (LPA)" type="number" fullWidth required value={newPlacement.ctc} onChange={handleChange} error={!!errors.ctc} helperText={errors.ctc} />
-        <TextField margin="dense" name="baseSalary" label="Base Salary (LPA)" type="number" fullWidth required value={newPlacement.baseSalary} onChange={handleChange} error={!!errors.baseSalary} helperText={errors.baseSalary} />
-        <TextField margin="dense" name="stipend" label="Stiped (per month)" type="number" fullWidth required value={newPlacement.stipend} onChange={handleChange} error={!!errors.bonus} helperText={errors.bonus} />
-        <TextField
-          margin="dense"
-          name="expectedJoiningDate"
-          label="Expected Date of Joining"
-          type="date"
-          fullWidth
-          required
-          InputLabelProps={{ shrink: true }}
-          value={newPlacement.expectedJoiningDate}
-          onChange={handleChange}
-          error={!!errors.expectedJoiningDate}
-          helperText={errors.expectedJoiningDate}
-        />
-        </>
-        )}
-
-        {activeStep === 3 && (
-        <>
-        <Typography variant="h5" sx={{ mt: 2 , mb: 1}}>
-          Eligibility Criteria
-        </Typography>
-        <Autocomplete
-          multiple
-          options={branchOptions}
-          value={newPlacement.eligibleBranches}
-          onChange={(e, newValue) => handleChange({ target: { name: 'eligibleBranches', value: newValue } })}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => (
-              <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-            ))
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              margin="dense"
-              label="Eligible Branches"
-              placeholder="Select Branches"
-            />
-          )}
-        />
-        
-        <TextField
-          margin="dense"
-          name="cgpa"
-          label="Minimum CGPA Required"
-          type="number"
-          fullWidth
-          required
-          InputProps={{ inputProps: { min: 0, max: 10, step: 0.1 } }}
-          value={newPlacement.cgpa}
-          onChange={handleChange}
-          error={!!errors.cgpa}
-          helperText={errors.cgpa}
-        />
-        
-        <TextField
-          margin="dense"
-          name="backlogs"
-          label="Maximum Backlogs Allowed"
-          type="number"
-          fullWidth
-          required
-          InputProps={{ inputProps: { min: 0 } }}
-          value={newPlacement.backlogs}
-          onChange={handleChange}
-          error={!!errors.backlogs}
-          helperText={errors.backlogs}
-        />
-
-        <TextField
-        margin='dense'
-        name='otherEligibility'
-        label='Other Eligibility Criteria'
-        fullWidth
-        value={newPlacement.otherEligibility}
-        onChange={handleChange}
-        error={!!errors.otherEligibility}
-        helperText={errors.otherEligibility}
-      />
-        </>
-        )}
-
-        {activeStep === 4 && (
-        <>
-        <Typography variant="h5" sx={{ mt: 2 , mb: 1}}>
-          Selection Rounds
-        </Typography>
-        <Autocomplete
-          multiple
-          options={selectionRounds}
-          value={newPlacement.selectionRounds}
-          onChange={(e, newValue) => handleChange({ target: { name: 'selectionRounds', value: newValue } })}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => (
-              <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-            ))
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              margin="dense"
-              label="Selection Rounds"
-              placeholder="Selection Rounds"
-            />
-          )}
-        />
-        <Typography variant="h5" sx={{ mt: 2 , mb: 1}}>
-          Application Details
-        </Typography>
-        <TextField
-          margin="dense"
-          name="applicationDeadline"
-          label="Application Deadline"
-          type="date"
-          fullWidth
-          required
-          InputLabelProps={{ shrink: true }}
-          value={newPlacement.applicationDeadline}
-          onChange={handleChange}
-          error={!!errors.applicationDeadline}
-          helperText={errors.applicationDeadline}
-        />
-        <TextField
-          margin="dense"
-          name="applicationLink"
-          label="Application Link"
-          fullWidth
-          required
-          value={newPlacement.applicationLink}
-          onChange={handleChange}
-          error={!!errors.applicationLink}
-          helperText={errors.applicationLink}
-        />
-        </>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        {activeStep !== 0 && <Button onClick={handleBack}>Back</Button>}
-        {activeStep === steps.length - 1 ? (
-          <>
-          <Button onClick={handleSubmit} color="primary">Add</Button>
-          <Button onClick={handleAssign} color="primary">Assign</Button>
-          </>
-        ) : (
-          <Button onClick={handleNext} color="primary">Next</Button>
-        )}
-      </DialogActions>
-      
-      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
-        <DialogTitle>Confirm Placement Addition</DialogTitle>
+    <>
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+        <DialogTitle variant="h5">Add Placement Drive</DialogTitle>
         <DialogContent>
-          Are you sure you want to add this placement drive?
+          <Stepper activeStep={activeStep} alternativeLabel>
+            {steps.map(label => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        <Container>
+        {activeStep === 0 && (
+          <>
+            <Typography sx={{ mt: 4, mb: 2 }} variant="h5" color="primary">
+              Company Details
+            </Typography>
+            <Grid container spacing={2}>
+              {[
+                { label: "Company Name", name: "name", value: formData.companyDetails.name, required: true, fullWidth: true },
+                { label: "Email", name: "email", value: formData.companyDetails.email, required: true },
+                { label: "Website", name: "website", value: formData.companyDetails.website },
+                { label: "Company Type", name: "companyType", value: formData.companyDetails.companyType, options: COMPANY_TYPES, select: true, required: true },
+                { label: "Domain", name: "domain", value: formData.companyDetails.domain, options: COMPANY_DOMAINS, select: true, required: true },
+                { label: "Description", name: "description", value: formData.companyDetails.description, multiline: true, rows: 4, fullWidth: true }
+              ].map(({ label, name, value, options, select, required, multiline, rows, fullWidth }, index) => (
+                <Grid item xs={12} sm={fullWidth ? 12 : 6} key={index}>
+                  <TextField
+                    label={label}
+                    fullWidth
+                    name={name}
+                    value={value}
+                    onChange={(e) => handleChange(e, `companyDetails.${name}`)}
+                    select={select}
+                    required={required}
+                    multiline={multiline}
+                    rows={rows}
+                  >
+                    {select && Object.values(options).map((option) => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              ))}
+            </Grid>
+          </>
+        )}
+        {activeStep === 1 && (
+          <Container sx={{ mt: 4 }}>
+            <Typography variant="h5" sx={{ my: 2 }} color="primary">
+              Job Details
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Profile ID" fullWidth name="profileId" value={formData.jobProfile.profileId} onChange={(e) => handleChange(e, "jobProfile.profileId")} required />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Designation" fullWidth name="designation" value={formData.jobProfile.designation} onChange={(e) => handleChange(e, "jobProfile.designation")} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField select label="Course" fullWidth name="course" value={formData.jobProfile.course} onChange={(e) => handleChange(e, "jobProfile.course")} required>
+                  {["btech", "mtech", "msc", "phd"].map((course) => (
+                    <MenuItem key={course} value={course}>{course}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField select label="Job Type" fullWidth name="jobType" value={formData.jobProfile.jobType} onChange={(e) => handleChange(e, "jobProfile.jobType")} required>
+                  {Object.entries(JOB_TYPES).map(([key, value]) => (
+                    <MenuItem key={value} value={value}>{key}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField label="Job Description" fullWidth multiline rows={3} name="description" value={formData.jobProfile.jobDescription.description} onChange={(e) => handleChange(e, "jobProfile.jobDescription.description")} />
+              </Grid>
+              {["CTC", "Take Home Salary", "Training Period", "Place of Posting"].map((field, index) => (
+                <Grid item xs={12} sm={6} key={index}>
+                  <TextField label={field} fullWidth type={field.includes("Salary") ? "number" : "text"} name={field.toLowerCase().replace(/\s/g, '')} value={formData.jobProfile[field.toLowerCase().replace(/\s/g, '')]} onChange={(e) => handleChange(e, `jobProfile.${field.toLowerCase().replace(/\s/g, '')}`)} />
+                </Grid>
+              ))}
+              {formData.jobProfile.jobType !== JOB_TYPES.FTE && (
+                <>
+                  {["Stipend", "Intern Duration"].map((field, index) => (
+                    <Grid item xs={12} sm={6} key={index}>
+                      <TextField label={field} fullWidth name={field.toLowerCase().replace(/\s/g, '')} value={formData.jobProfile[field.toLowerCase().replace(/\s/g, '')]} onChange={(e) => handleChange(e, `jobProfile.${field.toLowerCase().replace(/\s/g, '')}`)} />
+                    </Grid>
+                  ))}
+                </>
+              )}
+              <Grid item xs={12}>
+                <TextField label="Perks" fullWidth name="perks" value={formData.jobProfile.perks} onChange={(e) => handleChange(e, "jobProfile.perks")} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel control={<Checkbox checked={formData.jobProfile.jobDescription.attachFile} onChange={(e) => handleChange(e, "jobProfile.jobDescription.attachFile")} />} label="Attach File" />
+              </Grid>
+              {formData.jobProfile.jobDescription.attachFile && (
+                <Grid item xs={12} sm={6}>
+                  <TextField label="File URL" fullWidth name="file" value={formData.jobProfile.jobDescription.file} onChange={(e) => handleChange(e, "jobProfile.jobDescription.file")} required />
+                </Grid>
+              )}
+            </Grid>
+          </Container>
+        )}
+          {activeStep === 2 && (
+            <>
+              {formData.eligibleBranchesForProfiles.map((profile) =>
+                profile.profileId === formData.jobProfile.profileId ? (
+                  <Container key={profile.profileId} sx={{ mt: 4 }}>
+                    <Typography variant="h5" sx={{ my: 2 }} color="primary">
+                      Eligible Branches for {formData.jobProfile.course.toUpperCase()}
+                    </Typography>
+
+                    {formData.jobProfile.course === COURSES.BTECH &&
+                      profile.branches.btech.map((branch, index) => (
+                        <FormControlLabel
+                          key={branch.name}
+                          control={
+                            <Checkbox
+                              checked={branch.eligible}
+                              onChange={(e) => handleChange(e, `eligibleBranchesForProfiles.0.branches.btech.${index}.eligible`)}
+                            />
+                          }
+                          label={branch.name}
+                        />
+                      ))}
+                    {formData.jobProfile.course === COURSES.MTECH && (
+                      profile?.branches?.mtech?.length > 0 ? (
+                        profile.branches.mtech.map(({ department, specialization, eligible }, deptIndex) => (
+                          <Box key={department} sx={{ mb: 2 }}>
+                            <Typography variant="h6" color="secondary">{department}</Typography>
+                            <FormControlLabel
+                              key={specialization}
+                              control={
+                                <Checkbox
+                                  checked={eligible || false} // Ensure eligible is not undefined
+                                  onChange={(e) =>
+                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.mtech.${deptIndex}.eligible`)
+                                  }
+                                />
+                              }
+                              label={specialization} // Display specialization name as label
+                            />
+                          </Box>
+                        ))
+                      ) : (
+                        <Typography variant="body1" color="textSecondary">
+                          No M.Tech branches available.
+                        </Typography>
+                      )
+                    )}
+
+                    {formData.jobProfile.course === COURSES.MSC && (
+                        profile.branches.msc.map(({ department, specialization, eligible }, deptIndex) => (
+                          <Box key={department} sx={{ mb: 2 }}>
+                            <Typography variant="h6" color="secondary">{department}</Typography>
+                            <FormControlLabel
+                              key={specialization}
+                              control={
+                                <Checkbox
+                                  checked={eligible || false} // Ensure eligible is not undefined
+                                  onChange={(e) =>
+                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.msc.${deptIndex}.eligible`)
+                                  }
+                                />
+                              }
+                              label={specialization} // Display specialization name as label
+                            />
+                          </Box>
+                        ))
+                    )}
+                    
+                    {formData.jobProfile.course === COURSES.PHD && (
+                        profile.branches.phd.map(({ department, specialization, eligible }, deptIndex) => (
+                          <Box key={department} sx={{ mb: 2 }}>
+                            <Typography variant="h6" color="secondary">{department}</Typography>
+                            <FormControlLabel
+                              key={specialization}
+                              control={
+                                <Checkbox
+                                  checked={eligible || false} // Ensure eligible is not undefined
+                                  onChange={(e) =>
+                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.phd.${deptIndex}.eligible`)
+                                  }
+                                />
+                              }
+                              label={specialization} // Display specialization name as label
+                            />
+                          </Box>
+                        ))
+                    )}
+
+
+                    {/* {formData.jobProfile.course === COURSES.PHD &&
+                      profile.branches.phd.map((dept, deptIndex) => (
+                        <Box key={dept.department} sx={{ mb: 2 }}>
+                          <Typography variant="h6" color="secondary">{dept.department}</Typography>
+                          {dept.specialization.map((spec, specIndex) => (
+                            <FormControlLabel
+                              key={spec.name}
+                              control={
+                                <Checkbox
+                                  checked={spec.eligible}
+                                  onChange={(e) =>
+                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.phd.${deptIndex}.specialization.${specIndex}.eligible`)
+                                  }
+                                />
+                              }
+                              label={spec.name}
+                            />
+                          ))}
+                        </Box>
+                      ))} */}
+                  </Container>
+                ) : null
+              )}
+
+
+              <Container sx={{ mt: 4 }}>
+                <Typography variant="h5" sx={{ my: 2 }} color="primary">
+                  Eligibility Criteria
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField label="Minimum CGPA" fullWidth margin="normal" type="number" value={formData.eligibilityCriteria.minCgpa} onChange={(e) => handleChange(e, "eligibilityCriteria.minCgpa")} required />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField label="Backlogs Allowed" fullWidth margin="normal" type="number" value={formData.eligibilityCriteria.backlogAllowed} onChange={(e) => handleChange(e, "eligibilityCriteria.backlogAllowed")} required />
+                  </Grid>
+                </Grid>
+                <TextField label="Other Eligibility Criteria" fullWidth margin="normal" value={formData.eligibilityCriteria.otherEligibility} onChange={(e) => handleChange(e, "eligibilityCriteria.otherEligibility")} />
+              </Container>
+            </>
+          )}
+          {activeStep === 3 && (
+            <>
+              <Typography sx={{ mt: 4 }} variant="h5" color="primary">Selection Process</Typography>
+              {formData.selectionProcess[0].rounds.map((round, index) => (
+                <Grid container spacing={2} key={index}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField label="Round Number" fullWidth margin="normal" type="number" value={round.roundNumber} onChange={(e) => handleChange(e, `selectionProcess.0.rounds.${index}.roundNumber`)} />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField select label="Round Name" fullWidth margin="normal" value={round.roundName} onChange={(e) => handleChange(e, `selectionProcess.0.rounds.${index}.roundName`)}>
+                      {Object.values(SELECTION_PROCESS_ROUNDS).map((roundName) => (
+                        <MenuItem key={roundName} value={roundName}>{roundName}</MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField label="Details" fullWidth margin="normal" value={round.details} onChange={(e) => handleChange(e, `selectionProcess.0.rounds.${index}.details`)} />
+                  </Grid>
+                </Grid>
+              ))}
+              <Button variant="outlined" sx={{ mt: 2 }} onClick={() => {
+                setFormData((prev) => ({
+                  ...prev,
+                  selectionProcess: [{ ...prev.selectionProcess[0], rounds: [...prev.selectionProcess[0].rounds, { roundNumber: prev.selectionProcess[0].rounds.length + 1, roundName: "", details: "" }] }]
+                }));
+              }}>
+                Add Round
+              </Button>
+
+              <Typography sx={{ mt: 4 }} variant="h5" color="primary">Point of Contact</Typography>
+              {formData.pointOfContact.map((poc, index) => (
+                <Grid container spacing={2} key={index}>
+                  <Grid item xs={12}><Typography variant="h6">Contact {index + 1}</Typography></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Name" fullWidth margin="normal" value={poc.name} onChange={(e) => handleChange(e, `pointOfContact.${index}.name`)} required /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Email" fullWidth margin="normal" value={poc.email} onChange={(e) => handleChange(e, `pointOfContact.${index}.email`)} required /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Designation" fullWidth margin="normal" value={poc.designation} onChange={(e) => handleChange(e, `pointOfContact.${index}.designation`)} /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Mobile" fullWidth margin="normal" type="tel" value={poc.mobile} onChange={(e) => handleChange(e, `pointOfContact.${index}.mobile`)} /></Grid>
+                </Grid>
+              ))}
+              <Button variant="outlined" sx={{ mt: 2 }} onClick={() => {
+                setFormData((prev) => ({ ...prev, pointOfContact: [...prev.pointOfContact, { name: "", designation: "", mobile: "", email: "" }] }));
+              }}>
+                Add Another Contact
+              </Button>
+            </>
+          )}
+        {activeStep === 4 && (
+          <Container>
+            <Typography sx={{ mt: 4 }} variant="h5" color="primary">Drive Title</Typography>
+            <TextField label="Placement Drive Title" fullWidth margin="normal" name="placementDrive_title" value={formData.placementDrive_title} onChange={(e) => handleChange(e, "placementDrive_title")} required />
+
+            <Typography sx={{ mt: 2 }} variant="h5" color="primary">Application Details</Typography>
+            <TextField label="Application Deadline" fullWidth margin="normal" type="date" name="applicationDeadline" value={formData.applicationDetails.applicationDeadline} onChange={(e) => handleChange(e, "applicationDetails.applicationDeadline")} InputLabelProps={{ shrink: true }} required />
+            <TextField label="Application Link" fullWidth margin="normal" name="applicationLink" value={formData.applicationDetails.applicationLink} onChange={(e) => handleChange(e, "applicationDetails.applicationLink")} />
+
+            <Typography variant="h5" sx={{ mt: 2 }} color="primary">Bond Details</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControlLabel control={<Checkbox checked={formData.bondDetails.hasBond} onChange={(e) => handleChange(e, "bondDetails.hasBond")} />} label="Does this job have a bond?" />
+              </Grid>
+              {formData.bondDetails.hasBond && (
+                <Grid item xs={12}>
+                  <TextField label="Bond Details" fullWidth multiline rows={3} name="details" value={formData.bondDetails.details} onChange={(e) => handleChange(e, "bondDetails.details")} required />
+                </Grid>
+              )}
+            </Grid>
+          </Container>
+        )}
+      </Container>
+      </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="secondary">Cancel</Button>
+          {activeStep > 0 && <Button onClick={handleBack}>Back</Button>}
+          {activeStep < steps.length - 1 ? <Button onClick={handleNext} color="primary" variant="contained">Next</Button> : <Button onClick={handleSubmit} color="primary" variant="contained">Submit</Button>}
+        </DialogActions>
+      </Dialog>
+      
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleNotificationClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleNotificationClose} 
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
+
+      <Dialog open={confirmDialog} onClose={() => setConfirmDialog(false)}>
+        <DialogTitle>Confirm Placement Drive</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to create this placement drive?</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setConfirmDialog(false)} color="secondary">Cancel</Button>
           <Button onClick={handleConfirm} color="primary">Confirm</Button>
         </DialogActions>
       </Dialog>
-
-      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
-        <DialogTitle>Confirm Placement Addition</DialogTitle>
-        <DialogContent>Are you sure you want to add this placement drive?</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleConfirm} color="primary">Confirm</Button>
-        </DialogActions>
-      </Dialog>
-
-      <AssignPlacementDialog
-        open={assignDialogOpen}
-        handleClose={() => setAssignDialogOpen(false)}
-        users={[
-          { id: 1, name: 'User 1', email: 'user1@example.com' },
-          { id: 2, name: 'User 2', email: 'user2@example.com' },
-          { id: 3, name: 'User 3', email: 'user3@example.com' },
-        ]}
-        handleAssign={handleAssign}
-      />
-
-      {assignedDrives.length > 0 && (
-        <Box sx={{ mt: 2, p: 2 }}>
-          <Typography variant="h6">Assigned Placement Drives</Typography>
-          <List>
-            {assignedDrives.map((drive, index) => (
-              <ListItem key={index}>
-                <ListItemText primary={`${drive.companyName} - ${drive.role}`} secondary={`Assigned to: ${drive.assignedUser}`} />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      )}
-    </Dialog>
+    </>
   );
 };
 
 export default AddPlacementDialog;
+

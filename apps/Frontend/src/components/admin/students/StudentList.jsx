@@ -33,7 +33,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material';
 import {
   Search,
@@ -46,7 +48,9 @@ import {
   Sort,
   Clear,
   Save,
-  MoreVert
+  MoreVert,
+  ViewList,
+  ViewModule
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -138,6 +142,12 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
   // Add state for tracking updates
   const [refreshData, setRefreshData] = useState(false);
 
+  // Add this new state
+  const [viewMode, setViewMode] = useState('table');
+
+  // Add this new state
+  const [filteredStudents, setFilteredStudents] = useState([]);
+
   // Modify the useEffect to respond to refreshData changes
   useEffect(() => {
     const fetchStudents = async () => {
@@ -159,6 +169,32 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
 
     fetchStudents();
   }, [filters, page, rowsPerPage, refreshData]);
+
+  // Then in the useEffect for filtering
+  useEffect(() => {
+    let filtered = [...students];
+    
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(student => {
+        const { personalInfo = {} } = student;
+        const searchLower = searchTerm.toLowerCase();
+        
+        // Search in multiple fields
+        return (
+          (personalInfo.name && personalInfo.name.toLowerCase().includes(searchLower)) ||
+          (personalInfo.email && personalInfo.email.toLowerCase().includes(searchLower)) ||
+          (personalInfo.rollNo && personalInfo.rollNo.toLowerCase().includes(searchLower)) ||
+          (personalInfo.department && personalInfo.department.toLowerCase().includes(searchLower))
+        );
+      });
+    }
+    
+    // Apply other filters (keep existing filter logic)
+    // ...
+    
+    setFilteredStudents(filtered);
+  }, [students, searchTerm, filters]); // Make sure searchTerm is in the dependency array
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({
@@ -487,34 +523,19 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
     </Box>
   );
 
-  // Apply filtering logic
-  const filteredStudents = students.filter(student => {
-    const { personalInfo, academics } = student;
-
-    // Example filter conditions
-    const matchesSearch = filters.search ? personalInfo.name.toLowerCase().includes(filters.search.toLowerCase()) : true;
-    const matchesBatch = filters.batch.length ? filters.batch.includes(academics.batch) : true;
-    const matchesBranch = filters.branch.length ? filters.branch.includes(academics.branch) : true;
-    const matchesCGPA = filters.cgpaRange ? (academics.cgpa >= filters.cgpaRange[0] && academics.cgpa <= filters.cgpaRange[1]) : true;
-
-    return matchesSearch && matchesBatch && matchesBranch && matchesCGPA;
-  });
-
-  // Filter students based on search term
-  const searchFilteredStudents = filteredStudents.filter(student => {
-    const rollNumber = String(student.personalInfo.rollNumber).toLowerCase();
-    const name = student.personalInfo.name.toLowerCase();
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return rollNumber.includes(lowerCaseSearchTerm) || name.includes(lowerCaseSearchTerm);
-  });
+  // Add this new handler
+  const handleViewModeChange = (event, newMode) => {
+    if (newMode !== null) {
+      setViewMode(newMode);
+    }
+  };
 
   return (
     <Grid container spacing={3}>
-      {/* Search and Filters */}
       <Grid item xs={12}>
         <Card>
           <CardContent>
-            <Box display="flex" gap={2} alignItems="center">
+            <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
               <TextField
                 placeholder="Search students..."
                 value={searchTerm}
@@ -528,20 +549,47 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
                 }}
                 sx={{ flexGrow: 1 }}
               />
-              <Button
-                variant="outlined"
-                startIcon={<FilterList />}
-                onClick={() => setDrawerOpen(true)}
-              >
-                Filters
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<Download />}
-                onClick={handleExport}
-              >
-                Export
-              </Button>
+              
+              <Box display="flex" gap={2} alignItems="center">
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={handleViewModeChange}
+                  size="small"
+                  sx={{
+                    '& .MuiToggleButton-root': {
+                      border: 'none',
+                      '&.Mui-selected': {
+                        bgcolor: theme => theme.palette.mode === 'dark'
+                          ? 'rgba(255,255,255,0.08)'
+                          : 'rgba(25, 118, 210, 0.08)',
+                      }
+                    }
+                  }}
+                >
+                  <ToggleButton value="table" aria-label="table view">
+                    <ViewList />
+                  </ToggleButton>
+                  <ToggleButton value="card" aria-label="card view">
+                    <ViewModule />
+                  </ToggleButton>
+                </ToggleButtonGroup>
+                
+                <Button
+                  variant="outlined"
+                  startIcon={<FilterList />}
+                  onClick={() => setDrawerOpen(true)}
+                >
+                  Filters
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<Download />}
+                  onClick={handleExport}
+                >
+                  Export
+                </Button>
+              </Box>
             </Box>
 
             {/* Active Filters Display */}
@@ -557,6 +605,16 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
                         handleFilterChange(key, newValue);
                       }}
                       size="small"
+                      sx={{
+                        bgcolor: theme => theme.palette.mode === 'dark' 
+                          ? 'rgba(255,255,255,0.05)' 
+                          : 'rgba(25, 118, 210, 0.08)',
+                        '& .MuiChip-deleteIcon': {
+                          color: theme => theme.palette.mode === 'dark'
+                            ? 'rgba(255,255,255,0.7)'
+                            : theme.palette.primary.main
+                        }
+                      }}
                     />
                   ));
                 }
@@ -581,95 +639,407 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
                 {successMessage}
               </Alert>
             )}
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Student</TableCell>
-                  <TableCell>Roll No</TableCell>
-                  <TableCell>Batch</TableCell>
-                  <TableCell>Branch</TableCell>
-                  <TableCell>CGPA</TableCell>
-                  <TableCell>Placement Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {searchFilteredStudents.length > 0 ? (
-                  searchFilteredStudents.map((student) => {
-                    const { personalInfo, academics } = student;
-                    return(
-                    <TableRow key={student._id}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar 
-                            src={student.personalInfo?.photo} 
-                            alt={student.personalInfo?.name}
-                            onClick={() => handleProfileClick(student)}
-                            sx={{ 
-                              cursor: 'pointer',
-                              '&:hover': {
-                                opacity: 0.8,
-                                transform: 'scale(1.1)',
-                                transition: 'all 0.2s ease-in-out'
-                              }
-                            }}
-                          />
-                          <Typography>{student.personalInfo?.name}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography>{student.personalInfo.rollNumber}</Typography>
-                      </TableCell>
-                      <TableCell>
-                      <Typography>{personalInfo?.batch || "N/A"}</Typography>
-                      </TableCell>
-                      <TableCell>
-                      <Typography>{personalInfo?.department || "N/A"}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography>{student.academics.cgpa}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={student.verificationStatus || "N/A"}
-                          color={student.verificationStatus === "verified" ? "success" : "default"}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box display="flex" gap={1}>
-                          <Tooltip title="Edit">
-                            <IconButton onClick={(e) => handleEditClick(student, e)}>
-                              <Edit />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Send Email">
-                            <IconButton onClick={(e) => handleSendEmail(student, e)}>
-                              <Mail />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Debar Student">
-                            <IconButton 
-                              onClick={() => handleDebarClick(student._id)}
-                              sx={{ color: 'error.main' }}
-                            >
-                              <Block />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
+            
+            {viewMode === 'table' ? (
+              // Enhanced Table View
+              <Box sx={{ 
+                overflowX: 'auto',
+                '& .MuiTable-root': {
+                  borderCollapse: 'separate',
+                  borderSpacing: '0 8px'
+                }
+              }}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{
+                      '& th': {
+                        fontWeight: 600,
+                        color: theme => theme.palette.mode === 'dark' 
+                          ? 'rgba(255,255,255,0.7)' 
+                          : theme.palette.primary.main,
+                        borderBottom: theme => `2px solid ${
+                          theme.palette.mode === 'dark' 
+                            ? 'rgba(255,255,255,0.1)' 
+                            : theme.palette.primary.light
+                        }`,
+                        py: 1.5
+                      }
+                    }}>
+                      <TableCell>Student</TableCell>
+                      <TableCell>Roll No.</TableCell>
+                      <TableCell>Batch</TableCell>
+                      <TableCell>Branch</TableCell>
+                      <TableCell>CGPA</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="center">Actions</TableCell>
                     </TableRow>
-                  )})
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      <Typography>No students found</Typography>
-                    </TableCell>
-                  </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredStudents.map((student) => {
+                      const { personalInfo = {}, academics = {} } = student;
+                      return (
+                        <TableRow 
+                          key={student._id}
+                          sx={{
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              bgcolor: theme => theme.palette.mode === 'dark' 
+                                ? 'rgba(255,255,255,0.03)' 
+                                : 'rgba(25, 118, 210, 0.04)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: theme => theme.palette.mode === 'dark'
+                                ? '0 4px 12px rgba(0,0,0,0.2)'
+                                : '0 4px 12px rgba(0,0,0,0.05)',
+                            },
+                            '& td': {
+                              borderBottom: theme => `1px solid ${
+                                theme.palette.mode === 'dark' 
+                                  ? 'rgba(255,255,255,0.05)' 
+                                  : 'rgba(0,0,0,0.05)'
+                              }`,
+                              py: 1.5
+                            },
+                            '&:last-child td': {
+                              borderBottom: 'none'
+                            }
+                          }}
+                          onClick={() => handleProfileClick(student)}
+                        >
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={2}>
+                              <Avatar 
+                                src={personalInfo.profilePicture} 
+                                alt={personalInfo.name}
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  bgcolor: theme => theme.palette.primary.main,
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                }}
+                              >
+                                <Person />
+                              </Avatar>
+                              <Box>
+                                <Typography 
+                                  variant="subtitle2" 
+                                  sx={{ 
+                                    fontWeight: 600,
+                                    color: theme => theme.palette.mode === 'dark' 
+                                      ? '#fff' 
+                                      : '#1a1a1a'
+                                  }}
+                                >
+                                  {personalInfo.name || "N/A"}
+                                </Typography>
+                                <Typography 
+                                  variant="caption" 
+                                  sx={{ 
+                                    color: theme => theme.palette.mode === 'dark'
+                                      ? 'rgba(255,255,255,0.7)'
+                                      : 'rgba(0,0,0,0.6)'
+                                  }}
+                                >
+                                  {personalInfo.email || "N/A"}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {personalInfo.rollNo || "N/A"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {personalInfo.batch || "N/A"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {personalInfo.department || "N/A"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography 
+                              variant="body2" 
+                              fontWeight={600}
+                              sx={{
+                                color: theme => {
+                                  const cgpa = parseFloat(academics?.cgpa);
+                                  if (cgpa >= 8.5) return theme.palette.success.main;
+                                  if (cgpa >= 7.5) return theme.palette.info.main;
+                                  if (cgpa < 7.5) return theme.palette.mode === 'dark' 
+                                    ? '#ff5252'  // Bright red for dark mode
+                                    : '#d32f2f'; // Darker red for light mode
+                                  return theme.palette.text.primary;
+                                }
+                              }}
+                            >
+                              {academics?.cgpa || "N/A"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={student.verificationStatus || "N/A"}
+                              color={student.verificationStatus === "verified" ? "success" : "default"}
+                              size="small"
+                              sx={{ 
+                                fontWeight: 500,
+                                textTransform: 'capitalize',
+                                '& .MuiChip-label': { px: 1 }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" justifyContent="center" gap={1}>
+                              <Tooltip title="Edit">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditClick(student, e);
+                                  }}
+                                >
+                                  <Edit fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Send Email">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSendEmail(student, e);
+                                  }}
+                                >
+                                  <Mail fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Debar Student">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDebarClick(student._id);
+                                  }}
+                                  sx={{ 
+                                    color: '#d32f2f'
+                                  }}
+                                >
+                                  <Block fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                {filteredStudents.length === 0 && (
+                  <Box p={4} textAlign="center">
+                    <Typography>No students found</Typography>
+                  </Box>
                 )}
-              </TableBody>
-            </Table>
-
+              </Box>
+            ) : (
+              // Card View (new)
+              <Grid container spacing={3}>
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => {
+                    const { personalInfo, academics } = student;
+                    return (
+                      <Grid item xs={12} sm={6} md={4} lg={3} key={student._id}>
+                        <Card 
+                          elevation={0}
+                          sx={{
+                            height: '100%',
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: theme => theme.palette.mode === 'dark' 
+                              ? 'rgba(255, 255, 255, 0.1)' 
+                              : 'rgba(0, 0, 0, 0.08)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              transform: 'translateY(-4px)',
+                              boxShadow: theme => theme.palette.mode === 'dark'
+                                ? '0 4px 20px rgba(0, 0, 0, 0.5)'
+                                : '0 4px 20px rgba(25, 118, 210, 0.15)',
+                            }
+                          }}
+                        >
+                          <CardContent sx={{ p: 3 }}>
+                            <Box 
+                              display="flex" 
+                              flexDirection="column" 
+                              alignItems="center" 
+                              mb={2}
+                            >
+                              <Avatar 
+                                src={personalInfo?.photo} 
+                                alt={personalInfo?.name}
+                                onClick={() => handleProfileClick(student)}
+                                sx={{ 
+                                  width: 80,
+                                  height: 80,
+                                  mb: 2,
+                                  cursor: 'pointer',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  border: '3px solid',
+                                  borderColor: theme => theme.palette.mode === 'dark'
+                                    ? 'rgba(255,255,255,0.1)'
+                                    : theme.palette.primary.main,
+                                  '&:hover': {
+                                    transform: 'scale(1.05)',
+                                    transition: 'all 0.2s ease-in-out'
+                                  }
+                                }}
+                              />
+                              <Typography 
+                                variant="h6" 
+                                align="center"
+                                sx={{ 
+                                  fontWeight: 600,
+                                  mb: 0.5
+                                }}
+                              >
+                                {personalInfo?.name}
+                              </Typography>
+                              <Typography 
+                                variant="body2" 
+                                color="textSecondary" 
+                                align="center"
+                              >
+                                {personalInfo?.rollNumber}
+                              </Typography>
+                            </Box>
+                            
+                            <Box 
+                              sx={{
+                                display: 'grid',
+                                gap: 1.5,
+                                mb: 2,
+                                p: 2,
+                                borderRadius: 1,
+                                bgcolor: theme => theme.palette.mode === 'dark'
+                                  ? 'rgba(255,255,255,0.03)'
+                                  : 'rgba(25, 118, 210, 0.04)'
+                              }}
+                            >
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="body2" color="textSecondary">
+                                  Batch
+                                </Typography>
+                                <Typography variant="body2" fontWeight={500}>
+                                  {personalInfo?.batch || "N/A"}
+                                </Typography>
+                              </Box>
+                              
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="body2" color="textSecondary">
+                                  Branch
+                                </Typography>
+                                <Typography variant="body2" fontWeight={500}>
+                                  {personalInfo?.department || "N/A"}
+                                </Typography>
+                              </Box>
+                              
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="body2" color="textSecondary">
+                                  CGPA
+                                </Typography>
+                                <Typography 
+                                  variant="body2" 
+                                  fontWeight={600}
+                                  sx={{
+                                    color: theme => {
+                                      const cgpa = parseFloat(academics?.cgpa);
+                                      if (cgpa >= 8.5) return theme.palette.success.main;
+                                      if (cgpa >= 7.5) return theme.palette.info.main;
+                                      if (cgpa < 7.5) return theme.palette.mode === 'dark' 
+                                        ? '#ff5252'  // Bright red for dark mode
+                                        : '#d32f2f'; // Darker red for light mode
+                                      return theme.palette.text.primary;
+                                    }
+                                  }}
+                                >
+                                  {academics?.cgpa || "N/A"}
+                                </Typography>
+                              </Box>
+                              
+                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                                <Typography variant="body2" color="textSecondary">
+                                  Status
+                                </Typography>
+                                <Chip
+                                  label={student.verificationStatus || "N/A"}
+                                  color={student.verificationStatus === "verified" ? "success" : "default"}
+                                  size="small"
+                                  sx={{ 
+                                    fontWeight: 500,
+                                    textTransform: 'capitalize',
+                                    '& .MuiChip-label': { px: 1 }
+                                  }}
+                                />
+                              </Box>
+                            </Box>
+                            
+                            <Box 
+                              display="flex" 
+                              justifyContent="center" 
+                              gap={1}
+                              sx={{
+                                '& .MuiIconButton-root': {
+                                  color: theme => theme.palette.mode === 'dark'
+                                    ? 'rgba(255,255,255,0.7)'
+                                    : theme.palette.primary.main,
+                                  '&:hover': {
+                                    bgcolor: theme => theme.palette.mode === 'dark'
+                                      ? 'rgba(255,255,255,0.05)'
+                                      : 'rgba(25, 118, 210, 0.08)'
+                                  }
+                                }
+                              }}
+                            >
+                              <Tooltip title="Edit">
+                                <IconButton onClick={(e) => handleEditClick(student, e)}>
+                                  <Edit />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Send Email">
+                                <IconButton onClick={(e) => handleSendEmail(student, e)}>
+                                  <Mail />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Debar Student">
+                                <IconButton 
+                                  onClick={() => handleDebarClick(student._id)}
+                                  sx={{ 
+                                    color: '#d32f2f !important',
+                                    '&:hover': {
+                                      bgcolor: 'rgba(211,47,47,0.1) !important',
+                                    }
+                                  }}
+                                >
+                                  <Block />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    );
+                  })
+                ) : (
+                  <Grid item xs={12}>
+                    <Box p={4} textAlign="center">
+                      <Typography>No students found</Typography>
+                    </Box>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+            
             <TablePagination
               component="div"
               count={100}

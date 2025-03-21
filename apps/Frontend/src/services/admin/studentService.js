@@ -8,10 +8,9 @@ const studentService = {
   },
 
   getStudentById: async (id) => {
+    console.log("get student ");
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/v1/students/profile/${id}`
-      );
+      const response = await axios.get(`${API_BASE_URL}/student/profile/${id}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -36,7 +35,7 @@ const studentService = {
       }
     });
 
-    const response = await axios.post(`${API_BASE_URL}/students`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/student`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
@@ -55,7 +54,7 @@ const studentService = {
     });
 
     const response = await axios.put(
-      `${API_BASE_URL}/students/${id}`,
+      `${API_BASE_URL}/student/${id}`,
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
@@ -67,7 +66,7 @@ const studentService = {
   deleteStudent: async (studentId, reason) => {
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}/api/v1/students/delete/${studentId}`,
+        `${API_BASE_URL}/student/delete/${studentId}`,
         {
           data: { reason },
         }
@@ -80,11 +79,12 @@ const studentService = {
   },
 
   bulkImport: async (fileData) => {
+    console.log("bulk import called ");
     const formData = new FormData();
     formData.append("file", fileData);
 
     const response = await axios.post(
-      `${API_BASE_URL}/students/bulk-import`,
+      `${API_BASE_URL}/student/bulk-import`,
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
@@ -94,7 +94,9 @@ const studentService = {
   },
 
   exportStudents: async (filters) => {
-    const response = await axios.get(`${API_BASE_URL}/students/export`, {
+    console.log("export called ");
+
+    const response = await axios.get(`${API_BASE_URL}/student/export`, {
       params: filters,
       responseType: "blob",
     });
@@ -102,10 +104,9 @@ const studentService = {
   },
 
   updateStatus: async (id, status) => {
-    const response = await axios.patch(
-      `${API_BASE_URL}/students/${id}/status`,
-      { status }
-    );
+    const response = await axios.patch(`${API_BASE_URL}/student/${id}/status`, {
+      status,
+    });
     return response.data;
   },
 
@@ -116,7 +117,7 @@ const studentService = {
     formData.append("description", documentData.description);
 
     const response = await axios.post(
-      `${API_BASE_URL}/students/${id}/documents`,
+      `${API_BASE_URL}/student/${id}/documents`,
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
@@ -126,15 +127,13 @@ const studentService = {
   },
 
   getDocuments: async (id) => {
-    const response = await axios.get(
-      `${API_BASE_URL}/students/${id}/documents`
-    );
+    const response = await axios.get(`${API_BASE_URL}/student/${id}/documents`);
     return response.data;
   },
 
   deleteDocument: async (studentId, documentId) => {
     const response = await axios.delete(
-      `${API_BASE_URL}/students/${studentId}/documents/${documentId}`
+      `${API_BASE_URL}/student/${studentId}/documents/${documentId}`
     );
     return response.data;
   },

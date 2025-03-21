@@ -125,7 +125,8 @@ const StudentBulkUpload = () => {
 
   const handleDownloadTemplate = () => {
     const link = document.createElement('a');
-    link.href = `${API_BASE_URL}/students/template`;
+    console.log('Downloading');
+    link.href = `${API_BASE_URL}/student/template`;
     link.setAttribute('download', 'student_template.xlsx');
     document.body.appendChild(link);
     link.click();

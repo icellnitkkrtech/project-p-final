@@ -1,7 +1,8 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import JNFForm from '../jnfForm/JNFForm';
+import JNFForm from '../JNFPosting/index';
+import Index from '../JNFPosting/index';
 
 const CreateJNFDialog = ({ open, onClose }) => {
     return (
@@ -27,7 +28,7 @@ const CreateJNFDialog = ({ open, onClose }) => {
                 </IconButton>
             </DialogTitle>
             <DialogContent>
-                <JNFForm/>
+                <Index/>
             </DialogContent>
         </Dialog>
     );

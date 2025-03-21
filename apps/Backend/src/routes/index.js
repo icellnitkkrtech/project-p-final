@@ -7,7 +7,10 @@ import studentRouter from './studentRoutes.js';
 import jobRoutes from './jobRoutes.js';
 import applicationRoutes from "./applicationRoutes.js"
 import dashboardRouter from './dashboardRoutes.js';
-
+import placementRoutes from './placementRoutes.js';
+import jnfRouter from './jnfRoutes.js';
+import auditRouter from './auditRoutes.js';
+// import auditRoutes from './auditRoutes.js';
 const router = Router();
 
 router.get('/', (req, res) => {
@@ -22,5 +25,7 @@ router.use("/application", applicationRoutes);
 router.use("/student", studentRouter); //naveen
 router.use("/job", jobRoutes);//akarshit
 router.use("/dashboard", dashboardRouter);
-
+router.use("/jnf", jnfRouter);
+router.use("/placement", placementRoutes);
+router.use("/audit", auditRouter);
 export default router;

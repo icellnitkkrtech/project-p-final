@@ -1,17 +1,18 @@
 import { Schema as _Schema, model,mongoose } from 'mongoose';
 const Schema = _Schema;
 
-
 const JobSchema = new Schema(
     {
       course: {
         type: String,
         enum: ["B.Tech", "M.Tech", "MBA", "MCA", "M.Sc", "Ph.D"],
       },
+
       departments: {
         type: [String], 
         required: true,
       },
+
       designation: String,
       jobDescription: String,
       eligibilityCriteria: String,
