@@ -16,9 +16,11 @@ export default class companyServices {
             const companies = await Company.find()
                 .populate({
                     path: 'JNFs',
-                    populate: {
-                        path: 'placementDrive'
-                    }
+                    populate: [
+                        {
+                            path: 'jobProfiles'
+                        }
+                    ]
                 })
                 .populate('user', 'name email')
                 .lean();
@@ -78,9 +80,11 @@ export default class companyServices {
             const company = await Company.findById(id)
                 .populate({
                     path: 'JNFs',
-                    populate: {
-                        path: 'placementDrive'
-                    }
+                    populate: [
+                        {
+                            path: 'jobProfiles'
+                        }
+                    ]
                 })
                 .populate('user', 'name email')
                 .lean();
@@ -209,9 +213,11 @@ export default class companyServices {
             const company = await this.CompanyModel.findById(companyId)
                 .populate({
                     path: 'JNFs',
-                    populate: {
-                        path: 'placementDrive'
-                    }
+                    populate: [
+                        {
+                            path: 'jobProfiles'
+                        }
+                    ]
                 });
 
             if (!company) {
@@ -223,14 +229,16 @@ export default class companyServices {
 
             if (company.JNFs.length === 0) {
                 recruitmentStatus = 'inactive';
-            } else if (company.JNFs.some(jnf => 
-                jnf.placementDrive && jnf.placementDrive.status === 'inProgress'
-            )) {
-                recruitmentStatus = 'ongoing';
-            } else if (company.JNFs.every(jnf => 
-                jnf.placementDrive && jnf.placementDrive.status === 'completed'
-            )) {
-                recruitmentStatus = 'completed';
+            } else {
+                // Modified logic to avoid accessing placementDrive directly
+                const jnfsWithDrives = company.JNFs.filter(jnf => jnf.placementDrive);
+                
+                if (jnfsWithDrives.some(jnf => jnf.placementDrive.status === 'inProgress')) {
+                    recruitmentStatus = 'ongoing';
+                } else if (jnfsWithDrives.length > 0 && 
+                          jnfsWithDrives.every(jnf => jnf.placementDrive.status === 'completed')) {
+                    recruitmentStatus = 'completed';
+                }
             }
 
             // Update company status
