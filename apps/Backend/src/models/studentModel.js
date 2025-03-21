@@ -307,4 +307,71 @@ export default class StudentModel {
       );
     }
   }
+  async debourStudent(studentId, reason, adminId) {
+    try {
+      const student = await this.student.findByIdAndUpdate(
+        studentId,
+        {
+          isDeboured: true,
+          debourDetails: {
+            reason: reason,
+            debouredAt: new Date(),
+            debouredBy: adminId,
+          },
+        },
+        { new: true }
+      );
+
+      if (!student) {
+        return new apiResponse(404, null, "Student not found");
+      }
+
+      return new apiResponse(200, student, "Student deboured successfully");
+    } catch (error) {
+      console.error("Debour error:", error);
+      return new apiResponse(
+        500,
+        null,
+        "An error occurred while debouring student"
+      );
+    }
+  }
+
+  // Add this method to the StudentModel class
+  async revokeDebour(studentId, reason, adminId) {
+    try {
+      const student = await this.student.findByIdAndUpdate(
+        studentId,
+        {
+          isDeboured: false,
+          $push: {
+            debourHistory: {
+              action: "revoked",
+              reason: reason,
+              timestamp: new Date(),
+              adminId: adminId,
+            },
+          },
+        },
+        { new: true }
+      );
+
+      if (!student) {
+        return new apiResponse(404, null, "Student not found");
+      }
+
+      return new apiResponse(
+        200,
+        student,
+        "Student debour status revoked successfully"
+      );
+    } catch (error) {
+      console.error("Revoke debour error:", error);
+      return new apiResponse(
+        500,
+        null,
+        "An error occurred while revoking student debour"
+      );
+    }
+  }
 }

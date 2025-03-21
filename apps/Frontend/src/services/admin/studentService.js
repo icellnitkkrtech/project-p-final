@@ -77,7 +77,48 @@ const studentService = {
       throw error;
     }
   },
-
+  debourStudent: async (studentId, reason) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/student/debour/${studentId}`,
+        {
+          reason,
+          debouredAt: new Date(),
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error("Error debouring student:", error);
+      throw error;
+    }
+  },
+  checkDebourStatus: async (studentId) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/student/debour-status/${studentId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error checking debour status:", error);
+      throw error;
+    }
+  },
+  // Add a method to revoke debour if needed
+  revokeDebour: async (studentId, reason) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/student/revoke-debour/${studentId}`,
+        {
+          reason,
+          revokedAt: new Date(),
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error("Error revoking debour:", error);
+      throw error;
+    }
+  },
   bulkImport: async (fileData) => {
     console.log("bulk import called ");
     const formData = new FormData();

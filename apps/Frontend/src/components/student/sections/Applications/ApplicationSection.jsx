@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from "react";
 import axios from "../../axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Refresh, FilterList } from "@mui/icons-material";
+import { Search, Refresh, FilterList, Sort } from "@mui/icons-material";
 import ApplicationDetailView from "./ApplicationDetailView";
 import ApplicationSkeleton from "./ApplicationSkeleton";
-import { useOutlet, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
+import {
+  Box,
+  Tooltip,
+  IconButton,
+  Typography,
+  Menu,
+  Chip,
+  MenuItem,
+} from "@mui/material";
+
 const ApplicationsSection = () => {
-  const { student, setStudent } = useOutletContext();
+  const { student } = useOutletContext();
   const studentId = student._id;
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,10 +29,10 @@ const ApplicationsSection = () => {
     key: "appliedAt",
     direction: "desc",
   });
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const itemsPerPage = 10;
 
-  // Fetch applications
   const fetchApplications = async () => {
     setLoading(true);
     try {
@@ -30,7 +40,8 @@ const ApplicationsSection = () => {
       setApplications(response.data.data);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || "Error fetching applications");
+      setApplications([]);
     } finally {
       setLoading(false);
     }
@@ -40,6 +51,29 @@ const ApplicationsSection = () => {
     fetchApplications();
   }, [studentId]);
 
+  const getStatusClass = (status) => {
+    const statusClasses = {
+      applied: "bg-amber-100 text-amber-800 border border-amber-200",
+      shortlisted: "bg-blue-100 text-blue-800 border border-blue-200",
+      "in-process": "bg-purple-100 text-purple-800 border border-purple-200",
+      selected: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+      rejected: "bg-rose-100 text-rose-800 border border-rose-200",
+      "on-hold": "bg-gray-100 text-gray-800 border border-gray-200",
+    };
+    return statusClasses[status] || statusClasses.applied;
+  };
+
+  const handleSort = (key) => {
+    setSortConfig({
+      key,
+      direction:
+        sortConfig.key === key && sortConfig.direction === "asc"
+          ? "desc"
+          : "asc",
+    });
+    setAnchorEl(null);
+  };
+
   const filteredApplications = applications
     .filter((app) => {
       if (filter === "all") return true;
@@ -47,12 +81,25 @@ const ApplicationsSection = () => {
     })
     .filter(
       (app) =>
-        app.job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.job.company.toLowerCase().includes(searchTerm.toLowerCase())
+        app.placementDrive?.placementDrive_title
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        app.placementDrive?.companyDetails?.name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
+      if (sortConfig.key === "company") {
+        return sortConfig.direction === "asc"
+          ? (a.placementDrive?.companyDetails?.name || "").localeCompare(
+              b.placementDrive?.companyDetails?.name || ""
+            )
+          : (b.placementDrive?.companyDetails?.name || "").localeCompare(
+              a.placementDrive?.companyDetails?.name || ""
+            );
+      }
       return sortConfig.direction === "asc"
         ? aVal > bVal
           ? 1
@@ -69,6 +116,23 @@ const ApplicationsSection = () => {
 
   const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
 
+  const statusFilters = [
+    "all",
+    "applied",
+    "shortlisted",
+    "in-process",
+    "selected",
+    "rejected",
+    "on-hold",
+  ];
+
+  const headers = [
+    { label: "Company", key: "company" },
+    { label: "Position", key: "position" },
+    { label: "Status", key: "status" },
+    { label: "Applied On", key: "appliedAt" },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -79,7 +143,17 @@ const ApplicationsSection = () => {
       <div className="sticky top-0 z-10 bg-white border-b">
         <div className="p-4 md:px-6 md:py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <h3 className="text-xl font-semibold">Job Applications</h3>
+            <div className="flex items-center gap-2">
+              <Typography variant="h5" component="h1" className="font-semibold">
+                Placement Applications
+              </Typography>
+              <Chip
+                label={`${applications.length} Total`}
+                color="primary"
+                size="small"
+                variant="outlined"
+              />
+            </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-1 md:w-64">
                 <input
@@ -91,18 +165,25 @@ const ApplicationsSection = () => {
                 />
                 <Search className="absolute left-3 top-2.5 text-gray-400" />
               </div>
-              <button
-                onClick={fetchApplications}
-                className="p-2 hover:bg-gray-100 rounded-full flex-shrink-0"
-              >
-                <Refresh />
-              </button>
+              <Tooltip title="Refresh">
+                <IconButton onClick={fetchApplications} size="small">
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Sort">
+                <IconButton
+                  onClick={(e) => setAnchorEl(e.currentTarget)}
+                  size="small"
+                >
+                  <Sort />
+                </IconButton>
+              </Tooltip>
             </div>
           </div>
 
           {/* Filter Tabs */}
           <div className="mt-4 flex gap-2 overflow-x-auto pb-2 md:pb-0">
-            {["all", "applied", "accepted", "rejected"].map((status) => (
+            {statusFilters.map((status) => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}
@@ -120,15 +201,39 @@ const ApplicationsSection = () => {
         </div>
       </div>
 
+      {/* Sort Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+      >
+        {headers.map((header) => (
+          <MenuItem
+            key={header.key}
+            onClick={() => handleSort(header.key)}
+            selected={sortConfig.key === header.key}
+          >
+            {header.label}
+            {sortConfig.key === header.key && (
+              <span className="ml-2">
+                {sortConfig.direction === "asc" ? "↑" : "↓"}
+              </span>
+            )}
+          </MenuItem>
+        ))}
+      </Menu>
+
       {/* Content */}
       <div className="p-4 md:p-6">
         {loading ? (
           <ApplicationSkeleton count={5} />
         ) : error ? (
-          <div className="text-center py-8 text-red-500">{error}</div>
+          <Alert severity="error" className="my-4">
+            {error}
+          </Alert>
         ) : filteredApplications.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No applications found
+          <div className="text-center py-8">
+            <Typography color="textSecondary">No applications found</Typography>
           </div>
         ) : (
           <>
@@ -142,24 +247,22 @@ const ApplicationsSection = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="font-medium">{app.job.company}</h4>
-                      <p className="text-sm text-gray-600">{app.job.title}</p>
+                      <Typography variant="subtitle1" className="font-medium">
+                        {app.placementDrive?.companyDetails?.name}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        {app.placementDrive?.placementDrive_title}
+                      </Typography>
                     </div>
                     <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        app.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : app.status === "accepted"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                      }`}
+                      className={`px-2 py-1 text-xs rounded-full ${getStatusClass(app.status)}`}
                     >
                       {app.status}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <Typography variant="caption" color="textSecondary">
                     Applied: {new Date(app.appliedAt).toLocaleDateString()}
-                  </p>
+                  </Typography>
                 </div>
               ))}
             </div>
@@ -169,27 +272,22 @@ const ApplicationsSection = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    {["Company", "Position", "Status", "Applied On"].map(
-                      (header, index) => (
-                        <th
-                          key={index}
-                          onClick={() => {
-                            const key = header.toLowerCase().replace(" ", "");
-                            setSortConfig({
-                              key,
-                              direction:
-                                sortConfig.key === key &&
-                                sortConfig.direction === "asc"
-                                  ? "desc"
-                                  : "asc",
-                            });
-                          }}
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50"
-                        >
-                          {header}
-                        </th>
-                      )
-                    )}
+                    {headers.map((header) => (
+                      <th
+                        key={header.key}
+                        onClick={() => handleSort(header.key)}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50"
+                      >
+                        <div className="flex items-center gap-1">
+                          {header.label}
+                          {sortConfig.key === header.key && (
+                            <span>
+                              {sortConfig.direction === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -199,17 +297,15 @@ const ApplicationsSection = () => {
                       onClick={() => setActiveTab(app)}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
-                      <td className="px-6 py-4">{app.job.company}</td>
-                      <td className="px-6 py-4">{app.job.title}</td>
+                      <td className="px-6 py-4">
+                        {app.placementDrive?.companyDetails?.name}
+                      </td>
+                      <td className="px-6 py-4">
+                        {app.placementDrive?.placementDrive_title}
+                      </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            app.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : app.status === "accepted"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                          }`}
+                          className={`px-2 py-1 text-xs rounded-full ${getStatusClass(app.status)}`}
                         >
                           {app.status}
                         </span>
@@ -267,12 +363,14 @@ const ApplicationsSection = () => {
       </div>
 
       {/* Application Detail Modal */}
-      {activeTab && (
-        <ApplicationDetailView
-          application={activeTab}
-          onClose={() => setActiveTab(null)}
-        />
-      )}
+      <AnimatePresence>
+        {activeTab && (
+          <ApplicationDetailView
+            application={activeTab}
+            onClose={() => setActiveTab(null)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

@@ -22,6 +22,7 @@ import {
   Edit as EditIcon,
   GitHub,
   LinkedIn,
+  Block,
   Email,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
@@ -132,7 +133,58 @@ const ProfileView = ({ student, onEdit }) => {
           </Box>
         </Paper>
       </Fade>
+      {/* debour section*/}
 
+      {student?.isDeboured && (
+        <Fade in timeout={800}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              backgroundColor: "#ffebee", // Light red background
+              border: "1px solid #ef5350",
+              borderRadius: 2,
+            }}
+          >
+            <Box className="flex items-start gap-3">
+              <Box
+                sx={{
+                  bgcolor: "#ef5350",
+                  p: 1,
+                  borderRadius: "50%",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Block fontSize="small" />
+              </Box>
+              <Box>
+                <Typography
+                  variant="subtitle1"
+                  color="error"
+                  sx={{ fontWeight: 600, mb: 0.5 }}
+                >
+                  Account Deboured
+                </Typography>
+                <Typography variant="body2" color="error.dark">
+                  {student?.debourDetails?.reason || "No reason provided"}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", mt: 1, color: "text.secondary" }}
+                >
+                  Deboured on:{" "}
+                  {new Date(
+                    student?.debourDetails?.debouredAt
+                  ).toLocaleDateString()}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        </Fade>
+      )}
       <Grid container spacing={3}>
         {/* Academic Info */}
         <Grid item xs={12} md={6}>
@@ -227,7 +279,6 @@ const ProfileView = ({ student, onEdit }) => {
           </Grow>
         </Grid>
       </Grid>
-
       {/* Projects Section */}
       <motion.div variants={itemVariants}>
         <Card
