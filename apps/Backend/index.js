@@ -13,7 +13,7 @@ const whitelist = [
   "https://tnp-nitkkr.vercel.app",
   "http://localhost:5178",
   "http://localhost:5179",
-  "http://localhost:5184",
+  "http://localhost:5185",
   "http://localhost:5180",
   "https://project-p-final-frontend.vercel.app",
 ];

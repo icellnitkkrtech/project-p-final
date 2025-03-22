@@ -17,7 +17,6 @@ import { Close, Edit } from '@mui/icons-material';
 import PersonalInfoForm from './steps/PersonalInfoForm';
 import AcademicInfoForm from './steps/AcademicInfoForm';
 import PlacementInfoForm from './steps/PlacementInfoForm';
-import SkillsForm from './steps/SkillsForm';
 import DocumentsForm from './steps/DocumentsForm';
 import studentService from '../../../../services/admin/studentService';
 
@@ -25,7 +24,6 @@ const steps = [
   'Personal Information',
   'Academic Details',
   'Placement Information',
-  'Skills & Certifications',
   'Documents'
 ];
 
@@ -33,34 +31,84 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+  
+  // Update the initial state
   const [formData, setFormData] = useState({
-    personalInfo: {},
-    academics: {},
-    placement: {},
-    skills: {},
-    documents: {}
+    personalInfo: {
+      name: '',
+      rollNumber: '',
+      department: '',
+      Gender: '',  // Note capital G
+      category: 'GENERAL', // Add default value
+      batch: '',
+      isLocked: false
+    },
+    academics: {
+      cgpa: '',
+      tenthMarks: '',
+      twelfthMarks: '',
+      isLocked: false
+    },
+    placement: {
+      status: 'not_placed',
+      offersReceived: 0,
+      company: '',
+      role: '',
+      highestPackage: ''
+    },
+    documents: {
+      resume: null,
+      tenthCertificate: null,
+      twelfthCertificate: null,
+      graduationCertificate: null
+    }
   });
 
-  // Fetch student data when dialog opens
+  // Update the useEffect for data fetching
   useEffect(() => {
     const fetchStudentData = async () => {
       if (open && studentId) {
         setLoading(true);
         try {
           const response = await studentService.getStudentById(studentId);
-          if (response.statusCode === 200) { // Check for statusCode instead of success
+          console.log('Raw student data:', response.data);
+
+          if (response.statusCode === 200 && response.data) {
             setFormData({
-              personalInfo: response.data.personalInfo || {},
-              academics: response.data.academics || {},
-              placement: response.data.placement || {},
-              skills: response.data.skills || {},
-              documents: response.data.documents || {}
+              personalInfo: {
+                name: response.data.personalInfo?.name || '',
+                rollNumber: response.data.personalInfo?.rollNumber || '',
+                department: response.data.personalInfo?.department || '',
+                Gender: response.data.personalInfo?.Gender || '',
+                category: response.data.personalInfo?.category || 'GENERAL', // Add default
+                batch: response.data.personalInfo?.batch || '', // Single year number
+                isLocked: response.data.personalInfo?.isLocked || false
+              },
+              academics: {
+                cgpa: response.data.academics?.cgpa?.toString() || '',
+                tenthMarks: response.data.academics?.tenthMarks?.toString() || '',
+                twelfthMarks: response.data.academics?.twelfthMarks?.toString() || '',
+                isLocked: response.data.academics?.isLocked || false
+              },
+              placement: {
+                status: response.data.placement?.status || 'not_placed',
+                offersReceived: response.data.placement?.offersReceived || 0,
+                company: response.data.placement?.company || '',
+                role: response.data.placement?.role || '',
+                highestPackage: response.data.placement?.highestPackage || ''
+              },
+              documents: {
+                resume: response.data.documents?.resume || null,
+                tenthCertificate: response.data.documents?.tenthCertificate || null,
+                twelfthCertificate: response.data.documents?.twelfthCertificate || null,
+                graduationCertificate: response.data.documents?.graduationCertificate || null
+              }
             });
-            setError(null);
           }
         } catch (error) {
-          console.error('Error fetching student details:', error);
-          setError(error.response?.data?.message || 'Failed to load student data');
+          console.error('Error fetching student:', error);
+          setError('Failed to load student data');
         } finally {
           setLoading(false);
         }
@@ -88,13 +136,35 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
     }));
   };
 
+  // Update handleSubmit
   const handleSubmit = async () => {
     try {
-      await onUpdate(formData);
-      onClose();
+      const formattedData = {
+        personalInfo: {
+          ...formData.personalInfo,
+          rollNumber: Number(formData.personalInfo.rollNumber),
+          batch: Number(formData.personalInfo.batch), // Convert to number
+          Gender: formData.personalInfo.Gender,
+          category: formData.personalInfo.category || 'GENERAL', // Ensure category is present
+        },
+        academics: {
+          cgpa: Number(formData.academics.cgpa),
+          tenthMarks: Number(formData.academics.tenthMarks),
+          twelfthMarks: Number(formData.academics.twelfthMarks)
+        },
+        placement: formData.placement,
+        documents: formData.documents
+      };
+
+      console.log('Submitting formatted data:', formattedData);
+      const response = await studentService.updateStudent(studentId, formattedData);
+      
+      if (response.success) {
+        onUpdate?.();
+        onClose();
+      }
     } catch (error) {
-      console.error('Error updating student:', error);
-      setError('Failed to update student');
+      console.error('Error:', error);
     }
   };
 
@@ -122,13 +192,6 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
           />
         );
       case 3:
-        return (
-          <SkillsForm
-            formData={formData.skills}
-            onChange={(field, value) => handleInputChange('skills', field, value)}
-          />
-        );
-      case 4:
         return (
           <DocumentsForm
             formData={formData.documents}
@@ -184,6 +247,12 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
           </>
         )}
       </DialogContent>
+
+      {submitError && (
+        <Box sx={{ p: 2, color: 'error.main' }}>
+          <Typography color="error">{submitError}</Typography>
+        </Box>
+      )}
 
       {!loading && !error && (
         <DialogActions sx={{ p: 2, gap: 1 }}>

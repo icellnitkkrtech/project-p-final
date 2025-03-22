@@ -145,7 +145,10 @@ export default class StudentService {
   async getStudents() {
     try {
       const students = await this.studentModel.getStudents(); // Fetch all students
-      return new apiResponse(200, students, "Students fetched successfully");
+      const sortedStudents = students.sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      return new apiResponse(200, sortedStudents, "Students fetched successfully");
     } catch (error) {
       throw new Error("Failed to fetch students: " + error.message);
     }
@@ -153,55 +156,72 @@ export default class StudentService {
 
   async registerStudentByAdmin(studentData) {
     try {
-      // Validate required fields
+      console.log("Received student data:", studentData); // Debug log
+
+      // Validate the structure of incoming data
+      if (!studentData.personalInfo || !studentData.academics) {
+        return new apiResponse(400, null, "Invalid data structure");
+      }
+
+      // Validate required fields with proper case matching
       if (
-        !studentData.personalInfo?.name ||
-        !studentData.personalInfo?.rollNumber ||
-        !studentData.personalInfo?.Gender ||
-        !studentData.personalInfo?.department ||
-        !studentData.personalInfo?.batch ||
-        !studentData.academics?.cgpa ||
-        !studentData.academics?.tenthMarks ||
-        !studentData.academics?.twelfthMarks
+        !studentData.personalInfo.name ||
+        !studentData.personalInfo.rollNumber ||
+        !studentData.personalInfo.department ||
+        !studentData.personalInfo.gender ||
+        !studentData.personalInfo.category ||
+        !studentData.academics.cgpa ||
+        !studentData.academics.tenthMarks ||
+        !studentData.academics.twelfthMarks
       ) {
         return new apiResponse(400, null, "Missing required fields");
       }
 
       // Generate email and password
-      const email = `${studentData.personalInfo.rollNumber}@nitkkr.ac.in`;
+      const email = `${studentData.personalInfo.rollNumber.toLowerCase()}@nitkkr.ac.in`;
       const password = studentData.personalInfo.rollNumber.toString();
 
       // Create user data
       const userData = {
         email,
         password,
-        user_role: "student",
+        user_role: "student"
       };
 
       // Create the user first
       const user = await this.userServices.registerUser(userData);
-
       if (user.statusCode !== 201) {
         return new apiResponse(user.statusCode, null, user.message);
       }
 
-      // Create a new student with the user ID
-      const newStudent = await this.studentModel.create({
-        user: user.data.user._id, // Use the created user's ID
-        personalInfo: studentData.personalInfo,
-        academics: studentData.academics,
-        email, // Include email in the student data
-        password, // Include password in the student data
-      });
+      // Format the student data correctly
+      const formattedStudentData = {
+        user: user.data.user._id,
+        personalInfo: {
+          name: studentData.personalInfo.name,
+          rollNumber: studentData.personalInfo.rollNumber,
+          department: studentData.personalInfo.department,
+          batch: studentData.personalInfo.batch || `${studentData.personalInfo.batchStartYear}-${studentData.personalInfo.batchEndYear}`,
+          gender: studentData.personalInfo.gender,
+          category: studentData.personalInfo.category
+        },
+        academics: {
+          cgpa: parseFloat(studentData.academics.cgpa),
+          tenthMarks: parseFloat(studentData.academics.tenthMarks),
+          twelfthMarks: parseFloat(studentData.academics.twelfthMarks)
+        }
+      };
 
-      return new apiResponse(
-        201,
-        newStudent,
+      // Create student profile
+      const newStudent = await this.studentModel.create(formattedStudentData);
+
+      return new apiResponse(201, 
+        { user: user.data.user, student: newStudent }, 
         "Student registered successfully"
       );
     } catch (error) {
-      console.log("Registration error", error);
-      return new apiResponse(500, null, error.message);
+      console.error("Registration error:", error);
+      return new apiResponse(500, null, error.message || "Registration failed");
     }
   }
 
