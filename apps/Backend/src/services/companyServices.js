@@ -16,9 +16,11 @@ export default class companyServices {
             const companies = await Company.find()
                 .populate({
                     path: 'JNFs',
-                    populate: {
-                        path: 'placementDrive'
-                    }
+                    populate: [
+                        {
+                            path: 'jobProfiles'
+                        }
+                    ]
                 })
                 .populate('user', 'name email')
                 .lean();
@@ -78,9 +80,11 @@ export default class companyServices {
             const company = await Company.findById(id)
                 .populate({
                     path: 'JNFs',
-                    populate: {
-                        path: 'placementDrive'
-                    }
+                    populate: [
+                        {
+                            path: 'jobProfiles'
+                        }
+                    ]
                 })
                 .populate('user', 'name email')
                 .lean();
@@ -136,21 +140,33 @@ export default class companyServices {
     async addJNFToCompany(companyId, jnfData) {
         console.log("Service layer: addJNFToCompany called");
         try {
-            const company = await this.CompanyModel.findCompanyById(companyId);
+            // Validate required fields
+            if (!jnfData.companyDetails || !jnfData.jobProfiles || jnfData.jobProfiles.length === 0) {
+                return new apiResponse(400, null, "Missing required JNF details");
+            }
+            
+            // Find the company to ensure it exists and get the user ID
+            const company = await Company.findById(companyId);
+            
             if (!company) {
                 console.error(`Company with ID ${companyId} does not exist`);
-                return null;
+                return new apiResponse(404, null, "Company not found");
             }
-
+            
             const userId = company.user;
-
+            
             const response = await this.CompanyModel.addJNFToCompany(companyId, jnfData, userId);
-
-            console.log("added JNF", response);
+            
+            if (!response) {
+                return new apiResponse(500, null, "Failed to add JNF to company");
+            }
+            
+            console.log("Added JNF:", response);
             return new apiResponse(200, response, "JNF Added To Company Successfully");
         }
         catch (error) {
-            return new apiResponse(500, null, error.message);
+            console.error("Error in addJNFToCompany service:", error);
+            return new apiResponse(500, null, error.message || "Internal Server Error");
         }
     }
 
@@ -197,9 +213,11 @@ export default class companyServices {
             const company = await this.CompanyModel.findById(companyId)
                 .populate({
                     path: 'JNFs',
-                    populate: {
-                        path: 'placementDrive'
-                    }
+                    populate: [
+                        {
+                            path: 'jobProfiles'
+                        }
+                    ]
                 });
 
             if (!company) {
@@ -211,14 +229,16 @@ export default class companyServices {
 
             if (company.JNFs.length === 0) {
                 recruitmentStatus = 'inactive';
-            } else if (company.JNFs.some(jnf => 
-                jnf.placementDrive && jnf.placementDrive.status === 'inProgress'
-            )) {
-                recruitmentStatus = 'ongoing';
-            } else if (company.JNFs.every(jnf => 
-                jnf.placementDrive && jnf.placementDrive.status === 'completed'
-            )) {
-                recruitmentStatus = 'completed';
+            } else {
+                // Modified logic to avoid accessing placementDrive directly
+                const jnfsWithDrives = company.JNFs.filter(jnf => jnf.placementDrive);
+                
+                if (jnfsWithDrives.some(jnf => jnf.placementDrive.status === 'inProgress')) {
+                    recruitmentStatus = 'ongoing';
+                } else if (jnfsWithDrives.length > 0 && 
+                          jnfsWithDrives.every(jnf => jnf.placementDrive.status === 'completed')) {
+                    recruitmentStatus = 'completed';
+                }
             }
 
             // Update company status

@@ -1,6 +1,6 @@
-import apiResponse from "../utils/apiResponse";
-import asyncHandler from "../utils/asyncHandler";
-import authVerify from "./auth.middlewares";
+import apiResponse from "../utils/apiResponse.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import authVerify from "./auth.middlewares.js";
 
 const adminVerify = asyncHandler((req, res, next) => {
     const admin = req.user.user_role === "admin";

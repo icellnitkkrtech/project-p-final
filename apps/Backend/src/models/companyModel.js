@@ -99,28 +99,49 @@ export default class companyModel {
     }
 
     async addJNFToCompany(companyId, jnfData, userId) {
-        console.log("Company Model: addJNFToComapany called");
+        console.log("Company Model: addJNFToCompany called");
         try {
-            const company = await this.company.findById(companyId);
-            if (!company) {
-                console.log("Error in fetching company");
-                return new apiResponse(404, null, "Company not found");
+            // Create a new JNF document
+            const newJNF = new JNF({
+                company: companyId,
+                user: userId,
+                companyDetails: jnfData.companyDetails,
+                jobProfiles: jnfData.jobProfiles,
+                eligibilityCriteria: jnfData.eligibilityCriteria,
+                eligibleBranchesForProfiles: jnfData.eligibleBranchesForProfiles,
+                selectionProcessForProfiles: jnfData.selectionProcessForProfiles,
+                bondDetails: jnfData.bondDetails,
+                pointOfContact: jnfData.pointOfContact,
+                additionalInfo: jnfData.additionalInfo,
+                status: "pending" // Default status for new JNFs
+            });
+            
+            // Save the JNF
+            const savedJNF = await newJNF.save();
+            
+            if (!savedJNF) {
+                return null;
             }
-
-            jnfData.submittedBy = userId; 
-            jnfData.submissionDate = new Date();
-
-            const createdJNF = await JNF.create(jnfData);
-            company.JNFs.push(createdJNF._id);
-
-            await company.save();
-
-            return new apiResponse(200, createdJNF, "JNF added successfully");
+            
+            // Update the company document to include this JNF
+            const updatedCompany = await this.company.findByIdAndUpdate(
+                companyId,
+                { $push: { JNFs: savedJNF._id } },
+                { new: true }
+            );
+            
+            if (!updatedCompany) {
+                // If company update fails, delete the JNF to avoid orphaned records
+                await JNF.findByIdAndDelete(savedJNF._id);
+                return null;
+            }
+            
+            return savedJNF;
         } catch (error) {
-            return new apiResponse(500, null, error.message);
+            console.error("Error in addJNFToCompany model:", error);
+            return null;
         }
     }
-
 
     async getJNFsForCompany(companyId) {
         console.log("Company Model: getJNFsForCompany called");

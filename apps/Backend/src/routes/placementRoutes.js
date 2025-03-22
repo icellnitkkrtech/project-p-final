@@ -121,5 +121,10 @@ placementRoutes.get("/:id/notifications/all", (req, res) => {
 placementRoutes.delete("/:id/notifications/:notification_id/delete", (req, res) => {
     placementController.deleteNotification(req, res);
 });
+// 22
+// getting all rounds
+placementRoutes.get("/:id/rounds/all", (req, res) => {
+    placementController.getAllRounds(req, res);
+});
 
 export default placementRoutes;

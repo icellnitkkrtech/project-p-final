@@ -20,7 +20,12 @@ export default class PlacementController {
     async getAllPlacements(req, res) {
         try {
             const response = await this.placementService.getAllPlacements();
-            res.status(200).json({ data: response });
+            let placementDrives = [];
+            response.forEach((placementDrive) => {
+                const { _id, companyDetails, jobProfile, status, assignedUser, createdBy, placementDrive_title, applicantStudents, selectedStudents, createdAt, updatedAt } = placementDrive;
+                placementDrives.push({ _id, companyDetails, jobProfile, status, assignedUser, createdBy, placementDrive_title, applicantStudents, selectedStudents, createdAt, updatedAt });
+            });
+            res.status(200).json({ data: placementDrives });
         } catch (error) {
             res.status(500).json({ message: "Error fetching placements", error });
         }
@@ -29,14 +34,20 @@ export default class PlacementController {
     async getPlacement(req, res) {
         try {
             const response = await this.placementService.getPlacementById(req.params.id);
+
             if (!response) {
                 return res.status(404).json({ message: "Placement drive not found" });
             }
-            res.status(200).json(response);
+
+            const { roundDetails, notificationLogos, selectedStudents, applicantStudents, ...filteredResponse } = response.toObject ? response.toObject() : response;
+
+            res.status(200).json(filteredResponse);
         } catch (error) {
-            res.status(500).json({ message: "Error fetching placement", error });
+            console.error("Error fetching placement:", error);
+            res.status(500).json({ message: "Error fetching placement", error: error.message });
         }
     }
+
 
     async updatePlacement(req, res) {
         try {
@@ -171,8 +182,8 @@ export default class PlacementController {
     }
     async updateSelectedStudents(req, res) {
         try {
-            const { getSelectedStudents } = req.body;
-            const response = await this.placementService.updateSelectedStudents(req.params.id, req.params.round_id, getSelectedStudents);
+            const { selectedStudents } = req.body;
+            const response = await this.placementService.updateSelectedStudents(req.params.id, req.params.round_id, selectedStudents);
             if (!response) {
                 return res.status(404).json({ message: "Round not found" });
             }
@@ -278,6 +289,17 @@ export default class PlacementController {
             res.status(200).json({ message: "Notification deleted successfully" });
         } catch (error) {
             res.status(500).json({ message: "Error deleting notification", error });
+        }
+    }
+    async getAllRounds(req, res) {
+        try {
+            const response = await this.placementService.getAllRounds(req.params.id);
+            if (!response) {
+                return res.status(404).json({ message: "Placement drive not found" });
+            }
+            res.status(200).json(response);
+        } catch (error) {
+            res.status(500).json({ message: "Error fetching rounds", error });
         }
     }
 }

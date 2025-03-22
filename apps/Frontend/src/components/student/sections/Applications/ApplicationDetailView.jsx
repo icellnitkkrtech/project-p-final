@@ -1,25 +1,40 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Close } from "@mui/icons-material";
+import { Card, CardContent, Typography, Divider, Box } from "@mui/material";
+import {
+  Business,
+  Work,
+  School,
+  Link as LinkIcon,
+  ListAlt,
+  Gavel,
+  Assessment,
+  Description,
+  Timeline,
+} from "@mui/icons-material";
 
 const ApplicationDetailView = ({ application, onClose }) => {
   if (!application) return null;
 
-  const jobDetails = {
-    title: application.job?.title || "N/A",
-    company: application.job?.company || "N/A",
-    description: application.job?.description || "No description available",
-    requirements: application.job?.requirements || "No requirements specified",
-    salary: application.job?.salary || "Not specified",
-  };
-
+  const {
+    placementDrive,
+    status,
+    appliedAt,
+    roundStatus,
+    documents,
+    offerDetails,
+  } = application;
+  console.log(application);
   const getStatusClass = (status) => {
     const statusClasses = {
-      pending: "bg-amber-100 text-amber-800 border border-amber-200",
-      accepted: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+      applied: "bg-amber-100 text-amber-800 border border-amber-200",
+      shortlisted: "bg-blue-100 text-blue-800 border border-blue-200",
+      "in-process": "bg-purple-100 text-purple-800 border border-purple-200",
+      selected: "bg-emerald-100 text-emerald-800 border border-emerald-200",
       rejected: "bg-rose-100 text-rose-800 border border-rose-200",
+      "on-hold": "bg-gray-100 text-gray-800 border border-gray-200",
     };
-    return statusClasses[status] || statusClasses.pending;
+    return statusClasses[status] || statusClasses.applied;
   };
 
   return (
@@ -33,122 +48,337 @@ const ApplicationDetailView = ({ application, onClose }) => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl"
+        className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
       >
-        {/* Header Section */}
-        <div
-          style={{
-            background: "linear-gradient(135deg, #2c3e50 0%, #3498db 100%)",
-            padding: "16px 24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
-          <div className="flex justify-between items-start">
-            <div className="text-white">
-              <h2 className="text-2xl font-bold">{jobDetails.title}</h2>
-              <p className="text-blue-100 mt-1">
-                Applied on:{" "}
-                {new Date(application.appliedAt).toLocaleDateString()}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white/80 hover:text-white transition-colors p-1"
+        <Card sx={{ maxWidth: "100%", margin: "0 auto", boxShadow: "none" }}>
+          <CardContent>
+            {/* Header with Close Button */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
             >
-              <Close className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content Section */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-5rem)]">
-          <div className="space-y-6">
-            {/* Company & Status Section */}
-            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-800">
-                  {jobDetails.company}
-                </h3>
-              </div>
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusClass(
-                  application.status
-                )}`}
+              <Typography variant="h5" align="center" color="primary">
+                {placementDrive?.placementDrive_title}
+              </Typography>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full"
               >
-                {application.status?.charAt(0).toUpperCase() +
-                  application.status?.slice(1)}
-              </span>
-            </div>
+                ✕
+              </button>
+            </Box>
 
-            {/* Job Details Sections */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="text-lg font-semibold text-blue-800 mb-2">
-                  Salary Package
-                </h4>
-                <p className="text-blue-900">
-                  {typeof jobDetails.salary === "object"
-                    ? `₹${jobDetails.salary.ctc || "N/A"} LPA`
-                    : `₹${jobDetails.salary} LPA`}
-                </p>
-              </div>
-
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <h4 className="text-lg font-semibold text-purple-800 mb-2">
+            {/* Application Status */}
+            <Box mb={3}>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <Assessment color="primary" />
+                <Typography variant="h6" color="primary">
                   Application Status
-                </h4>
-                <div className="flex gap-2 items-center">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      application.status === "accepted"
-                        ? "bg-green-500"
-                        : application.status === "rejected"
-                        ? "bg-red-500"
-                        : "bg-yellow-500"
-                    }`}
-                  ></div>
-                  <p className="text-purple-900">
-                    {application.status?.charAt(0).toUpperCase() +
-                      application.status?.slice(1)}
-                  </p>
-                </div>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+              <Box className="flex items-center gap-3">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm ${getStatusClass(status)}`}
+                >
+                  {status?.charAt(0).toUpperCase() + status?.slice(1)}
+                </span>
+                <Typography variant="body2" color="text.secondary">
+                  Applied on: {new Date(appliedAt).toLocaleDateString()}
+                </Typography>
+              </Box>
+            </Box>
 
-            {/* Description Section */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                Job Description
-              </h4>
-              <p className="text-gray-600 whitespace-pre-line">
-                {jobDetails.description}
-              </p>
-            </div>
+            <Divider sx={{ my: 2 }} />
 
-            {/* Requirements Section */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                Requirements
-              </h4>
-              <p className="text-gray-600 whitespace-pre-line ">
-                {jobDetails.requirements}
-              </p>
-            </div>
-          </div>
-        </div>
+            {/* Company Details */}
+            <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <Business color="primary" />
+                <Typography variant="h6" color="primary">
+                  Company Details
+                </Typography>
+              </Box>
+              <Typography variant="body1">
+                <strong>Name:</strong>{" "}
+                {placementDrive?.companyDetails?.company_name}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Description:</strong>{" "}
+                {placementDrive?.companyDetails?.description}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Domain:</strong>{" "}
+                {placementDrive?.companyDetails?.domain}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Type:</strong>{" "}
+                {placementDrive?.companyDetails?.companyType}
+              </Typography>
+            </Box>
 
-        {/* Footer Section */}
-        <div className="border-t px-6 py-4 bg-gray-50">
-          <button
-            onClick={onClose}
-            className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg 
-                     hover:bg-gray-200 transition-colors duration-200 font-medium"
-          >
-            Close
-          </button>
-        </div>
+            <Divider sx={{ my: 2 }} />
+
+            {/* Job Profile */}
+            <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <Work color="primary" />
+                <Typography variant="h6" color="primary">
+                  Job Profile
+                </Typography>
+              </Box>
+              <Box
+                sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
+              >
+                <Typography variant="body1">
+                  <strong>Role:</strong>{" "}
+                  {placementDrive?.jobProfile?.designation}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Location:</strong>{" "}
+                  {placementDrive?.jobProfile?.placeOfPosting}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Job Type:</strong>{" "}
+                  {placementDrive?.jobProfile?.jobType}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>CTC:</strong> ₹{placementDrive?.jobProfile?.ctc} LPA
+                </Typography>
+                {placementDrive?.jobProfile?.takeHome && (
+                  <Typography variant="body1">
+                    <strong>Take Home:</strong> ₹
+                    {placementDrive?.jobProfile?.takeHome}
+                  </Typography>
+                )}
+                {placementDrive?.jobProfile?.stipend && (
+                  <Typography variant="body1">
+                    <strong>Stipend:</strong> ₹
+                    {placementDrive?.jobProfile?.stipend}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Eligibility Criteria */}
+            <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <School color="primary" />
+                <Typography variant="h6" color="primary">
+                  Eligibility Criteria
+                </Typography>
+              </Box>
+              <Typography variant="body1">
+                <strong>Minimum CGPA:</strong>{" "}
+                {placementDrive?.eligibilityCriteria?.minCgpa}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Backlogs Allowed:</strong>{" "}
+                {placementDrive?.eligibilityCriteria?.backlogAllowed
+                  ? "Yes"
+                  : "No"}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Eligible Courses:</strong>{" "}
+                {placementDrive?.jobProfile?.course}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Eligible Branches:</strong>{" "}
+                {placementDrive?.eligibleBranchesForProfiles
+                  ?.map((profile) =>
+                    profile.branches?.[placementDrive?.jobProfile?.course]
+                      ?.map((branch) => branch.name)
+                      .join(", ")
+                  )
+                  .join(", ")}
+              </Typography>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Selection Process */}
+            {/* Selection Process */}
+            <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <ListAlt color="primary" />
+                <Typography variant="h6" color="primary">
+                  Selection Process
+                </Typography>
+              </Box>
+              {placementDrive?.selectionProcess?.[0]?.rounds?.length > 0 ? (
+                <Box className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {placementDrive.selectionProcess[0].rounds.map(
+                    (round, index) => (
+                      <Box key={index} className="p-2 bg-gray-50 rounded-lg">
+                        <Typography variant="subtitle2" color="primary">
+                          Round {round.roundNumber}: {round.roundName}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          className="block mt-0.5"
+                        >
+                          {round.details}
+                        </Typography>
+                      </Box>
+                    )
+                  )}
+                </Box>
+              ) : (
+                <Typography color="text.secondary" variant="body2">
+                  Selection process details not available
+                </Typography>
+              )}
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Your Progress */}
+            {/* <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <Assessment color="primary" />
+                <Typography variant="h6" color="primary">
+                  Your Progress
+                </Typography>
+              </Box>
+              {roundStatus?.length > 0 ? (
+                <Box className="space-y-2">
+                  {roundStatus.map((round, index) => (
+                    <Box
+                      key={index}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                    >
+                      <Box>
+                        <Typography variant="subtitle1">
+                          {round.roundName}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(round.date).toLocaleDateString()}
+                        </Typography>
+                        {round.feedback && (
+                          <Typography variant="body2" color="text.secondary">
+                            Feedback: {round.feedback}
+                          </Typography>
+                        )}
+                      </Box>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm ${getStatusClass(round.status)}`}
+                      >
+                        {round.status}
+                      </span>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography color="text.secondary">
+                  No round status updates yet
+                </Typography>
+              )}
+            </Box> */}
+
+            {/* Bond Details */}
+            {placementDrive?.bondDetails && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Box>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Gavel color="primary" />
+                    <Typography variant="h6" color="primary">
+                      Bond Details
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1">
+                    <strong>Details:</strong>{" "}
+                    {placementDrive.bondDetails.details}
+                  </Typography>
+                </Box>
+              </>
+            )}
+
+            {/* Documents Section */}
+            {documents?.length > 0 && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Box>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Description color="primary" />
+                    <Typography variant="h6" color="primary">
+                      Documents
+                    </Typography>
+                  </Box>
+                  <Box className="space-y-2">
+                    {documents.map((doc, index) => (
+                      <Box
+                        key={index}
+                        className="flex justify-between items-center p-2 bg-gray-50 rounded-lg"
+                      >
+                        <Typography>{doc.name}</Typography>
+                        <Box className="flex items-center gap-3">
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              doc.verified
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {doc.verified ? "Verified" : "Pending"}
+                          </span>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            View
+                          </a>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              </>
+            )}
+
+            {/* Offer Details */}
+            {offerDetails && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Box>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Gavel color="primary" />
+                    <Typography variant="h6" color="primary">
+                      Offer Details
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1">
+                    <strong>Status:</strong> {offerDetails.status}
+                  </Typography>
+                  {offerDetails.ctc && (
+                    <Typography variant="body1">
+                      <strong>CTC:</strong> ₹{offerDetails.ctc} LPA
+                    </Typography>
+                  )}
+                  {offerDetails.joiningDate && (
+                    <Typography variant="body1">
+                      <strong>Joining Date:</strong>{" "}
+                      {new Date(offerDetails.joiningDate).toLocaleDateString()}
+                    </Typography>
+                  )}
+                  {offerDetails.location && (
+                    <Typography variant="body1">
+                      <strong>Location:</strong> {offerDetails.location}
+                    </Typography>
+                  )}
+                </Box>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </motion.div>
     </motion.div>
   );
