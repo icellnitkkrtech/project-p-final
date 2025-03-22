@@ -3,8 +3,8 @@ import path from 'path';
 import fs from 'fs';
 
 // Create absolute path for uploads directory
-const uploadDir = path.resolve(process.cwd(), 'uploads', 'jobDescriptions');
-
+// const uploadDir = path.resolve(process.cwd(), 'uploads', 'jobDescriptions');
+const uploadDir = path.join('/tmp', 'uploads', 'jobDescriptions');
 // Ensure upload directory exists
 try {
     if (!fs.existsSync(uploadDir)) {
