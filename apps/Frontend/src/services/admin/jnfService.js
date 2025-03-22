@@ -32,9 +32,20 @@ const jnfService = {
     }
   },
 
-  async update(id, data) {
-    const response = await api.put(`/update/${id}`, data);
-    return response.data;
+  async update(id, formData) {
+    try {
+        const config = {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        };
+        // Updated URL to match backend route
+        const response = await api.put(`/updatejnf/${id}`, formData, config);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating JNF:', error);
+        throw error;
+    }
   },
 
   async delete(id) {
@@ -103,6 +114,34 @@ async assignJNF(jnfId, userId) {
         }
     }
 },
+async updateJNF(id, formData) {
+    try {
+        const config = {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        };
+        const response = await api.put(`/updatejnf/${id}`, formData, config);
+        
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Failed to update JNF');
+        }
+        
+        return response.data;
+    } catch (error) {
+        console.error('Error updating JNF:', error);
+        throw error.response?.data || error;
+    }
+},
+async updateStatus(id, status) {
+    try {
+        const response = await api.put(`/updateStatus/${id}`, { status });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating JNF status:', error);
+        throw error;
+    }
+}
 
 };
 

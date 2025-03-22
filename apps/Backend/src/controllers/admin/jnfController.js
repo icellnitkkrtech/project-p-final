@@ -136,5 +136,29 @@ async getJnfAssignments(req, res) {
         res.status(500).json(new apiResponse(500, null, error.message));
     }
 }
+async updateStatus(req, res) {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const response = await this.JNFService.updatestatus(id, status);
+        
+        if (response.statusCode === 200) {
+            res.status(200).json({
+                success: true,
+                data: response.data,
+                message: `JNF ${status} successfully`
+            });
+        } else {
+            throw new Error(response.message);
+        }
+    } catch (error) {
+        console.error('Error in updateStatus controller:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to update JNF status'
+        });
+    }
+}
 
 }

@@ -14,7 +14,7 @@ const jnfController = new JNFController(jnfServices);
 
 
 //update status of the jnf
-jnfRouter.put('/update/:id', 
+jnfRouter.put('/updatejnf/:id', 
   upload.single('jobDescriptionFile'), 
   handleFileUploadError,
   (req, res) => jnfController.updateJNF(req, res)
@@ -59,5 +59,9 @@ jnfRouter.get("/getJnfAssignment/:id", (req, res) => {
   jnfController.getJnfAssignments(req, res);
 });//done
 
+jnfRouter.put('/updateStatus/:id', 
+ 
+    (req, res) => jnfController.updateStatus(req, res)
+);
 
 export default jnfRouter;
