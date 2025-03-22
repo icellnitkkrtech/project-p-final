@@ -1,84 +1,104 @@
-import { application } from 'express';
-import { Schema as _Schema, model,mongoose } from 'mongoose';
+import { Schema as _Schema, model } from "mongoose";
 const Schema = _Schema;
 
-const ApplicationSchema = new Schema({
-  student: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  job: {
-    type: Schema.Types.ObjectId,
-    ref: "Job",
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ["applied", "shortlisted", "selected", "rejected"],
-    default: "applied",
-  },
-  roundStatus: [
-    {
-      round: String,
-      status: String,
-      feedback: String,
-      date: Date,
+const ApplicationSchema = new Schema(
+  {
+    student: {
+      type: Schema.Types.ObjectId,
+      ref: "Student",
+      required: true,
     },
-  ],
-  timeline: [{
-    status: String,
-    date: { type: Date, default: Date.now },
-    remarks: String
-  }],
-  documents: [
-    {
+    placementDrive: {
+      type: Schema.Types.ObjectId,
+      ref: "PlacementDrive",
+      required: true,
+    },
+    status: {
       type: String,
-      url: String,
-      verified: Boolean,
+      enum: [
+        "applied",
+        "shortlisted",
+        "in-process",
+        "selected",
+        "rejected",
+        "on-hold",
+      ],
+      default: "applied",
     },
-  ],
-  feedback: String,
-  appliedAt: {
-    type: Date,
-    default: Date.now,
+    roundStatus: [
+      {
+        roundNumber: Number,
+        roundName: String,
+        status: {
+          type: String,
+          enum: ["pending", "qualified", "not-qualified", "absent"],
+          default: "pending",
+        },
+        feedback: String,
+        date: { type: Date, default: Date.now },
+        interviewer: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+      },
+    ],
+    timeline: [
+      {
+        status: String,
+        date: { type: Date, default: Date.now },
+        remarks: String,
+        updatedBy: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+      },
+    ],
+    documents: [
+      {
+        name: String,
+        type: {
+          type: String,
+          enum: ["resume", "offer_letter", "other"],
+        },
+        url: String,
+        verified: {
+          type: Boolean,
+          default: false,
+        },
+        verifiedBy: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    offerDetails: {
+      status: {
+        type: String,
+        enum: ["pending", "accepted", "rejected", "withdrawn"],
+        default: "pending",
+      },
+      ctc: Number,
+      takeHome: Number,
+      joiningDate: Date,
+      location: String,
+      offerLetter: String,
+      bondDetails: String,
+    },
+    feedback: String,
+    appliedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-  notifications: [
-    {
-     type:Schema.Types.ObjectId,
-     ref:"Notification"
-    },
-  ],
-  emailNotificationsSent: [
-    {
-      type: String,
-      date: Date,
-    },
-  ],
-});
-
-
-ApplicationSchema.pre("save", function (next) {
-  this.updatedAt = new Date();
-  next();
-});
-// Validating round status change
-ApplicationSchema.pre('save',function(next){
-  if(this.isModified('status')){
-    if(this.isNew){
-      this.timeline.push({
-        status:this.status,
-        date: new Date(),
-        remarks: 'Application created'
-      })
-    }
-  }
-  next();
-})
-const Application = model('Application', ApplicationSchema);
-
-export default Application;
+  { timestamps: true }
+);
+const Application = model("Application", ApplicationSchema);
+export { Application };

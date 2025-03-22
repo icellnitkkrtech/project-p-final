@@ -218,4 +218,40 @@ export default class StudentService {
       );
     }
   }
+
+  // Add these methods in the StudentService class
+  async debourStudent(studentId, reason, adminId) {
+    try {
+      const result = await this.studentModel.debourStudent(
+        studentId,
+        reason,
+        adminId
+      );
+      return result;
+    } catch (error) {
+      return new apiResponse(
+        500,
+        null,
+        "An error occurred while debouring student"
+      );
+    }
+  }
+
+  // Add this method to the StudentService class
+  async revokeDebour(studentId, reason, adminId) {
+    try {
+      const result = await this.studentModel.revokeDebour(
+        studentId,
+        reason,
+        adminId
+      );
+      return result;
+    } catch (error) {
+      return new apiResponse(
+        500,
+        null,
+        "An error occurred while revoking student debour"
+      );
+    }
+  }
 }

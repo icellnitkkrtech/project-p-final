@@ -108,4 +108,38 @@ export default class StudentController {
     const result = await this.studentService.deleteStudent(id);
     res.status(result.statusCode).json(result);
   });
+
+  // Add these methods in the StudentController class
+  debourStudent = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user?._id; // Assuming you have user info in request
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Reason for debouring is required",
+      });
+    }
+
+    const result = await this.studentService.debourStudent(id, reason, adminId);
+    res.status(result.statusCode).json(result);
+  });
+
+  // Add this method to the StudentController class
+  revokeDebour = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user?._id; // Assuming you have user info in request
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Reason for revoking debour is required",
+      });
+    }
+
+    const result = await this.studentService.revokeDebour(id, reason, adminId);
+    res.status(result.statusCode).json(result);
+  });
 }
