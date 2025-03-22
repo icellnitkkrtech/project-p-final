@@ -9,7 +9,7 @@ const studentService = {
 
   getStudentById: async (id) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/v1/students/profile/${id}`);
+      const response = await axios.get(`${API_BASE_URL}/student/profile/${id}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -57,7 +57,7 @@ const studentService = {
 
   deleteStudent: async (studentId, reason) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/api/v1/students/delete/${studentId}`, {
+      const response = await axios.delete(`${API_BASE_URL}/student/delete/${studentId}`, {
         data: { reason }
       });
       return response;

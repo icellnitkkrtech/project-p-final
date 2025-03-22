@@ -148,25 +148,26 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
   // Add this new state
   const [filteredStudents, setFilteredStudents] = useState([]);
 
-  // Modify the useEffect to respond to refreshData changes
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await studentService.getStudents(filters, { page, rowsPerPage });
-        console.log("Fetched students data:", response);
+  // Add this before the useEffect
+  const fetchStudents = async () => {
+    try {
+      const response = await studentService.getStudents(filters, { page, rowsPerPage });
+      console.log("Fetched students data:", response);
 
-        if (response && response.data && Array.isArray(response.data)) {
-          setStudents(response.data);
-        } else {
-          setStudents([]);
-          console.error("Unexpected response structure:", response);
-        }
-      } catch (error) {
-        console.error('Error fetching students:', error);
+      if (response && response.data && Array.isArray(response.data)) {
+        setStudents(response.data);
+      } else {
         setStudents([]);
+        console.error("Unexpected response structure:", response);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      setStudents([]);
+    }
+  };
 
+  // Modify the useEffect to use the fetchStudents function
+  useEffect(() => {
     fetchStudents();
   }, [filters, page, rowsPerPage, refreshData]);
 
@@ -285,16 +286,16 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
     try {
       const response = await studentService.deleteStudent(selectedStudentId, debarReason);
       
-      if (response.status === 204) {
-        setStudents((prevStudents) => 
-          prevStudents.filter(student => student._id !== selectedStudentId)
-        );
+      // Check for successful deletion
+      if (response.status === 200 || response.status === 204) {
         setSuccessMessage('Student has been debarred successfully');
         handleCloseDebarDialog();
+        // Refresh the student list
+        await fetchStudents(); // Now fetchStudents is accessible here
       }
     } catch (error) {
       console.error('Error debarring student:', error);
-      setErrorMessage('An error occurred while debarring the student.');
+      setErrorMessage(error.response?.data?.message || 'An error occurred while debarring the student.');
     }
   };
 

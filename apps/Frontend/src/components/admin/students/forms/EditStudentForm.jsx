@@ -48,7 +48,7 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
         setLoading(true);
         try {
           const response = await studentService.getStudentById(studentId);
-          if (response.success) {
+          if (response.statusCode === 200) { // Check for statusCode instead of success
             setFormData({
               personalInfo: response.data.personalInfo || {},
               academics: response.data.academics || {},
@@ -60,7 +60,7 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
           }
         } catch (error) {
           console.error('Error fetching student details:', error);
-          setError('Failed to load student data');
+          setError(error.response?.data?.message || 'Failed to load student data');
         } finally {
           setLoading(false);
         }
@@ -222,4 +222,4 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
   );
 };
 
-export default EditStudentForm; 
+export default EditStudentForm;
