@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect ,useState } from 'react';
 import {
     Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow, Paper, Typography, IconButton, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Box
@@ -17,6 +17,9 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState(null);
     const [assignedTasks, setAssignedTasks] = useState({});
+    const [pccUsers, setPccUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const handleExpandClick = (jobId) => {
         setExpanded(expanded === jobId ? null : jobId);
@@ -51,6 +54,25 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
             console.error("Error deleting JNF:", error);
         }
     };
+    //fro fetching pcc from backend server
+    useEffect(() => {
+        const fetchPCCUsers = async () => {
+            try {
+                const response = await jnfService.getPCC();
+                console.log("pcc ",response);
+                if (response.data.success) {
+                    setPccUsers(response.data.data);
+                }
+            } catch (error) {
+                setError(error.message);
+                console.error('Error fetching PCC users:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPCCUsers();
+    }, []);
 
     return (
         <>
@@ -135,11 +157,9 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                 open={assignDialogOpen}
                 onClose={() => setAssignDialogOpen(false)}
                 onAssign={handleAssign}
-                users={[
-                    { id: 1, name: 'Mohit(PCC)', email: 'mohit@example.com' },
-                    { id: 2, name: 'Muskan(PCC)', email: 'muskan@example.com' },
-                    { id: 3, name: 'Mohan(PCC)', email: 'mohan@example.com' },
-                ]}
+                users={pccUsers}
+                loading={loading}
+                error={error}
                 job={selectedJob}
             />
 

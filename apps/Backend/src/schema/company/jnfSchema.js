@@ -229,7 +229,7 @@ const JNFSchema = new Schema(
     status: {
       type: String,
       enum: ["draft", "submitted", "pending", "approved", "rejected"],
-      default: "draft",
+      default: "pending",
     },
     submittedBy: {
       type: Schema.Types.ObjectId,

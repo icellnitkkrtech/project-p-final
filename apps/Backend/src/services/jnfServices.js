@@ -76,4 +76,13 @@ export default class jnfServices {
         }
     }
     
+    async getJnfAssignments(jnfId) {
+        try {
+            const response = await this.jnfModel.getJnfAssignments(jnfId);
+            return new apiResponse(200, response, "JNF Assignments Fetched Successfully");
+        } catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
+    
 }
