@@ -1,86 +1,160 @@
-import { Table, TableHead, TableRow, TableCell, TableBody, Button, Icon } from '@mui/material';
-import DataTable from '../../common/DataTable';
-import { useNavigate } from 'react-router-dom';
-import { Delete } from '@mui/icons-material';
-import placementService from '../../../services/admin/placementService';
+import React, { useEffect, useState } from "react";
+import {
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogTitle,
+  Paper,
+  TableContainer,
+  Chip,
+  Tooltip,
+  IconButton,
+  CircularProgress,
+  Box,
+  Typography,
+} from "@mui/material";
+import { Visibility, Delete } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack";
+import placementService from "../../../services/admin/placementService";
 
-    const columns = [
-        { field: '_id', headerName: 'ID', width: 90 },
-        { field: 'companyName', headerName: 'Company', width: 200 },
-        { field: 'role', headerName: 'Role', width: 150 },
-        // { field: 'package', headerName: 'Package (LPA)', width: 150 },
-        // { field: 'appliedCount', headerName: 'Applied', width: 100 },
-        // { field: 'selectedCount', headerName: 'Selected', width: 100 },
-        { field: 'status', headerName: 'Status', width: 120 },
-        // { 
-        //   field: 'location', 
-        //   headerName: 'Locations', 
-        //   width: 200,
-        //   renderCell: (params) => (
-        //     <Tooltip title={params.value}>
-        //       <span>{params.value}</span>
-        //     </Tooltip>
-        //   )
-        // },
-      ];
+const PlacementTable = () => {
+  const [placements, setPlacements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedPlacementId, setSelectedPlacementId] = useState(null);
 
-
-const PlacementTable = ({ placements, mockPagination }) => {
-
-  
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPlacements = async () => {
+      try {
+        const data = await placementService.getAllPlacements();
+        setPlacements(data);
+      } catch (err) {
+        enqueueSnackbar("Error fetching placements", { variant: "error" });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlacements();
+  }, []);
 
   const handleNavigation = (path) => {
     navigate(path);
   };
 
-  const handleDeletePlacement = async (id) => {
+  const handleDeleteClick = (id) => {
+    setSelectedPlacementId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedPlacementId) return;
     try {
-      const response = await placementService.deletePlacement(id);
-      console.log(response);
-        alert('Placement deleted successfully');
-        window.location.reload();
+      await placementService.deletePlacement(selectedPlacementId);
+      setPlacements(placements.filter((p) => p._id !== selectedPlacementId));
+      enqueueSnackbar("Placement deleted successfully", { variant: "success" });
+      setDeleteDialogOpen(false);
     } catch (error) {
-      console.log(error);
+      enqueueSnackbar("Error deleting placement", { variant: "error" });
     }
   };
 
-
   return (
-    <Table>
-      <TableHead>
-        <TableRow>
-          {columns.map((column) => (
-            <TableCell key={column.field} style={{ minWidth: column.width }}>
-              {column.headerName}
-            </TableCell>
-          ))}
-          <TableCell>Action</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {placements.map((placement) => (
-          <TableRow key={placement._id}>
-            <TableCell>{placement._id}</TableCell>
-            <TableCell>{placement.companyDetails?.name}</TableCell>
-            <TableCell>{placement.jobProfile?.designation}</TableCell>
-            <TableCell>{placement.status}</TableCell>
-            <TableCell>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => handleNavigation(`/admin/placements/${placement._id}`)}
-              >
-                View
-              </Button>
-              <Delete
-              color='error'
-              onClick = {() => handleDeletePlacement(placement._id)} />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <>
+      <TableContainer component={Paper} sx={{ maxHeight: 450, overflowY: "auto" }}>
+        <Table stickyHeader>
+          {/* Table Head - Always Visible */}
+          <TableHead>
+            <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>ID</TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Company</TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Role</TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {/* Show Loading inside the table */}
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} sx={{ textAlign: "center", py: 3 }}>
+                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <CircularProgress />
+                    <Typography sx={{ ml: 2 }}>Loading Placements...</Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : placements.length === 0 ? (
+              // No Data Message (inside Table Body)
+              <TableRow>
+                <TableCell colSpan={5} sx={{ textAlign: "center", py: 3 }}>
+                  <Typography color="textSecondary">No placements found</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              // Display Placements when available
+              placements.map((placement) => (
+                <TableRow key={placement._id} hover>
+                  <TableCell sx={{ textAlign: "center" }}>{placement._id}</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>{placement.companyDetails?.name}</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>{placement.jobProfile?.designation}</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    <Chip
+                      label={placement.status}
+                      size="small"
+                      color={
+                        placement.status === "inProgress"
+                          ? "info"
+                          : placement.status === "closed"
+                          ? "suceess"
+                          : placement.status === "hold"
+                          ? "warning"
+                          : "error"
+                      }
+                    />
+                  </TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    <Tooltip title="View Placement">
+                      <IconButton color="primary" onClick={() => handleNavigation(`/admin/placements/${placement._id}`)}>
+                        <Visibility />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Placement">
+                      <IconButton color="error" onClick={() => handleDeleteClick(placement._id)}>
+                        <Delete />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Are you sure you want to delete this placement?</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

@@ -32,11 +32,22 @@ export default class jnfServices {
             return new apiResponse(500, null, error.message);
         }
     }
-    async updateJNF(jnfId, jnfData) {
+    async updateJNF(jnfId, formData) {
         try {
+            // Parse the form data if it's a string
+            const jnfData = typeof formData === 'string' ? JSON.parse(formData) : formData;
+
+            // Handle file path if present in the request
+            if (jnfData.fileUpload) {
+                const { fileIndex, filePath } = jnfData.fileUpload;
+                jnfData.jobProfiles[fileIndex].jobDescription.file = filePath;
+                delete jnfData.fileUpload; // Remove the temporary file data
+            }
+
             const response = await this.jnfModel.updateJnf(jnfId, jnfData);
             return new apiResponse(200, response, "JNF Updated Successfully");
         } catch (error) {
+            console.error('Error in updateJNF service:', error);
             return new apiResponse(500, null, error.message);
         }
     }
@@ -84,5 +95,12 @@ export default class jnfServices {
             return new apiResponse(500, null, error.message);
         }
     }
-    
-}
+    async updatestatus( jnfId, status ) {
+        try {
+            const response = await this.jnfModel.updateStatus(jnfId, status);
+            return new apiResponse(200, response, "Status Updated Successfully");
+        } catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
+    }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { useParams } from 'react-router-dom';
 import jnfService from '../../../services/admin/jnfService';
@@ -34,6 +34,64 @@ import SelectionProcessStep from './steps/SelectionProcessSteps';
 import EligibleBranchesStep from './steps/EligibleBranchesStep';
 import AdditionalDetailsStep from './steps/AdditionalDetailsStep';
 
+const validateJNF = (formData) => {
+    const errors = [];
+
+    // Company Details Validation
+    if (!formData.companyDetails.name) errors.push('Company name is required');
+    if (!formData.companyDetails.email) errors.push('Company email is required');
+    if (!formData.companyDetails.companyType) errors.push('Company type is required');
+    if (!formData.companyDetails.domain) errors.push('Company domain is required');
+
+    // Job Profiles Validation
+    formData.jobProfiles.forEach((profile, index) => {
+        if (!profile.designation) errors.push(`Job designation is required for Profile ${index + 1}`);
+        // if (!profile.jobDescription.description) errors.push(`Job description is required for Profile ${index + 1}`);
+        if (profile.jobDescription.attachFile && !profile.jobDescription.file) {
+            errors.push(`Job description file is required when attachment is enabled for Profile ${index + 1}`);
+        }
+        if (!profile.ctc) errors.push(`CTC is required for Profile ${index + 1}`);
+        if (!profile.jobType) errors.push(`Job type is required for Profile ${index + 1}`);
+    });
+
+    // Selection Process Validation
+    formData.selectionProcessForProfiles.forEach((profile, index) => {
+        if (!profile.rounds || profile.rounds.length === 0) {
+            errors.push(`At least one selection round is required for Profile ${index + 1}`);
+        }
+        if (!profile.expectedRecruits) errors.push(`Expected recruits is required for Profile ${index + 1}`);
+    });
+
+    // Eligibility Criteria Validation
+    if (!formData.eligibilityCriteria.minCgpa) errors.push('Minimum CGPA is required');
+
+    // Bond Details Validation
+    if (formData.bondDetails.hasBond && !formData.bondDetails.details) {
+        errors.push('Bond details are required when bond is applicable');
+    }
+
+    // Point of Contact Validation
+    if (!formData.pointOfContact || formData.pointOfContact.length === 0) {
+        errors.push('At least one point of contact is required');
+    } else {
+        formData.pointOfContact.forEach((contact, index) => {
+            if (!contact.name) errors.push(`Contact name is required for Contact ${index + 1}`);
+            if (!contact.email) errors.push(`Contact email is required for Contact ${index + 1}`);
+            if (!contact.mobile) errors.push(`Contact mobile is required for Contact ${index + 1}`);
+        });
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors
+    };
+};
+
+// Add this helper function to format error messages
+const formatErrorMessages = (errors) => {
+    return errors.join('\n');
+};
+
 const steps = [
     { number: 1, title: 'Company Details', icon: BusinessIcon },
     { number: 2, title: 'Job Profile', icon: WorkIcon },
@@ -43,13 +101,13 @@ const steps = [
     { number: 6, title: 'Review', icon: PreviewIcon }
 ];
 
-const index = () => {
+const index = ({ initialData, onSubmit, isEditing, onClose }) => { // Add onClose to props
     const { id } = useParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const theme = useTheme();
     const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(initialData || {
         // Company Details - structure mostly the same
         companyDetails: {
             name: '',
@@ -185,6 +243,13 @@ const index = () => {
 
         status: 'pending',
     });
+
+    // Add useEffect to handle initialData changes
+    useEffect(() => {
+        if (initialData) {
+            setFormData(initialData);
+        }
+    }, [initialData]);
 
     // Handlers
     const handleCompanyInputChange = (e) => {
@@ -416,43 +481,68 @@ const index = () => {
 
     const handleSubmit = async () => {
         try {
+            const validation = validateJNF(formData);
+            if (!validation.valid) {
+                alert(formatErrorMessages(validation.errors));
+                return;
+            }
+
             setLoading(true);
             setError(null);
-            
-            // Create FormData instance
+
             const formDataToSend = new FormData();
             
-            // Check for file attachments in job profiles
+            // Check for file attachments
             formData.jobProfiles.forEach((profile, index) => {
                 if (profile.jobDescription.attachFile && profile.jobDescription.file) {
                     formDataToSend.append('jobDescriptionFile', profile.jobDescription.file);
-                    formDataToSend.append('fileJobProfileIndex', index);
+                    formDataToSend.append('fileJobProfileIndex', index.toString());
                 }
             });
             
-            // Add the rest of the form data
-            formDataToSend.append('formData', JSON.stringify({
+            // Update data with status change
+            const dataToSend = {
                 ...formData,
-                submittedBy: id,
-                submissionDate: new Date()
-            }));
+                status: 'pending',
+                submissionDate: new Date().toISOString()
+            };
 
-            console.log("Sending form data:", formDataToSend);
-            
-            const response = await jnfService.create(formDataToSend);
-            
-            if (response) {
-                alert('JNF submitted successfully');
-                console.log("response", response);
+// Add the form data
+            formDataToSend.append('formData', JSON.stringify(dataToSend));
+
+            let response;
+            if (isEditing && formData._id) {
+                response = await jnfService.update(formData._id, formDataToSend);
+                if (response?.data) {
+                    if (onSubmit) {
+                        onSubmit(response.data);
+                    }
+                    if (onClose) {
+                        onClose(); // Close dialog after successful update
+                    }
+                    alert('JNF updated successfully');
+                }
+            } else {
+                response = await jnfService.create(formDataToSend);
+                if (response?.data) {
+                    if (onSubmit) {
+                        onSubmit(response.data);
+                        onClose && onClose();
+                    }
+                }
             }
+
+            // Show success message
+            alert(`JNF ${isEditing ? 'updated' : 'submitted'} successfully`);
+
         } catch (err) {
-            alert('Failed to submit JNF');
-            setError(err?.message || 'Failed to submit JNF');
-            console.error('Error submitting JNF:', err);
+            setError(err?.message || `Failed to ${isEditing ? 'update' : 'submit'} JNF`);
+            alert(`Failed to ${isEditing ? 'update' : 'submit'} JNF: ${err.message}`);
         } finally {
             setLoading(false);
         }
     };
+
     const renderStep = () => {
         switch (currentStep) {
             case 1:

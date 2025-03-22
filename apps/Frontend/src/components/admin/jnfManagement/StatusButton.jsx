@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,, useEffect } from 'react';
 import { Box, IconButton, Typography, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -9,6 +9,12 @@ import jnfService from '../../../services/admin/jnfService';
 const StatusButton = ({ job, onReview }) => {
     const [open, setOpen] = useState(false);
     const [statusToUpdate, setStatusToUpdate] = useState(null);
+    const [currentStatus, setCurrentStatus] = useState(job.status);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        setCurrentStatus(job.status);
+    }, [job.status]);
 
     const handleConfirm = (status) => {
         setStatusToUpdate(status);
