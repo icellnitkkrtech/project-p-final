@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Card, CardContent, Button, Dialog, DialogTitle, 
   DialogContent, DialogActions, TextField, Stepper, Step, StepLabel, FormControl, InputLabel, Select, MenuItem, Grid,
-  IconButton, Snackbar, Alert, Chip
+  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText
 } from "@mui/material";
-import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges } from "@mui/icons-material";
+import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event } from "@mui/icons-material";
 import RoundStudents from "./RoundStudents";
 import { styled } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
-import { Event, AccessTime, LocationOn, List, Schedule , Upcoming, Autorenew,CheckCircle} from "@mui/icons-material";
+import { AccessTime, LocationOn, Schedule, Upcoming, Autorenew, CheckCircle } from "@mui/icons-material";
 import placementService from "../../../services/admin/placementService";
 
 const RoundButton = styled(IconButton)(({ theme }) => ({
@@ -54,17 +54,32 @@ const getStatusIcon = (status) => {
 
 const PlacementRounds = ({ placementId }) => {
 
-  const [roundDetails, setRoundDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [rounds, setRounds] = useState([]);
-  const [selectedRound, setSelectedRound] = useState(null);
-  const [editRound, setEditRound] = useState( null );
-  const [hover, setHover]= useState(false);
-  const [openStudentDialog, setOpenStudentDialog] = useState(false);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [openNewRoundDialog, setOpenNewRoundDialog] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [roundDetails, setRoundDetails] = useState(null); // Stores details of all rounds
+  const [loading, setLoading] = useState(true); // Loading state while fetching data
+  const [error, setError] = useState(false); // Error state for API failures
+  const [rounds, setRounds] = useState([]); // Array of all rounds
+  const [selectedRound, setSelectedRound] = useState(null); // Currently selected round
+  const [editRound, setEditRound] = useState(null); // Round being edited
+  const [hover, setHover] = useState(false); // Hover state for UI elements
+  const [openStudentDialog, setOpenStudentDialog] = useState(false); // Dialog for viewing students
+  const [openEditDialog, setOpenEditDialog] = useState(false); // Dialog for editing round
+  const [openNewRoundDialog, setOpenNewRoundDialog] = useState(false); // Dialog for adding new round
+  const [openResultDialog, setOpenResultDialog] = useState(false); // Dialog for viewing/declaring results
+  const [snackbar, setSnackbar] = useState({ 
+    open: false, 
+    message: "", 
+    severity: "success" 
+  }); // For showing notifications
+  const [roundResult, setRoundResult] = useState({
+    resultMessage: "",
+    resultDescription: ""
+  });
+  const [resultData, setResultData] = useState({
+    resultMessage: "",
+    resultDescription: ""
+  });
+  const [showResult, setShowResult] = useState(false); // Toggle for showing results
+  const [openDeclareResultDialog, setOpenDeclareResultDialog] = useState(false);
 
   const fetchRoundDetails = async () => {
     try {
@@ -73,13 +88,17 @@ const PlacementRounds = ({ placementId }) => {
       console.log("Rounds",response.rounds);
       console.log("Round Details",response);
       setRoundDetails(response);
-      setRounds(response.rounds);
-      if (response.rounds.length > 0) {
+      setRounds(response.rounds || []);
+      if (response.rounds && response.rounds.length > 0) {
         setSelectedRound(response.rounds[0]);
+      } else {
+        setSelectedRound(null);
       }
     } catch (err) {
       console.log("Error",err);
       setError("Failed to load placement rounds.");
+      setRounds([]);
+      setSelectedRound(null);
     } finally {
       setLoading(false);
     }
@@ -101,9 +120,33 @@ const PlacementRounds = ({ placementId }) => {
     fetchRoundDetails();
   }, [placementId]);
 
-  if (loading) return <Typography>Loading...</Typography>;
-  if (error) return <Typography color="error">{error}</Typography>;
-  if (!roundDetails) return <Typography>No Round Details available.</Typography>;
+  useEffect(() => {
+    const fetchRoundResult = async () => {
+      try {
+        if (!selectedRound) return;
+        
+        const result = await placementService.getResults(placementId, selectedRound._id);
+        if (result) {
+          setRoundResult({
+            resultMessage: result.resultMessage,
+            resultDescription: result.resultDescription
+          });
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (err) {
+        console.error("Error fetching round result:", err);
+        // Only set error for non-404 responses
+        if (!err.message?.includes("No results found")) {
+          setError(err.message || "Failed to fetch round result");
+        }
+      }
+    };
+
+    if (placementId && selectedRound) {
+      fetchRoundResult();
+    }
+  }, [placementId, selectedRound]);
 
   const handleRoundClick = (index) => {
     setSelectedRound(rounds[index]);
@@ -219,6 +262,63 @@ const PlacementRounds = ({ placementId }) => {
     setEditRound({ ...editRound, [event.target.name]: event.target.value });
   };
 
+  const handleDeclareResult = async () => {
+      if (!resultData.resultMessage || !resultData.resultDescription || !selectedRound) {
+        setSnackbar({
+          open: true,
+          message: "Please fill all required fields",
+          severity: "error"
+        });
+        return;
+      }
+
+      try{
+        const resultDeclare ={
+          resultMessage: resultData.resultMessage,
+          resultDescription: resultData.resultDescription,
+        };
+
+        const response = await placementService.declareResults(placementId, selectedRound._id, resultDeclare);
+
+      // Check if response exists and handle accordingly
+      if (response) {
+        setSnackbar({
+          open: true,
+          message: "Results declared successfully!",
+          severity: "success"
+        });
+        setOpenDeclareResultDialog(false);
+        setResultData({
+          resultMessage: "",
+          resultDescription: ""
+        });
+        fetchRoundDetails();
+      } else {
+        throw new Error(response?.message || "Failed to declare results");
+      }
+    } catch (error) {
+      console.error("Error declaring results:", error);
+      setSnackbar({
+        open: true,
+        message: error.message || "Failed to declare results",
+        severity: "error"
+      });
+    }
+  };
+
+  const handleViewResults = async () => {
+    try {
+      setRoundResult(roundResult);
+      setOpenResultDialog(true);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to fetch results",
+        severity: "error"
+      });
+    }
+  };
+
   return (
     <Box sx={{ width: "100%", p: 2 }}>
 
@@ -230,7 +330,7 @@ const PlacementRounds = ({ placementId }) => {
       </Snackbar>
 
       <Stepper
-  activeStep={rounds.findIndex(r => r._id === selectedRound._id)}
+  activeStep={selectedRound ? rounds.findIndex(r => r._id === selectedRound._id) : 0}
   alternativeLabel
   sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", rowGap: 2, width: "100%", my: 3 }}
 >
@@ -240,7 +340,7 @@ const PlacementRounds = ({ placementId }) => {
       <StepLabel StepIconComponent={() => (
         <Box sx={{
           width: 35, height: 35, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-          backgroundColor: selectedRound._id === round._id 
+          backgroundColor: selectedRound && selectedRound._id === round._id 
           ? "gray" 
           : round.roundStatus === "completed" 
             ? "#4caf50"   // Green (Success)
@@ -316,7 +416,7 @@ const PlacementRounds = ({ placementId }) => {
                     <Button variant="contained" color= {getStatusColor(selectedRound.roundStatus)} size="small" onClick={handleOpenStudentDialog} startIcon={<List />}>
                       Manage
                     </Button>
-                    <Button variant="outlined" color={getStatusColor(selectedRound.roundStatus)} size="small" startIcon={<Event />}>
+                    <Button variant="outlined" color={getStatusColor(selectedRound.roundStatus)} size="small" onClick={() => setOpenDeclareResultDialog(true)} startIcon={<Event />}>
                       Declare Results
                     </Button>
                   </>
@@ -327,7 +427,13 @@ const PlacementRounds = ({ placementId }) => {
                   </Button>
                 )}
                 {selectedRound.roundStatus === "completed" && (
-                  <Button variant="outlined" color= {getStatusColor(selectedRound.roundStatus)} size="small" startIcon={<AccessTime />}>
+                  <Button 
+                    variant="outlined" 
+                    color={getStatusColor(selectedRound.roundStatus)} 
+                    size="small" 
+                    onClick={handleViewResults}
+                    startIcon={<AccessTime />}
+                  >
                     View Results
                   </Button>
                 )}
@@ -411,6 +517,88 @@ const PlacementRounds = ({ placementId }) => {
         <DialogActions>
           <Button onClick={() => setOpenNewRoundDialog(false)} color="secondary">Cancel</Button>
           <Button onClick={handleAddNewRound} color="primary" variant="contained">Add Round</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Declare Result Dialog */}
+      <Dialog 
+        open={openDeclareResultDialog} 
+        onClose={() => {
+          setOpenDeclareResultDialog(false);
+          setResultData({
+            resultMessage: "",
+            resultDescription: ""
+          });
+        }} 
+        fullWidth 
+        maxWidth="md"
+      >
+        <DialogTitle>Declare Round Results</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Result Message"
+            value={resultData.resultMessage}
+            onChange={(e) => setResultData({...resultData, resultMessage: e.target.value})}
+            required
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Result Description"
+            multiline
+            rows={4}
+            value={resultData.resultDescription}
+            onChange={(e) => setResultData({...resultData, resultDescription: e.target.value})}
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setOpenDeclareResultDialog(false);
+            setResultData({
+              resultMessage: "",
+              resultDescription: ""
+            });
+          }}>Cancel</Button>
+          <Button 
+            onClick={handleDeclareResult} 
+            variant="contained" 
+            color="primary"
+            disabled={!resultData.resultMessage || !resultData.resultDescription}
+          >
+            Declare Results
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Result Dialog */}
+      <Dialog 
+        open={openResultDialog} 
+        onClose={() => setOpenResultDialog(false)} 
+        fullWidth 
+        maxWidth="md"
+      >
+        <DialogTitle>Round Results</DialogTitle>
+        <DialogContent>
+          <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Result Message
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {roundResult.resultMessage}
+            </Typography>
+            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+              Result Description
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {roundResult.resultDescription}
+            </Typography>
+          </Paper>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenResultDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>
