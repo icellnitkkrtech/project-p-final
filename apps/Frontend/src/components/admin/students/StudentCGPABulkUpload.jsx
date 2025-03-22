@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -20,20 +21,37 @@ import {
   CheckCircle,
   Error,
 } from '@mui/icons-material';
-import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import studentService from '../../../services/admin/studentService';
 import { API_BASE_URL } from '../../../config/constants';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
+import axios from 'axios';
 
 const StudentCGPABulkUpload = () => {
+  const [students, setStudents] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadResults, setUploadResults] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Fetch students when component mounts
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const response = await studentService.getStudents();
+      if (response.statusCode === 200) {
+        setStudents(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  };
 
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -46,100 +64,140 @@ const StudentCGPABulkUpload = () => {
     setUploading(true);
     setErrorMessage('');
     setSuccessMessage('');
-    setUploadResults(null);
+    setUploadProgress(0);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const data = e.target.result;
-      let cgpaUpdates = [];
-
       try {
-        const fileType = selectedFile.type;
-        if (fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || fileType === 'application/vnd.ms-excel') {
-          const workbook = XLSX.read(data, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          cgpaUpdates = XLSX.utils.sheet_to_json(sheet);
-        } else if (fileType === 'text/csv') {
-          Papa.parse(data, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-              cgpaUpdates = results.data;
-              processCGPAUpdates(cgpaUpdates);
-            },
-            error: (error) => {
-              setErrorMessage('Error parsing CSV file.');
-              setUploading(false);
-            }
-          });
-          return;
-        } else {
-          throw new Error('Unsupported file type');
-        }
+        const csvData = e.target.result;
+        Papa.parse(csvData, {
+          header: true,
+          skipEmptyLines: true,
+          complete: async (results) => {
+            console.log('Parsed CSV data:', results.data);
 
-        await processCGPAUpdates(cgpaUpdates);
+            const updates = results.data;
+            const totalUpdates = updates.length;
+            let successful = 0;
+            let failed = 0;
+            const errors = [];
+
+            for (let i = 0; i < updates.length; i++) {
+              try {
+                const rollNumber = updates[i].Roll_Number;
+                const cgpa = updates[i].CGPA;
+
+                // Validate data
+                if (!rollNumber || cgpa === undefined || cgpa === '') {
+                  failed++;
+                  errors.push({
+                    row: i + 2,
+                    rollNumber: rollNumber || 'N/A',
+                    error: `Missing ${!rollNumber ? 'Roll Number' : 'CGPA'}`
+                  });
+                  continue;
+                }
+
+                // Validate CGPA format
+                const cgpaNum = Number(cgpa);
+                if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
+                  failed++;
+                  errors.push({
+                    row: i + 2,
+                    rollNumber: rollNumber,
+                    error: 'CGPA must be a number between 0 and 10'
+                  });
+                  continue;
+                }
+
+                try {
+                  const response = await axios.put(
+                    `${API_BASE_URL}/student/update-cgpa/${rollNumber}`,
+                    { cgpa: cgpaNum },
+                    {
+                      headers: { 'Content-Type': 'application/json' }
+                    }
+                  );
+
+                  if (response.data.statusCode === 200) {
+                    successful++;
+                  } else {
+                    failed++;
+                    errors.push({
+                      row: i + 2,
+                      rollNumber: rollNumber,
+                      error: response.data.message
+                    });
+                  }
+                } catch (updateError) {
+                  failed++;
+                  errors.push({
+                    row: i + 2,
+                    rollNumber: rollNumber,
+                    error: updateError.response?.data?.message || 'Update failed'
+                  });
+                }
+
+                setUploadProgress(((i + 1) / totalUpdates) * 100);
+              } catch (error) {
+                failed++;
+                errors.push({
+                  row: i + 2,
+                  rollNumber: updates[i].Roll_Number || 'N/A',
+                  error: error.message
+                });
+              }
+            }
+
+            setUploadResults({
+              total: totalUpdates,
+              successful,
+              failed,
+              errors
+            });
+
+            if (successful > 0) {
+              setSuccessMessage(`Successfully updated ${successful} student CGPAs`);
+              fetchStudents();
+            }
+          }
+        });
       } catch (error) {
-        setErrorMessage(error.message || 'Error processing file');
+        setErrorMessage('Error processing file: ' + error.message);
+      } finally {
         setUploading(false);
       }
     };
 
-    reader.readAsBinaryString(selectedFile);
-  };
-
-  const processCGPAUpdates = async (updates) => {
-    const results = {
-      total: updates.length,
-      successful: 0,
-      failed: 0,
-      errors: []
-    };
-
-    try {
-      for (let i = 0; i < updates.length; i++) {
-        const update = updates[i];
-        setUploadProgress(Math.round(((i + 1) / updates.length) * 100));
-
-        try {
-          const response = await studentService.updateStudentCGPA(update.rollNumber, update.cgpa);
-          
-          if (response.statusCode === 200) {
-            results.successful++;
-          } else {
-            results.failed++;
-            results.errors.push({
-              row: i + 2, // +2 because Excel rows start at 1 and we have a header
-              rollNumber: update.rollNumber,
-              error: response.message
-            });
-          }
-        } catch (error) {
-          results.failed++;
-          results.errors.push({
-            row: i + 2,
-            rollNumber: update.rollNumber,
-            error: error.message
-          });
-        }
-      }
-
-      setUploadResults(results);
-      setSuccessMessage(`Successfully updated ${results.successful} out of ${results.total} CGPA records`);
-    } catch (error) {
-      setErrorMessage('Error processing updates');
-    } finally {
-      setUploading(false);
-    }
+    reader.readAsText(selectedFile);
   };
 
   const handleDownloadTemplate = () => {
-    const link = document.createElement('a');
-    link.href = `${API_BASE_URL}/student/cgpa-template`;
-    link.setAttribute('download', 'cgpa_update_template.xlsx');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Create CSV content with proper headers
+      const csvContent = [
+        ['Roll_Number', 'CGPA'], // Changed header to match exactly what upload expects
+        ...students.map(student => [
+          student.personalInfo?.rollNumber || '',
+          student.academics?.cgpa || '0' // Default to '0' if no CGPA
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      console.log('CSV Content:', csvContent); // Debug log
+
+      // Create and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'student_cgpa_template.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download error:', error);
+      setErrorMessage('Error downloading template');
+    }
   };
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -161,7 +219,7 @@ const StudentCGPABulkUpload = () => {
             
             <Box sx={{ mb: 3 }}>
               <Typography variant="body2" color="textSecondary" gutterBottom>
-                Download the template file, fill in the student roll numbers and CGPAs, and upload it back.
+                Download current CGPA data, update the values, and upload it back.
               </Typography>
               <Button
                 variant="outlined"
@@ -169,7 +227,7 @@ const StudentCGPABulkUpload = () => {
                 onClick={handleDownloadTemplate}
                 sx={{ mr: 2 }}
               >
-                Download Template
+                Download Current CGPA Data
               </Button>
             </Box>
 
@@ -302,4 +360,4 @@ const StudentCGPABulkUpload = () => {
   );
 };
 
-export default StudentCGPABulkUpload; 
+export default StudentCGPABulkUpload;

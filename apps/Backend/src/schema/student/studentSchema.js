@@ -56,6 +56,11 @@ const StudentSchema = new Schema(
         type: String,
         enum: ["Male", "Female", "Other"],
       },
+      category: {
+        type: String,
+        enum: ["GENERAL", "OBC", "SC", "ST", "EWS"],
+        required: true
+      },
     },
 
     academics: {

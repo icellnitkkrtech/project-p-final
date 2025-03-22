@@ -12,9 +12,16 @@ import {
 } from '@mui/material';
 import { CloudUpload, Delete, Description } from '@mui/icons-material';
 
-const DocumentsForm = ({ formData, onChange, studentId }) => {
+const DocumentsForm = ({ formData = {}, onChange }) => {
   const [uploading, setUploading] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
+
+  const {
+    resume = null,
+    tenthCertificate = null,
+    twelfthCertificate = null,
+    graduationCertificate = null
+  } = formData;
 
   const handleFileUpload = async (event, documentType) => {
     const file = event.target.files[0];
@@ -131,29 +138,29 @@ const DocumentsForm = ({ formData, onChange, studentId }) => {
         <DocumentUploader
           label="Resume"
           type="resume"
-          value={formData.resume}
+          value={resume}
         />
         
         <DocumentUploader
           label="10th Certificate"
           type="tenthCertificate"
-          value={formData.tenthCertificate}
+          value={tenthCertificate}
         />
         
         <DocumentUploader
           label="12th Certificate"
           type="twelfthCertificate"
-          value={formData.twelfthCertificate}
+          value={twelfthCertificate}
         />
         
         <DocumentUploader
           label="Graduation Certificate"
           type="graduationCertificate"
-          value={formData.graduationCertificate}
+          value={graduationCertificate}
         />
       </Grid>
     </Grid>
   );
 };
 
-export default DocumentsForm; 
+export default DocumentsForm;
