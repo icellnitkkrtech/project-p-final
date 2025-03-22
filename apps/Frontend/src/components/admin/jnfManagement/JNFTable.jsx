@@ -33,7 +33,19 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const handleDeleteClick = (job) => {
         setSelectedJob(job);
         setDeleteDialogOpen(true);
-        console.log("delete this job or not???",job);
+    };
+
+    const handleConfirmDelete = async () => {
+        try {
+            if (!selectedJob?._id) return;
+            
+            await jnfService.delete(selectedJob._id);
+            setDeleteDialogOpen(false);
+            setSelectedJob(null);
+            onDelete(selectedJob._id); // This will update the parent component's state
+        } catch (error) {
+            console.error("Error deleting JNF:", error);
+        }
     };
 
     const handleAssign = (assignedTask) => {
@@ -46,15 +58,7 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
         }));
     };
 
-    const handleDelete = async (jobId) => {
-        try {
-            await jnfService.delete(jobId);
-            // setJnf((prevJnf) => prevJnf.filter((job) => job._id !== jobId));
-        } catch (error) {
-            console.error("Error deleting JNF:", error);
-        }
-    };
-    //fro fetching pcc from backend server
+    //for fetching pcc from backend server
     useEffect(() => {
         const fetchPCCUsers = async () => {
             try {
@@ -115,7 +119,7 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                                                     <IconButton
                                                         color="error"
                                                         size="small"
-                                                        onClick={() => handleDelete(job._id)}
+                                                        onClick={() => handleDeleteClick(job)} // Changed from handleDelete to handleDeleteClick
                                                         sx={{ padding: 0.5 }}
                                                     >
                                                         <Delete fontSize="small" />
@@ -166,11 +170,11 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 job={selectedJob}
-                onClose={() => setDeleteDialogOpen(false)}
-                onConfirm={() => {
-                    onDelete(selectedJob.id);
+                onClose={() => {
                     setDeleteDialogOpen(false);
+                    setSelectedJob(null);
                 }}
+                onConfirm={handleConfirmDelete}
             />
         </>
     );

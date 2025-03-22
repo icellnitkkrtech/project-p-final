@@ -9,10 +9,11 @@ import axios from "../../config/axios";
 import jnfService from "../../services/admin/jnfService";
 
 const JNFManagement = ({ searchTerm }) => {
+    const [jnfs, setJnfs] = useState([]);
     const [selectedJNF, setSelectedJNF] = useState(null);
-    const [jnf, setJnf] = useState([]);
     const [tab, setTab] = useState('all');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
 
     const handleViewJNF = (jnfItem) => setSelectedJNF(jnfItem);
     const handleOpenCreateDialog = () => setIsCreateDialogOpen(true);
@@ -21,16 +22,16 @@ const JNFManagement = ({ searchTerm }) => {
     useEffect(() => {
         const fetchAllJNFs = async () => {
             const response = await jnfService.getAll();
-            setJnf(response.data);
+            setJnfs(response.data);
         };
         fetchAllJNFs();
         }, []);
-        console.log(jnf);
+        console.log(jnfs);
 
 
     const handleReview = (jobId, newStatus) => {
-        setJnf((prevJnf) =>
-            prevJnf.map((job) =>
+        setJnfs((prevJnfs) =>
+            prevJnfs.map((job) =>
                 job.id === jobId ? { ...job, status: newStatus } : job
             )
         );
@@ -39,14 +40,33 @@ const JNFManagement = ({ searchTerm }) => {
     const handleDeleteJNF = async (jobId) => {
         try {
             await jnfService.delete(jobId);
-            setJnf((prevJnf) => prevJnf.filter((job) => job._id !== jobId));
+            setJnfs((prevJnfs) => prevJnfs.filter((job) => job._id !== jobId));
         } catch (error) {
             console.error("Error deleting JNF:", error);
         }
     };
 
+    const handleUpdate = (updatedJNF) => {
+        setJnfs(prevJnfs => 
+            prevJnfs.map(jnf => 
+                jnf._id === updatedJNF._id ? updatedJNF : jnf
+            )
+        );
+    };
+
+    // Function to refresh JNF list
+    const handleJNFUpdate = (updatedJNF) => {
+        setJnfs(prevJnfs => 
+            prevJnfs.map(jnf => 
+                jnf._id === updatedJNF._id ? updatedJNF : jnf
+            )
+        );
+        setSelectedJNF(null);
+        setEditDialogOpen(false);
+    };
+
     // Filter logic for the table
-    const filteredJnfs = jnf.filter((jnfItem) => {
+    const filteredJnfs = jnfs.filter((jnfItem) => {
         const search = searchTerm.toLowerCase();
         const matchesStatus = tab === 'all' || jnfItem.status === tab;
         const matchesSearch =
@@ -59,27 +79,45 @@ const JNFManagement = ({ searchTerm }) => {
         return matchesStatus && matchesSearch;
     });
 
+    const handleStatusUpdate = (jnfId, newStatus) => {
+        setJnfs(prevJnfs => 
+            prevJnfs.map(jnf => 
+                jnf._id === jnfId 
+                    ? { ...jnf, status: newStatus }
+                    : jnf
+            )
+        );
+        setSelectedJNF(null);
+    };
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', mt: 2 }}>
             <NFHeader tab={tab} setTab={setTab} onCreate={handleOpenCreateDialog} title = {"JNF"}/>
-            <JNFTable jnfs= {filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} />
+            <JNFTable jnfs= {filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} onEdit={(jnf) => {
+                    setSelectedJNF(jnf);
+                    setEditDialogOpen(true);
+                }} />
             {selectedJNF && (
                 <ViewJNFDialog
                     selectedJNF={selectedJNF}
                     onClose={() => setSelectedJNF(null)}
-                    onUpdateStatus={(id, status) => {
-                        setJnf((prevState) =>
-                            prevState.map((jnfItem) =>
-                                jnfItem.id === id ? { ...jnfItem, status } : jnfItem
-                            )
-                        );
-                        setSelectedJNF(null);
-                    }}
+                    onReview={handleStatusUpdate}
                     onDelete={handleDeleteJNF}
-                    onReview={handleReview}
+                    onUpdate={handleUpdate}
                 />
             )}
             <CreateJNFDialog open={isCreateDialogOpen} onClose={handleCloseCreateDialog} />
+            {editDialogOpen && (
+                <EditJNFDialog
+                    open={editDialogOpen}
+                    jnf={selectedJNF}
+                    onClose={() => {
+                        setEditDialogOpen(false);
+                        setSelectedJNF(null);
+                    }}
+                    onSubmit={handleJNFUpdate}
+                />
+            )}
         </Box>
     );
 };
@@ -117,7 +155,9 @@ const INFManagement = ({ searchTerm }) => {
             )
         );
     };
-
+    useEffect(() => {
+        fetchJNFs();
+    }, []);
     const handleDeleteJNF = (jobId) => {
         setJnf((prevJnf) => prevJnf.filter((job) => job.id !== jobId));
     };
