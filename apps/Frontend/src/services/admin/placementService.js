@@ -92,10 +92,8 @@ const placementService = {
     },
     
     //13 Update selected students in a round
-    updateSelectedStudents: async (roundId, selectedStudentIds) => {
-        const response = await axios.put(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/update-selected-students`, {
-            selectedStudents: selectedStudentIds
-        });
+    updateSelectedStudents: async (id, roundId, data) => {
+        const response = await axios.put(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/update-selected-students`, data);
         return response.data;
     },
     

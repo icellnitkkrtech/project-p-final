@@ -151,8 +151,7 @@ export default class PlacementController {
             if (!response) {
                 return res.status(404).json({ message: "Round not found" });
             }
-            const applicantStudents = response.roundDetails.rounds[0].applicantStudents || [];
-            res.status(200).json(applicantStudents);
+            res.status(200).json(response);
         } catch (error) {
             res.status(500).json({ message: "Error fetching applicants", error });
         }
@@ -164,8 +163,7 @@ export default class PlacementController {
             if (!response) {
                 return res.status(404).json({ message: "Round not found" });
             }
-            const selectedStudents = response.roundDetails.rounds[0].selectedStudents || [];
-            res.status(200).json(selectedStudents);
+            res.status(200).json(response);
         } catch (error) {
             res.status(500).json({ message: "Error fetching selected students", error });
         }
@@ -177,8 +175,7 @@ export default class PlacementController {
             if (!response) {
                 return res.status(404).json({ message: "Round not found" });
             }
-            const appearedStudents = response.roundDetails.rounds[0].appearedStudents || [];
-            res.status(200).json(appearedStudents);
+            res.status(200).json(response);
         } catch (error) {
             res.status(500).json({ message: "Error fetching appeared students", error });
         }

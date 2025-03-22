@@ -119,9 +119,9 @@ export default class PlacementModel {
     async getApplicantsForRound(id, roundId) {
         console.log("Placement Model: getApplicantsForRound called");
         try {
-            return await this.placement.findOne(
+            return await this.placementDrive.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
-                { "roundDetails.rounds.$": 1 }
+                { "roundDetails.rounds.$.applicantStudents": 1 }
             ).populate({
                 path: "roundDetails.rounds.applicantStudents",
                 model: "Student"
@@ -135,13 +135,10 @@ export default class PlacementModel {
     async getSelectedStudentsForRound(id, roundId) {
         console.log("Placement Model: getSelectedStudentsForRound called");
         try {
-            return await this.placement.findOne(
+            return await this.placementDrive.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
-                { "roundDetails.rounds.$": 1 }
-            ).populate({ 
-                path: "roundDetails.rounds.selectedStudents", 
-                model: "Student" 
-            });
+                { "roundDetails.rounds.$.selectedStudents": 1 }
+            ).populate({ path: "roundDetails.rounds.selectedStudents", model: "Student" });
         } catch (error) {
             console.error("Error in getSelectedStudentsForRound:", error);
             throw error;
@@ -149,17 +146,14 @@ export default class PlacementModel {
     }
 
     async getAppearedStudentsForRound(id, roundId) {
-        console.log("Placement Model: getAppearedStudentsForRound called");
+        console.log("Placement Model: getApperaredStudentsForRound called");
         try {
-            return await this.placement.findOne(
+            return await this.placementDrive.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
-                { "roundDetails.rounds.$": 1 }
-            ).populate({ 
-                path: "roundDetails.rounds.appearedStudents", 
-                model: "Student" 
-            });
+                { "roundDetails.rounds.$.appearedStudents": 1 }
+            ).populate({ path: "roundDetails.rounds.appearedStudents", model: "Student" });
         } catch (error) {
-            console.error("Error in getAppearedStudentsForRound:", error);
+            console.error("Error in getApperaredStudentsForRound:", error);
             throw error;
         }
     }
