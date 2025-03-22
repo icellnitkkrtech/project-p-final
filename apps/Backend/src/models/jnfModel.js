@@ -1,4 +1,3 @@
-
 import JNF from "../schema/company/jnfSchema.js";
 import User from "../schema/userSchema.js";
 import apiResponse from "../utils/apiResponse.js";
@@ -79,5 +78,35 @@ import apiResponse from "../utils/apiResponse.js";
                     
 
 
+                }
+                async getJnfAssignments(jnfId) {
+                    try {
+                        const jnf = await this.jnf
+                            .findById(jnfId)
+                            .select('assignedUser')  // Only select the assignedUser field
+                            .populate('assignedUser', 'name email'); // Populate only name and email
+
+                        if (!jnf) {
+                            return new apiResponse(404, null, "JNF not found");
+                        }
+
+                        // If there's an assigned user, format the response
+                        if (jnf.assignedUser) {
+                            const assignmentData = {
+                                user: {
+                                    _id: jnf.assignedUser._id,
+                                    name: jnf.assignedUser.name,
+                                    email: jnf.assignedUser.email
+                                },
+                                assignedDate: jnf.updatedAt // Using updatedAt as assignment date
+                            };
+                            return new apiResponse(200, assignmentData, "JNF assignment fetched successfully");
+                        }
+
+                        // If no user is assigned
+                        return new apiResponse(200, null, "No user assigned to this JNF");
+                    } catch (error) {
+                        return new apiResponse(500, null, error.message);
+                    }   
                 }
             }

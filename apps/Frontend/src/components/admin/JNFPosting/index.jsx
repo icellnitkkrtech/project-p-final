@@ -183,7 +183,7 @@ const index = () => {
             contests: ''
         },
 
-        status: 'draft',
+        status: 'pending',
     });
 
     // Handlers
@@ -419,17 +419,27 @@ const index = () => {
             setLoading(true);
             setError(null);
             
-            // Format job profiles for submission
-            const formattedData = {
+            // Create FormData instance
+            const formDataToSend = new FormData();
+            
+            // Check for file attachments in job profiles
+            formData.jobProfiles.forEach((profile, index) => {
+                if (profile.jobDescription.attachFile && profile.jobDescription.file) {
+                    formDataToSend.append('jobDescriptionFile', profile.jobDescription.file);
+                    formDataToSend.append('fileJobProfileIndex', index);
+                }
+            });
+            
+            // Add the rest of the form data
+            formDataToSend.append('formData', JSON.stringify({
                 ...formData,
                 submittedBy: id,
                 submissionDate: new Date()
-            };
-    
-            console.log("Final formatted data for submission:", formattedData);
+            }));
+
+            console.log("Sending form data:", formDataToSend);
             
-            // Use jnfService instead of direct axios call
-            const response = await jnfService.create(formattedData);
+            const response = await jnfService.create(formDataToSend);
             
             if (response) {
                 alert('JNF submitted successfully');
