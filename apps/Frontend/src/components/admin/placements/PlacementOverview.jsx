@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, Typography, Divider, Box } from "@mui/material";
+import { Card, CardContent, Typography, Divider, Box, CircularProgress } from "@mui/material";
 import {
   Business,
   Work,
@@ -30,7 +30,13 @@ const PlacementOverview = ({ id }) => {
     fetchPlacement();
   }, [id]);
 
-  if (loading) return <Typography>Loading...</Typography>;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
   if (error) return <Typography color="error">{error}</Typography>;
   if (!placementData)
     return <Typography>No placement data available.</Typography>;
@@ -107,10 +113,10 @@ const PlacementOverview = ({ id }) => {
             <strong>Job Type:</strong> {jobProfile?.jobType}
           </Typography>
           <Typography variant="body1">
-            <strong>CTC:</strong> ₹{jobProfile?.ctc}
+            <strong>CTC:</strong> ₹{jobProfile?.ctc/100000} LPA
           </Typography>
           <Typography variant="body1">
-            <strong>Take Home Salary:</strong> ₹{jobProfile?.takeHome}
+            <strong>Take Home Salary:</strong> ₹{jobProfile?.takeHome/100000} LPA
           </Typography>
           {jobProfile?.stipend && (
             <Typography variant="body1">

@@ -1,5 +1,5 @@
 import axios from '../../config/axios';
-import { API_BASE_URL } from '../../config/constants';
+import { API_BASE_URL } from '../../config/constants.js';
 
 const placementService = {
     //1 Create a placement drive
@@ -143,7 +143,13 @@ const placementService = {
     deleteNotification: async (id, notificationId) => {
         const response = await axios.delete(`${API_BASE_URL}/placement/${id}/notifications/${notificationId}/delete`);
         return response.data;
-    }
+    },
+
+    //22 Get application details
+    getApplicationDetails: async (applicationId) => {
+        const response = await axios.get(`${API_BASE_URL}/student/applications/detail/${applicationId}`);
+        return response.data;
+      },
 };
 
 export default placementService;
