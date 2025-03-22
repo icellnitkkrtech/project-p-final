@@ -520,9 +520,7 @@ const Placements = () => {
         onFilterChange={handleFilterChange}
         onSearchChange={handleSearchChange}
       />
-      <PlacementTable
-        placements={placements}
-       />
+      <PlacementTable/>
     </Container>
   );
 };

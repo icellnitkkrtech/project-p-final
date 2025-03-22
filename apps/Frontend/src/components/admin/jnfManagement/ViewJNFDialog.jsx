@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Box } from '@mui/material';
+import { 
+    Dialog, 
+    DialogTitle, 
+    DialogContent, 
+    DialogActions, 
+    Button, 
+    IconButton, 
+    Box, 
+    Typography 
+} from '@mui/material';
 import JNFFormPreview from '../JNFPosting/JNFFormPreview';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import EditJNFDialog from './EditJNFDialog';
+import jnfService from '../../../services/admin/jnfService';
 
-const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose }) => {
+const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose, onUpdate }) => {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [statusToUpdate, setStatusToUpdate] = useState(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
     
     const handleConfirmOpen = (status) => {
         setStatusToUpdate(status);
@@ -18,11 +32,47 @@ const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose }) => {
         setStatusToUpdate(null);
     };
     
-    const handleReview = () => {
-        if (statusToUpdate) {
-            onReview(selectedJNF.id, statusToUpdate);
+    const handleReview = async () => {
+        try {
+            if (statusToUpdate) {
+                const response = await jnfService.updateStatus(selectedJNF._id, statusToUpdate);
+                if (response.success) {
+                    // Update parent component
+                    onReview(selectedJNF._id, statusToUpdate);
+                    // Close confirmation dialog
+                    handleConfirmClose();
+                    // Close main dialog
+                    onClose();
+                    // Show success message
+                    alert(`JNF ${statusToUpdate} successfully`);
+                }
+            }
+        } catch (error) {
+            console.error("Error updating JNF status:", error);
+            alert(`Failed to update JNF status: ${error.message}`);
         }
-        handleConfirmClose();
+    };
+
+    const handleDeleteClick = () => {
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        onDelete(selectedJNF._id); // Make sure to use _id instead of id
+        setDeleteConfirmOpen(false);
+        onClose();
+    };
+
+    const handleEditClick = () => {
+        setEditDialogOpen(true);
+    };
+
+    const handleUpdateSuccess = (updatedJNF) => {
+        if (onUpdate) {
+            onUpdate(updatedJNF);
+        }
+        setEditDialogOpen(false);
+        onClose();
     };
     
     return (
@@ -45,8 +95,10 @@ const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose }) => {
                 <DialogActions>
                     {selectedJNF.status === 'draft' && (
                         <Button
-                            color="error"
+                            color="primary"
                             variant="contained"
+                            onClick={handleEditClick}
+                            startIcon={<EditIcon />}
                         >
                             Edit
                         </Button>
@@ -56,7 +108,7 @@ const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose }) => {
                             <Button
                                 variant="contained"
                                 color="success"
-                                onClick={() => handleConfirmOpen('accepted')}
+                                onClick={() => handleConfirmOpen('approved')}
                             >
                                 Accept
                             </Button>
@@ -74,7 +126,7 @@ const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose }) => {
                         <IconButton
                             color="error"
                             size="small"
-                            onClick={() => onDelete(selectedJNF.id)}
+                            onClick={handleDeleteClick}
                             sx={{ padding: 0.5 }}
                         >
                             <DeleteIcon fontSize="small" />
@@ -83,6 +135,13 @@ const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose }) => {
                 </DialogActions>
             </Dialog>
             
+            <EditJNFDialog
+                open={editDialogOpen}
+                onClose={() => setEditDialogOpen(false)}
+                jnf={selectedJNF}
+                onUpdate={handleUpdateSuccess}
+            />
+
             {/* Confirmation Dialog */}
             <Dialog open={confirmOpen} onClose={handleConfirmClose}>
                 <DialogTitle>Confirm Status Change</DialogTitle>
@@ -95,6 +154,33 @@ const ViewJNFDialog = ({ selectedJNF, onReview, onDelete, onClose }) => {
                     </Button>
                     <Button onClick={handleReview} color="primary" autoFocus>
                         Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+                <DialogTitle>Confirm Delete</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete this JNF from {selectedJNF?.companyDetails?.name}?
+                        This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={() => setDeleteConfirmOpen(false)} 
+                        color="inherit"
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleDeleteConfirm} 
+                        color="error" 
+                        variant="contained"
+                        autoFocus
+                    >
+                        Delete
                     </Button>
                 </DialogActions>
             </Dialog>

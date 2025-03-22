@@ -1,4 +1,3 @@
-
 import JNF from "../schema/company/jnfSchema.js";
 import User from "../schema/userSchema.js";
 import apiResponse from "../utils/apiResponse.js";
@@ -41,10 +40,21 @@ import apiResponse from "../utils/apiResponse.js";
         async updateJnf(jnfId, jnfData) {
 
             try {
-                const updatedJnf = await this.jnf.findByIdAndUpdate
-                (jnfId, jnfData, { new: true });
-                return  new apiResponse(200, jnfData, "jnf updated successfully");
-                } catch (error) {
+// Ensure status is set to pending
+                jnfData.status = 'pending';
+                jnfData.submissionDate = new Date();
+
+                const updatedJNF = await this.jnf.findByIdAndUpdate(
+                    jnfId,
+                    jnfData,
+                    { new: true, runValidators: true }
+                );
+
+                if (!updatedJNF) {
+                    throw new Error('JNF not found');
+                }
+
+                apiResponse(200, jnf, "jnf deleted successful");  } catch (error) {
                     return new apiResponse(500, null, error.message);
                     }
                     }
@@ -79,5 +89,55 @@ import apiResponse from "../utils/apiResponse.js";
                     
 
 
+                }
+                async getJnfAssignments(jnfId) {
+                    try {
+                        const jnf = await this.jnf
+                            .findById(jnfId)
+                            .select('assignedUser')  // Only select the assignedUser field
+                            .populate('assignedUser', 'name email'); // Populate only name and email
+
+                        if (!jnf) {
+                            return new apiResponse(404, null, "JNF not found");
+                        }
+
+                        // If there's an assigned user, format the response
+                        if (jnf.assignedUser) {
+                            const assignmentData = {
+                                user: {
+                                    _id: jnf.assignedUser._id,
+                                    name: jnf.assignedUser.name,
+                                    email: jnf.assignedUser.email
+                                },
+                                assignedDate: jnf.updatedAt // Using updatedAt as assignment date
+                            };
+                            return new apiResponse(200, assignmentData, "JNF assignment fetched successfully");
+                        }
+
+                        // If no user is assigned
+                        return new apiResponse(200, null, "No user assigned to this JNF");
+                    } catch (error) {
+                        return new apiResponse(500, null, error.message);
+                    }   
+                }
+                async updateStatus(jnfId, status) {
+                    try {
+                        const jnf = await this.jnf.findByIdAndUpdate(
+                            jnfId,
+                            { 
+                                status,
+                                reviewDate: new Date()
+                            },
+                            { new: true }
+                        );
+
+                        if (!jnf) {
+                            return new apiResponse(404, null, "JNF not found");
+                        }
+
+                        return new apiResponse(200, jnf, "JNF status updated successfully");
+                    } catch (error) {
+                        return new apiResponse(500, null, error.message);
+                    }
                 }
             }

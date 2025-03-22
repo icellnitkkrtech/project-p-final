@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect ,useState } from 'react';
 import {
     Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow, Paper, Typography, IconButton, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
-    Box
+    Box, Card, CardContent, Avatar, Chip, Grid
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -17,6 +17,9 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState(null);
     const [assignedTasks, setAssignedTasks] = useState({});
+    const [pccUsers, setPccUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const handleExpandClick = (jobId) => {
         setExpanded(expanded === jobId ? null : jobId);
@@ -30,7 +33,19 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const handleDeleteClick = (job) => {
         setSelectedJob(job);
         setDeleteDialogOpen(true);
-        console.log("delete this job or not???",job);
+    };
+
+    const handleConfirmDelete = async () => {
+        try {
+            if (!selectedJob?._id) return;
+            
+            await jnfService.delete(selectedJob._id);
+            setDeleteDialogOpen(false);
+            setSelectedJob(null);
+            onDelete(selectedJob._id); // This will update the parent component's state
+        } catch (error) {
+            console.error("Error deleting JNF:", error);
+        }
     };
 
     const handleAssign = (assignedTask) => {
@@ -43,14 +58,25 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
         }));
     };
 
-    const handleDelete = async (jobId) => {
-        try {
-            await jnfService.delete(jobId);
-            // setJnf((prevJnf) => prevJnf.filter((job) => job._id !== jobId));
-        } catch (error) {
-            console.error("Error deleting JNF:", error);
-        }
-    };
+    //for fetching pcc from backend server
+    useEffect(() => {
+        const fetchPCCUsers = async () => {
+            try {
+                const response = await jnfService.getPCC();
+                console.log("pcc ",response);
+                if (response.data.success) {
+                    setPccUsers(response.data.data);
+                }
+            } catch (error) {
+                setError(error.message);
+                console.error('Error fetching PCC users:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPCCUsers();
+    }, []);
 
     return (
         <>
@@ -93,7 +119,7 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                                                     <IconButton
                                                         color="error"
                                                         size="small"
-                                                        onClick={() => handleDelete(job._id)}
+                                                        onClick={() => handleDeleteClick(job)} // Changed from handleDelete to handleDeleteClick
                                                         sx={{ padding: 0.5 }}
                                                     >
                                                         <Delete fontSize="small" />
@@ -135,22 +161,20 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                 open={assignDialogOpen}
                 onClose={() => setAssignDialogOpen(false)}
                 onAssign={handleAssign}
-                users={[
-                    { id: 1, name: 'Mohit(PCC)', email: 'mohit@example.com' },
-                    { id: 2, name: 'Muskan(PCC)', email: 'muskan@example.com' },
-                    { id: 3, name: 'Mohan(PCC)', email: 'mohan@example.com' },
-                ]}
+                users={pccUsers}
+                loading={loading}
+                error={error}
                 job={selectedJob}
             />
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 job={selectedJob}
-                onClose={() => setDeleteDialogOpen(false)}
-                onConfirm={() => {
-                    onDelete(selectedJob.id);
+                onClose={() => {
                     setDeleteDialogOpen(false);
+                    setSelectedJob(null);
                 }}
+                onConfirm={handleConfirmDelete}
             />
         </>
     );

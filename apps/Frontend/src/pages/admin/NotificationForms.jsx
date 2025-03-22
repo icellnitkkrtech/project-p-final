@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Box, Button, TextField, AppBar, Toolbar, Typography, Slide, useTheme } from "@mui/material";
+import { Box, Button, TextField, AppBar, Toolbar, Typography, Slide, useTheme, ToggleButtonGroup, ToggleButton, Paper, InputAdornment, Card, CardContent } from "@mui/material";
+import { Search } from "@mui/icons-material";
 import NFHeader from "../../components/admin/jnfManagement/JNFHeader";
 import CreateJNFDialog from "../../components/admin/jnfManagement/CreateJNFdialog";
 import ViewJNFDialog from "../../components/admin/jnfManagement/ViewJNFDialog";
@@ -9,10 +10,11 @@ import axios from "../../config/axios";
 import jnfService from "../../services/admin/jnfService";
 
 const JNFManagement = ({ searchTerm }) => {
+    const [jnfs, setJnfs] = useState([]);
     const [selectedJNF, setSelectedJNF] = useState(null);
-    const [jnf, setJnf] = useState([]);
     const [tab, setTab] = useState('all');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
 
     const handleViewJNF = (jnfItem) => setSelectedJNF(jnfItem);
     const handleOpenCreateDialog = () => setIsCreateDialogOpen(true);
@@ -21,16 +23,16 @@ const JNFManagement = ({ searchTerm }) => {
     useEffect(() => {
         const fetchAllJNFs = async () => {
             const response = await jnfService.getAll();
-            setJnf(response.data);
+            setJnfs(response.data);
         };
         fetchAllJNFs();
         }, []);
-        console.log(jnf);
+        console.log(jnfs);
 
 
     const handleReview = (jobId, newStatus) => {
-        setJnf((prevJnf) =>
-            prevJnf.map((job) =>
+        setJnfs((prevJnfs) =>
+            prevJnfs.map((job) =>
                 job.id === jobId ? { ...job, status: newStatus } : job
             )
         );
@@ -39,14 +41,33 @@ const JNFManagement = ({ searchTerm }) => {
     const handleDeleteJNF = async (jobId) => {
         try {
             await jnfService.delete(jobId);
-            setJnf((prevJnf) => prevJnf.filter((job) => job._id !== jobId));
+            setJnfs((prevJnfs) => prevJnfs.filter((job) => job._id !== jobId));
         } catch (error) {
             console.error("Error deleting JNF:", error);
         }
     };
 
+    const handleUpdate = (updatedJNF) => {
+        setJnfs(prevJnfs => 
+            prevJnfs.map(jnf => 
+                jnf._id === updatedJNF._id ? updatedJNF : jnf
+            )
+        );
+    };
+
+    // Function to refresh JNF list
+    const handleJNFUpdate = (updatedJNF) => {
+        setJnfs(prevJnfs => 
+            prevJnfs.map(jnf => 
+                jnf._id === updatedJNF._id ? updatedJNF : jnf
+            )
+        );
+        setSelectedJNF(null);
+        setEditDialogOpen(false);
+    };
+
     // Filter logic for the table
-    const filteredJnfs = jnf.filter((jnfItem) => {
+    const filteredJnfs = jnfs.filter((jnfItem) => {
         const search = searchTerm.toLowerCase();
         const matchesStatus = tab === 'all' || jnfItem.status === tab;
         const matchesSearch =
@@ -59,27 +80,45 @@ const JNFManagement = ({ searchTerm }) => {
         return matchesStatus && matchesSearch;
     });
 
+    const handleStatusUpdate = (jnfId, newStatus) => {
+        setJnfs(prevJnfs => 
+            prevJnfs.map(jnf => 
+                jnf._id === jnfId 
+                    ? { ...jnf, status: newStatus }
+                    : jnf
+            )
+        );
+        setSelectedJNF(null);
+    };
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', mt: 2 }}>
             <NFHeader tab={tab} setTab={setTab} onCreate={handleOpenCreateDialog} title = {"JNF"}/>
-            <JNFTable jnfs= {filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} />
+            <JNFTable jnfs= {filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} onEdit={(jnf) => {
+                    setSelectedJNF(jnf);
+                    setEditDialogOpen(true);
+                }} />
             {selectedJNF && (
                 <ViewJNFDialog
                     selectedJNF={selectedJNF}
                     onClose={() => setSelectedJNF(null)}
-                    onUpdateStatus={(id, status) => {
-                        setJnf((prevState) =>
-                            prevState.map((jnfItem) =>
-                                jnfItem.id === id ? { ...jnfItem, status } : jnfItem
-                            )
-                        );
-                        setSelectedJNF(null);
-                    }}
+                    onReview={handleStatusUpdate}
                     onDelete={handleDeleteJNF}
-                    onReview={handleReview}
+                    onUpdate={handleUpdate}
                 />
             )}
             <CreateJNFDialog open={isCreateDialogOpen} onClose={handleCloseCreateDialog} />
+            {editDialogOpen && (
+                <EditJNFDialog
+                    open={editDialogOpen}
+                    jnf={selectedJNF}
+                    onClose={() => {
+                        setEditDialogOpen(false);
+                        setSelectedJNF(null);
+                    }}
+                    onSubmit={handleJNFUpdate}
+                />
+            )}
         </Box>
     );
 };
@@ -117,7 +156,9 @@ const INFManagement = ({ searchTerm }) => {
             )
         );
     };
-
+    useEffect(() => {
+        fetchJNFs();
+    }, []);
     const handleDeleteJNF = (jobId) => {
         setJnf((prevJnf) => prevJnf.filter((job) => job.id !== jobId));
     };
@@ -174,43 +215,133 @@ const NotificationForms = () => {
   const [activeComponent, setActiveComponent] = useState(0);
   const theme = useTheme();
 
+  const handleFormsToggle = (event, newValue) => {
+    if (newValue !== null) {
+      setActiveComponent(newValue);
+    }
+  };
+
   return (
     <Box sx={{ flexGrow: 1, padding: 2 }}>
-      <AppBar position="static" sx={{ borderRadius: 2, backgroundColor: theme.palette.mode === "dark" ? "#424242" : "#f5f5f5", color: theme.palette.text.primary }}>
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Box sx={{ display: "flex", gap: 1 }}>
-          <Typography variant="h5">Notification Forms</Typography>
-            <Button variant={activeComponent === 0 ? "contained" : "outlined"} onClick={() => setActiveComponent(0)} size="small">JNF</Button>
-            <Button variant={activeComponent === 1 ? "contained" : "outlined"} onClick={() => setActiveComponent(1)} size="small">INF</Button>
+      <Card 
+        elevation={1} 
+        sx={{ 
+          borderRadius: 2, 
+          mb: 3,
+          overflow: 'visible'
+        }}
+      >
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 2
+          }}>
+            <Box>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 600, 
+                  mb: 2 
+                }}
+              >
+                Notification Forms
+              </Typography>
+              
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  display: 'inline-flex',
+                  p: 0.5,
+                  borderRadius: 2,
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'
+                }}
+              >
+                <ToggleButtonGroup
+                  value={activeComponent}
+                  exclusive
+                  onChange={handleFormsToggle}
+                  aria-label="notification forms toggle"
+                  sx={{
+                    '& .MuiToggleButtonGroup-grouped': {
+                      border: 0,
+                      borderRadius: 1.5,
+                      mx: 0.5,
+                      px: 2,
+                      py: 0.75,
+                      '&.Mui-selected': {
+                        bgcolor: theme.palette.primary.main,
+                        color: theme.palette.primary.contrastText,
+                        '&:hover': {
+                          bgcolor: theme.palette.primary.dark,
+                        }
+                      },
+                      '&:not(.Mui-selected)': {
+                        bgcolor: 'transparent',
+                        '&:hover': {
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                        }
+                      }
+                    }
+                  }}
+                >
+                  <ToggleButton value={0} aria-label="JNF">
+                    <Typography variant="button" fontWeight={500}>
+                      Job Notification Form (JNF)
+                    </Typography>
+                  </ToggleButton>
+                  <ToggleButton value={1} aria-label="INF">
+                    <Typography variant="button" fontWeight={500}>
+                      Internship Notification Form (INF)
+                    </Typography>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Paper>
+            </Box>
+            
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Search forms..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ 
+                minWidth: 250,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                }
+              }}
+            />
           </Box>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ backgroundColor: theme.palette.mode === "dark" ? "#616161" : "#e0e0e0", borderRadius: 1, width: 200, input: { color: theme.palette.text.primary } }}
-          />
-        </Toolbar>
-      </AppBar>
+        </CardContent>
+      </Card>
 
-      <Box sx={{ marginTop: 2 }}>
+      <Box sx={{ mt: 2 }}>
         {activeComponent === 0 && (
-            <Slide direction="left" in={true} mountOnEnter unmountOnExit>
+          <Slide direction="right" in={true} mountOnEnter unmountOnExit timeout={350}>
             <div>
-                <JNFManagement searchTerm={searchTerm} key="jnf" />
+              <JNFManagement searchTerm={searchTerm} key="jnf" />
             </div>
-            </Slide>
+          </Slide>
         )}
         {activeComponent === 1 && (
-            <Slide direction="right" in={true} mountOnEnter unmountOnExit>
+          <Slide direction="left" in={true} mountOnEnter unmountOnExit timeout={350}>
             <div>
-                <INFManagement searchTerm={searchTerm} key="inf" />
+              <INFManagement searchTerm={searchTerm} key="inf" />
             </div>
-            </Slide>
+          </Slide>
         )}
-        </Box>
-
+      </Box>
     </Box>
   );
 };
