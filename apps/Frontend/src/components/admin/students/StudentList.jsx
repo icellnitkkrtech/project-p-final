@@ -896,7 +896,7 @@ const StudentList = () => {
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">
-                              {personalInfo.rollNo || "N/A"}
+                              {personalInfo.rollNumber || "N/A"}
                             </Typography>
                           </TableCell>
                           <TableCell>

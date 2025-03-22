@@ -274,4 +274,52 @@ export default class StudentService {
       );
     }
   }
+
+  // Add this method to StudentService class
+  async updateStudentCGPA(rollNumber, cgpa) {
+    try {
+      // Input validation
+      if (!rollNumber || cgpa === undefined) {
+        return new apiResponse(400, null, "Roll number and CGPA are required");
+      }
+
+      // Convert CGPA to number and validate
+      const cgpaNum = Number(cgpa);
+      if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
+        return new apiResponse(400, null, "CGPA must be a number between 0 and 10");
+      }
+
+      // Find student using StudentModel
+      const student = await this.studentModel.findOne({
+        "personalInfo.rollNumber": rollNumber
+      });
+
+      if (!student) {
+        return new apiResponse(404, null, `Student with roll number ${rollNumber} not found`);
+      }
+
+      // Update the CGPA
+      const result = await this.studentModel.student.findOneAndUpdate(
+        { "personalInfo.rollNumber": rollNumber },
+        { 
+          $set: { 
+            "academics.cgpa": cgpaNum,
+            updatedAt: new Date()
+          }
+        },
+        { new: true }
+      );
+
+      if (!result) {
+        return new apiResponse(400, null, "Failed to update CGPA");
+      }
+
+      console.log(`Updated CGPA for student ${rollNumber} to ${cgpaNum}`);
+      return new apiResponse(200, { rollNumber, cgpa: cgpaNum }, "CGPA updated successfully");
+
+    } catch (error) {
+      console.error('CGPA update error:', error);
+      return new apiResponse(500, null, "Internal server error while updating CGPA");
+    }
+  }
 }
