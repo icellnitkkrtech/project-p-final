@@ -147,13 +147,28 @@ export default class PlacementController {
 
     async getApplicantsForRound(req, res) {
         try {
-            const response = await this.placementService.getApplicantsForRound(req.params.id, req.params.round_id);
+            const { id, round_id } = req.params;
+            const response = await this.placementService.getApplicantsForRound(id, round_id);
+            
             if (!response) {
-                return res.status(404).json({ message: "Round not found" });
+                return res.status(404).json({ 
+                    success: false,
+                    message: "Round not found or no applicants available" 
+                });
             }
-            res.status(200).json(response);
+
+            res.status(200).json({
+                success: true,
+                data: response,
+                message: "Successfully retrieved applicants for round"
+            });
         } catch (error) {
-            res.status(500).json({ message: "Error fetching applicants", error });
+            console.error("Error in getApplicantsForRound controller:", error);
+            res.status(500).json({ 
+                success: false,
+                message: "Error fetching applicants",
+                error: error.message 
+            });
         }
     }
 

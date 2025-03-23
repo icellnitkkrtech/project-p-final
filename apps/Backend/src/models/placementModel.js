@@ -119,13 +119,27 @@ export default class PlacementModel {
     async getApplicantsForRound(id, roundId) {
         console.log("Placement Model: getApplicantsForRound called");
         try {
-            return await this.placementDrive.findOne(
+            // Changed this.placementDrive to this.placement
+            const result = await this.placement.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
-                { "roundDetails.rounds.$.applicantStudents": 1 }
+                { "roundDetails.rounds.$": 1 }  // Modified projection to get entire round
             ).populate({
                 path: "roundDetails.rounds.applicantStudents",
-                model: "Student"
+                model: "Student",
+                select: "name email registrationNumber branch" // Add fields you want to retrieve
             });
+
+            if (!result) {
+                throw new Error('Round not found');
+            }
+
+            // Extract applicant students from the matched round
+            const round = result.roundDetails.rounds[0];
+            return {
+                roundId: round._id,
+                roundName: round.roundName,
+                applicantStudents: round.applicantStudents
+            };
         } catch (error) {
             console.error("Error in getApplicantsForRound:", error);
             throw error;

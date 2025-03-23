@@ -110,7 +110,7 @@ export default class ApplicationModel {
           path: "timeline.updatedBy",
           select: "name email",
         });
-
+ console.log(applications)
       if (!applications || applications.length === 0) {
         return new apiResponse(404, [], "No applications found");
       }

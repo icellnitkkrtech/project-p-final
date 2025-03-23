@@ -188,6 +188,10 @@ const studentService = {
     );
     return response.data;
   },
+  getStudentApplications : async (studentId) => {
+    const response = await axios.get(`${API_BASE_URL}/student/applications/${studentId}`);
+    return response.data;
+  }
 };
 
 export default studentService;

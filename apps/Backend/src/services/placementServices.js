@@ -1,5 +1,5 @@
 import PlacementModel from "../models/placementModel.js";
-
+import apiResponse from "../utils/apiResponse.js";
 export default class PlacementService {
     constructor() {
         this.placementModel = new PlacementModel();
@@ -87,9 +87,14 @@ export default class PlacementService {
     }
     async getApplicantsForRound(id, roundId) {
         try {
-            return await this.placementModel.getApplicantsForRound(id, roundId);
+            const result = await this.placementModel.getApplicantsForRound(id, roundId);
+            if (!result) {
+                return new apiResponse(404, null, "Round not found or no applicants available");
+            }
+            return new apiResponse(200, result, "Successfully retrieved applicants");
         } catch (error) {
-            throw new Error("Error fetching applicants: " + error.message);
+            console.error("Error in getApplicantsForRound service:", error);
+            return new apiResponse(500, null, error.message);
         }
     }
     async getSelectedStudentsForRound(id, roundId) {
