@@ -141,6 +141,42 @@ async updateStatus(id, status) {
         console.error('Error updating JNF status:', error);
         throw error;
     }
+},
+async saveDraft(formData) {
+    try {
+        const formDataToSend = new FormData();
+        
+        // Handle file attachments if present
+        formData.jobProfiles.forEach((profile, index) => {
+            if (profile.jobDescription.attachFile && profile.jobDescription.file) {
+                formDataToSend.append('jobDescriptionFile', profile.jobDescription.file);
+                formDataToSend.append('fileJobProfileIndex', index.toString());
+            }
+        });
+
+        // Prepare data for saving
+        const dataToSend = {
+            ...formData,
+            status: 'draft',
+            lastModified: new Date().toISOString()
+        };
+
+        formDataToSend.append('formData', JSON.stringify(dataToSend));
+
+        const token = localStorage.getItem('token');
+        const config = {
+            headers: {
+                // 'Authorization': `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+            }
+        };
+
+        const response = await api.post('/draft', formDataToSend ,config);
+        return response.data;
+    } catch (error) {
+        console.error('Error saving draft:', error);
+        throw error;
+    }
 }
 
 };
