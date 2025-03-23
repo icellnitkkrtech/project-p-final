@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Card, CardContent, Button, Dialog, DialogTitle, 
   DialogContent, DialogActions, TextField, Stepper, Step, StepLabel, FormControl, InputLabel, Select, MenuItem, Grid,
-  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, CircularProgress
+  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress
 } from "@mui/material";
-import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event, Edit as EditIcon } from "@mui/icons-material";
+import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event } from "@mui/icons-material";
 import RoundStudents from "./RoundStudents";
 import { styled } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -26,15 +26,15 @@ const RoundButton = styled(IconButton)(({ theme }) => ({
 }));
 
 const getStatusColor = (status) => {
-  switch (status?.toLowerCase()) {
+  switch (status) {
     case "ongoing":
       return "primary"; // Blue
     case "completed":
       return "success"; // Green
     case "upcoming":
-      return "warning"; // Orange
+      return "secondary"; // Yellow
     default:
-      return "default"; // Gray
+      return "secondary"; // Gray
   }
 };
 
@@ -80,6 +80,7 @@ const PlacementRounds = ({ placementId }) => {
   });
   const [showResult, setShowResult] = useState(false); // Toggle for showing results
   const [openDeclareResultDialog, setOpenDeclareResultDialog] = useState(false);
+  const [appearedStudents, setAppearedStudents] = useState({});
 
   const fetchRoundDetails = async () => {
     try {
@@ -316,6 +317,21 @@ const PlacementRounds = ({ placementId }) => {
         message: "Failed to fetch results",
         severity: "error"
       });
+    }
+  };
+
+  const fetchAppearedStudents = async (roundId) => {
+    try {
+      const response = await placementService.getAppearedStudents(placementId, roundId);
+      console.log("Appeared students response for round", roundId, ":", response);
+      
+      // Store the populated student details
+      setAppearedStudents(prev => ({
+        ...prev,
+        [roundId]: response.students || []
+      }));
+    } catch (error) {
+      console.error("Error fetching appeared students for round", roundId, ":", error);
     }
   };
 
@@ -604,6 +620,58 @@ const PlacementRounds = ({ placementId }) => {
           <Button onClick={() => setOpenResultDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {loading ? (
+        <CircularProgress />
+      ) : (
+        <>
+          {rounds.map((round) => (
+            <Card key={round._id} sx={{ mb: 2, p: 2 }}>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Appeared Students ({round.appearedStudents?.length || 0})
+                </Typography>
+                {appearedStudents[round._id]?.length > 0 ? (
+                  <TableContainer component={Paper}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Roll Number</TableCell>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Department</TableCell>
+                          <TableCell>CGPA</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {appearedStudents[round._id].map((student) => (
+                          <TableRow key={student._id}>
+                            <TableCell>
+                              {student.personalInfo?.rollNumber}
+                            </TableCell>
+                            <TableCell>
+                              {student.personalInfo?.name}
+                            </TableCell>
+                            <TableCell>
+                              {student.personalInfo?.department}
+                            </TableCell>
+                            <TableCell>
+                              {student.academics?.cgpa}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography color="textSecondary">
+                    No students have appeared yet
+                  </Typography>
+                )}
+              </Box>
+            </Card>
+          ))}
+        </>
+      )}
     </Box>
   );
 };

@@ -182,6 +182,8 @@ const placementDriveSchema = new mongoose.Schema(
           roundDate: { type: Date },
           roundDuration: { type: String },
           venue: { type: String },
+          startTime: { type: Date },
+          endTime: { type: Date },
           roundStatus: {
             type: String,
             enum: ["upcoming", "ongoing", "completed"],

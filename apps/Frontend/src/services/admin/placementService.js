@@ -138,29 +138,10 @@ const placementService = {
     getAppearedStudentsForRound: async (id, roundId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/appeared-students`);
-            const students = response.data?.data || [];
             
-            // Fetch full details for each student using studentService
-            const studentsWithDetails = await Promise.all(
-                students.map(async (student) => {
-                    try {
-                        const details = await studentService.getStudentById(student._id);
-                        return details?.data || {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    } catch (error) {
-                        console.error(`Error fetching details for student ${student._id}:`, error);
-                        return {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    }
-                })
-            );
-            return studentsWithDetails;
+            // The response already contains full student details, no need to fetch individually
+            return response.data || []; // Return the array of students directly
+            
         } catch (error) {
             console.error("Error fetching appeared students for round:", error);
             return [];

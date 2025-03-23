@@ -195,6 +195,8 @@ export default class PlacementController {
             res.status(500).json({ message: "Error fetching appeared students", error });
         }
     }
+    
+    
     async updateSelectedStudents(req, res) {
         try {
             const { selectedStudents } = req.body;
@@ -315,6 +317,46 @@ export default class PlacementController {
             res.status(200).json(response);
         } catch (error) {
             res.status(500).json({ message: "Error fetching rounds", error });
+        }
+    }
+    async getAppearedStudents(req, res) {
+        try {
+            const { id, roundId } = req.params;
+            
+            const drive = await this.placementService.findOne(
+                { 
+                    _id: id,
+                    "roundDetails.rounds._id": roundId 
+                }
+            ).populate({
+                path: 'roundDetails.rounds.appearedStudents',
+                select: 'personalInfo academics' // Select the fields we want
+            });
+
+            if (!drive) {
+                return res.status(404).json({ message: "Drive not found" });
+            }
+
+            const round = drive.roundDetails.rounds.find(
+                r => r._id.toString() === roundId
+            );
+
+            if (!round) {
+                return res.status(404).json({ message: "Round not found" });
+            }
+
+            // Return populated student details
+            res.status(200).json({
+                students: round.appearedStudents || [],
+                selectedStudents: round.selectedStudents || []
+            });
+
+        } catch (error) {
+            console.error("Error getting appeared students:", error);
+            res.status(500).json({ 
+                message: "Error getting appeared students",
+                error: error.message 
+            });
         }
     }
 }

@@ -127,4 +127,8 @@ placementRoutes.get("/:id/rounds/all", (req, res) => {
     placementController.getAllRounds(req, res);
 });
 
+placementRoutes.put("/:id/rounds/:roundId/update-status", (req, res) => {
+    placementController.updateRoundStatus(req, res);
+});
+
 export default placementRoutes;
