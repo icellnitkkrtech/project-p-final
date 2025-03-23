@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Box, Paper, Tabs, Tab, Typography, Button } from "@mui/material";
+import { Box, Paper, Tabs, Tab, Typography, Button, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Checkbox } from "@mui/material";
 import StudentTable from "./StudentTable"; // Ensure this is the correct import
 import placementService from "../../../services/admin/placementService";
 
-const RoundStudents = ({ placementId, roundId }) => {
+const RoundStudents = ({ placementId, roundId, selectable = false, onSelectionChange }) => {
   const [tabIndex, setTabIndex] = useState(0);
   const [appliedStudents, setAppliedStudents] = useState([]);
   const [appearedStudents, setAppearedStudents] = useState([]);
@@ -11,6 +11,7 @@ const RoundStudents = ({ placementId, roundId }) => {
   const [updatedSelectedStudents, setUpdatedSelectedStudents] = useState([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -48,14 +49,23 @@ const RoundStudents = ({ placementId, roundId }) => {
     setTabIndex(newValue);
   };
 
-  const handleSelectStudent = (studentId) => {
-    setUpdatedSelectedStudents((prev) =>
-      prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId]
-    );
+  const handleStudentSelect = (studentId) => {
+    const newSelected = selectedIds.includes(studentId)
+      ? selectedIds.filter(id => id !== studentId)
+      : [...selectedIds, studentId];
+    
+    setSelectedIds(newSelected);
+    if (onSelectionChange) {
+      onSelectionChange(newSelected);
+    }
   };
 
   const handleSelectAll = (event) => {
-    setUpdatedSelectedStudents(event.target.checked ? [...appearedStudents] : []);
+    const newSelected = event.target.checked ? appearedStudents.map(student => student._id) : [];
+    setSelectedIds(newSelected);
+    if (onSelectionChange) {
+      onSelectionChange(newSelected);
+    }
   };
 
   const handleUpdateSelected = async () => {
@@ -82,31 +92,47 @@ const RoundStudents = ({ placementId, roundId }) => {
         <Tabs value={tabIndex} onChange={handleTabChange} centered>
           <Tab label="Applied Students" />
           <Tab label="Appeared Students" />
-          <Tab label="Selected Students" />
+          {!selectable && <Tab label="Selected Students" />}
         </Tabs>
 
         <Box sx={{ p: 2 }}>
-          {tabIndex === 0 && <StudentTable title="Applied Students" students={appliedStudents} />}
+          {tabIndex === 0 && (
+            <StudentTable 
+              title="Applied Students" 
+              students={appliedStudents}
+              selectable={selectable}
+              selectedStudents={selectedIds}
+              onSelect={handleStudentSelect}
+              onSelectAll={handleSelectAll}
+            />
+          )}
           
           {tabIndex === 1 && (
             <Box>
               <StudentTable
                 title="Appeared Students"
                 students={appearedStudents}
-                selectable
-                selectedStudents={updatedSelectedStudents}
-                onSelect={handleSelectStudent}
+                selectable={selectable}
+                selectedStudents={selectedIds}
+                onSelect={handleStudentSelect}
                 onSelectAll={handleSelectAll}
               />
-              <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-                <Button variant="contained" onClick={handleUpdateSelected} disabled={isUpdating}>
-                  {isUpdating ? "Updating..." : "Update Selected"}
-                </Button>
-              </Box>
+              {!selectable && (
+                <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+                  <Button variant="contained" onClick={handleUpdateSelected} disabled={isUpdating}>
+                    {isUpdating ? "Updating..." : "Update Selected"}
+                  </Button>
+                </Box>
+              )}
             </Box>
           )}
           
-          {tabIndex === 2 && <StudentTable title="Selected Students" students={selectedStudents} />}
+          {tabIndex === 2 && !selectable && (
+            <StudentTable 
+              title="Selected Students" 
+              students={selectedStudents} 
+            />
+          )}
         </Box>
       </Paper>
     </Box>

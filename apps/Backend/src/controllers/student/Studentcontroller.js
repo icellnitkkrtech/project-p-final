@@ -142,4 +142,13 @@ export default class StudentController {
     const result = await this.studentService.revokeDebour(id, reason, adminId);
     res.status(result.statusCode).json(result);
   });
+
+  // Add this method to StudentController class
+  updateStudentCGPA = asyncHandler(async (req, res) => {
+    const { rollNumber } = req.params;
+    const { cgpa } = req.body;
+
+    const result = await this.studentService.updateStudentCGPA(rollNumber, cgpa);
+    res.status(result.statusCode).json(result);
+  });
 }

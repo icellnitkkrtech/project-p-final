@@ -59,8 +59,9 @@ import studentService from "../../../services/admin/studentService";
 import { useAudit } from "../../../hooks/admin/useAudit";
 import StudentDetailsView from "./StudentDetailsView";
 import EditStudentForm from "./forms/EditStudentForm";
+import StudentRegistration from "./StudentRegistration";
 
-const StudentList = ({ onStudentSelect, onProfileClick }) => {
+const StudentList = () => {
   const { logEvent } = useAudit();
   // State for filters
   const [filters, setFilters] = useState({
@@ -152,42 +153,39 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
   // Add this new state
   const [filteredStudents, setFilteredStudents] = useState([]);
 
-  // Modify the useEffect to respond to refreshData changes
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await studentService.getStudents(filters, {
-          page,
-          rowsPerPage,
+  // Define fetchStudents as a component function
+  const fetchStudents = async () => {
+    try {
+      const response = await studentService.getStudents();
+      if (response.data) {
+        // Sort students by creation date in descending order (newest first)
+        const sortedStudents = response.data.sort((a, b) => {
+          return new Date(b.createdAt) - new Date(a.createdAt);
         });
-        console.log("Fetched students data:", response);
-
-        if (response && response.data && Array.isArray(response.data)) {
-          setStudents(response.data);
-        } else {
-          setStudents([]);
-          console.error("Unexpected response structure:", response);
-        }
-      } catch (error) {
-        console.error("Error fetching students:", error);
-        setStudents([]);
+        setStudents(sortedStudents);
+        setFilteredStudents(sortedStudents);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchStudents();
-  }, [filters, page, rowsPerPage, refreshData]);
+  }, []);
 
-  // Then in the useEffect for filtering
+  const handleRegistrationSuccess = () => {
+    fetchStudents(); // Refresh the list after successful registration
+  };
+
   useEffect(() => {
     let filtered = [...students];
 
-    // Apply search filter
     if (searchTerm.trim()) {
       filtered = filtered.filter((student) => {
         const { personalInfo = {} } = student;
         const searchLower = searchTerm.toLowerCase();
 
-        // Search in multiple fields
         return (
           (personalInfo.name &&
             personalInfo.name.toLowerCase().includes(searchLower)) ||
@@ -201,11 +199,8 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
       });
     }
 
-    // Apply other filters (keep existing filter logic)
-    // ...
-
     setFilteredStudents(filtered);
-  }, [students, searchTerm, filters]); // Make sure searchTerm is in the dependency array
+  }, [students, searchTerm]);
 
   const handleFilterChange = (field, value) => {
     setFilters((prev) => ({
@@ -668,6 +663,7 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
 
   return (
     <Grid container spacing={3}>
+      {/* Search and Filter Card */}
       <Grid item xs={12}>
         <Card>
           <CardContent>
@@ -900,7 +896,7 @@ const StudentList = ({ onStudentSelect, onProfileClick }) => {
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">
-                              {personalInfo.rollNo || "N/A"}
+                              {personalInfo.rollNumber || "N/A"}
                             </Typography>
                           </TableCell>
                           <TableCell>
