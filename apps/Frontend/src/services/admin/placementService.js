@@ -112,29 +112,22 @@ const placementService = {
     getSelectedStudentsForRound: async (id, roundId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/selected-students`);
-            const students = response.data?.data || [];
             
-            // Fetch full details for each student using studentService
-            const studentsWithDetails = await Promise.all(
-                students.map(async (student) => {
-                    try {
-                        const details = await studentService.getStudentById(student._id);
-                        return details?.data || {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    } catch (error) {
-                        console.error(`Error fetching details for student ${student._id}:`, error);
-                        return {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    }
-                })
-            );
-            return studentsWithDetails;
+            // Handle the direct array response format
+            let students = [];
+            if (Array.isArray(response.data)) {
+                students = response.data;
+            } else if (Array.isArray(response.data?.data)) {
+                students = response.data.data;
+            } else if (response.data?.data?.roundDetails?.rounds?.[0]?.selectedStudents) {
+                students = response.data.data.roundDetails.rounds[0].selectedStudents;
+            }
+            
+            return students.map(student => ({
+                _id: student._id,
+                personalInfo: student.personalInfo || {},
+                academics: student.academics || {}
+            }));
         } catch (error) {
             console.error("Error fetching selected students for round:", error);
             return [];

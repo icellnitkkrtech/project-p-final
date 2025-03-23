@@ -70,6 +70,7 @@ export default class ApplicationModel {
       // Update placement drive's applicants array
       await this.placementDrive.findByIdAndUpdate(driveId, {
         $push: { applicantStudents: studentId },
+       
       });
 
       return new apiResponse(

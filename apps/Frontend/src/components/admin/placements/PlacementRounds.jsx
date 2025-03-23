@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Card, CardContent, Button, Dialog, DialogTitle, 
   DialogContent, DialogActions, TextField, Stepper, Step, StepLabel, FormControl, InputLabel, Select, MenuItem, Grid,
-  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText
+  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, CircularProgress
 } from "@mui/material";
-import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event } from "@mui/icons-material";
+import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event, Edit as EditIcon } from "@mui/icons-material";
 import RoundStudents from "./RoundStudents";
 import { styled } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -26,15 +26,15 @@ const RoundButton = styled(IconButton)(({ theme }) => ({
 }));
 
 const getStatusColor = (status) => {
-  switch (status) {
+  switch (status?.toLowerCase()) {
     case "ongoing":
       return "primary"; // Blue
     case "completed":
       return "success"; // Green
     case "upcoming":
-      return "secondary"; // Yellow
+      return "warning"; // Orange
     default:
-      return "secondary"; // Gray
+      return "default"; // Gray
   }
 };
 
@@ -419,6 +419,9 @@ const PlacementRounds = ({ placementId }) => {
                     <Button variant="outlined" color={getStatusColor(selectedRound.roundStatus)} size="small" onClick={() => setOpenDeclareResultDialog(true)} startIcon={<Event />}>
                       Declare Results
                     </Button>
+                    <Button variant="outlined" color= {getStatusColor(selectedRound.roundStatus)} size="small" onClick={handleOpenEditDialog} startIcon={<Event />}>
+                    Edit Round
+                  </Button>
                   </>
                 )}
                 {selectedRound.roundStatus === "upcoming" && (
