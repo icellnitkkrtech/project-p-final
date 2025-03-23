@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
+import studentService from "../../../../services/admin/studentService";
 const ApplicationsSection = ({ studentId }) => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,8 +9,7 @@ const ApplicationsSection = ({ studentId }) => {
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const response = await axios.get(
-          `/api/v1/student/applications/${studentId}`
+        const response = await studentService.getStudentApplications(studentId  
         );
         setApplications(response.data.data);
       } catch (err) {
