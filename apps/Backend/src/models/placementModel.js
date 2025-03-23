@@ -149,10 +149,43 @@ export default class PlacementModel {
     async getSelectedStudentsForRound(id, roundId) {
         console.log("Placement Model: getSelectedStudentsForRound called");
         try {
-            return await this.placement.findOne(
+            const result = await this.placement.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
                 { "roundDetails.rounds.$": 1 }
-            ).populate({ path: "roundDetails.rounds.selectedStudents", model: "Student" });
+            ).populate({
+                path: "roundDetails.rounds.selectedStudents",
+                model: "Student",
+                select: "personalInfo academics" // Select only the fields we need
+            });
+    
+            if (!result || !result.roundDetails || !result.roundDetails.rounds.length === 0) {
+                return [];
+            }
+    
+            // Return the selected students array from the matched round
+            return result.roundDetails.rounds[0].selectedStudents || [];
+        } catch (error) {
+            console.error("Error in getSelectedStudentsForRound:", error);
+            throw error;
+        }
+    }async getSelectedStudentsForRound(id, roundId) {
+        console.log("Placement Model: getSelectedStudentsForRound called");
+        try {
+            const result = await this.placement.findOne(
+                { _id: id, "roundDetails.rounds._id": roundId },
+                { "roundDetails.rounds.$": 1 }
+            ).populate({
+                path: "roundDetails.rounds.selectedStudents",
+                model: "Student",
+                select: "personalInfo academics" // Select only the fields we need
+            });
+    
+            if (!result || !result.roundDetails || !result.roundDetails.rounds.length === 0) {
+                return [];
+            }
+    
+            // Return the selected students array from the matched round
+            return result.roundDetails.rounds[0].selectedStudents || [];
         } catch (error) {
             console.error("Error in getSelectedStudentsForRound:", error);
             throw error;
@@ -160,14 +193,26 @@ export default class PlacementModel {
     }
 
     async getAppearedStudentsForRound(id, roundId) {
-        console.log("Placement Model: getApperaredStudentsForRound called");
+        console.log("Placement Model: getAppearedStudentsForRound called");
         try {
-            return await this.placement.findOne(
+            // First, find the placement and get the specific round
+            const result = await this.placement.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
-                { "roundDetails.rounds.$.appearedStudents": 1 }
-            ).populate({ path: "roundDetails.rounds.appearedStudents", model: "Student" });
+                { "roundDetails.rounds.$": 1 }
+            ).populate({
+                path: "roundDetails.rounds.appearedStudents",
+                model: "Student",
+                select: "personalInfo academics" // Select the fields we need
+            });
+
+            if (!result || !result.roundDetails || !result.roundDetails.rounds.length === 0) {
+                return [];
+            }
+
+            // Return the appeared students array from the matched round
+            return result.roundDetails.rounds[0].appearedStudents || [];
         } catch (error) {
-            console.error("Error in getApperaredStudentsForRound:", error);
+            console.error("Error in getAppearedStudentsForRound:", error);
             throw error;
         }
     }
