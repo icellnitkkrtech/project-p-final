@@ -168,28 +168,6 @@ export default class PlacementModel {
             console.error("Error in getSelectedStudentsForRound:", error);
             throw error;
         }
-    }async getSelectedStudentsForRound(id, roundId) {
-        console.log("Placement Model: getSelectedStudentsForRound called");
-        try {
-            const result = await this.placement.findOne(
-                { _id: id, "roundDetails.rounds._id": roundId },
-                { "roundDetails.rounds.$": 1 }
-            ).populate({
-                path: "roundDetails.rounds.selectedStudents",
-                model: "Student",
-                select: "personalInfo academics" // Select only the fields we need
-            });
-    
-            if (!result || !result.roundDetails || !result.roundDetails.rounds.length === 0) {
-                return [];
-            }
-    
-            // Return the selected students array from the matched round
-            return result.roundDetails.rounds[0].selectedStudents || [];
-        } catch (error) {
-            console.error("Error in getSelectedStudentsForRound:", error);
-            throw error;
-        }
     }
 
     async getAppearedStudentsForRound(id, roundId) {
@@ -228,14 +206,34 @@ export default class PlacementModel {
     }
 
     async updateSelectedStudents(id, roundId, studentId) {
-        console.log("Placement Model: updateSelectedStudents called");
+        console.log("Placement Model: Updating selected students with:", {
+            driveId: id,
+            roundId: roundId,
+            studentId: studentId
+        });
+
         try {
-            console.log(studentId);
-            return await this.placement.findOneAndUpdate(
-                { _id: id, "roundDetails.rounds._id": roundId },
-                { $push: { "roundDetails.rounds.$.selectedStudents": studentId } },
-                { new: true }
+            const result = await this.placement.findOneAndUpdate(
+                { 
+                    _id: id,
+                    "roundDetails.rounds._id": roundId 
+                },
+                { 
+                    $addToSet: { "roundDetails.rounds.$.selectedStudents": studentId } 
+                },
+                { 
+                    new: true,
+                    runValidators: true 
+                }
             );
+
+            if (!result) {
+                console.log("No document found/updated");
+                return null;
+            }
+
+            console.log("Update successful");
+            return result;
         } catch (error) {
             console.error("Error in updateSelectedStudents:", error);
             throw error;
@@ -244,12 +242,68 @@ export default class PlacementModel {
     async declareResult(id, roundId, resultData) {
         console.log("Placement Model: declareResult called");
         try {
-            const {resultMessage, resultDescription} = resultData;
-            return await this.placement.findOneAndUpdate(
-                { _id: id, "roundDetails.rounds._id": roundId },
-                { $set: { "roundDetails.rounds.$.resultMessage": resultMessage, "roundDetails.rounds.$.resultDescription": resultDescription } },
-                { new: true }
+            const { resultMessage, resultDescription } = resultData;
+            
+            // First, get the current placement drive with all rounds
+            const placement = await this.placement.findOne({ _id: id });
+            if (!placement) {
+                throw new Error("Placement drive not found");
+            }
+            
+            // Find the current round and its index
+            const roundIndex = placement.roundDetails.rounds.findIndex(
+                round => round._id.toString() === roundId
             );
+            
+            if (roundIndex === -1) {
+                throw new Error("Round not found");
+            }
+            
+            // Get the current round and its selected students
+            const currentRound = placement.roundDetails.rounds[roundIndex];
+            
+            // Get unique selected students (in case there are duplicates)
+            const selectedStudents = [...new Set(currentRound.selectedStudents.map(id => id.toString()))];
+            
+            // Check if there's a next round
+            const nextRoundIndex = roundIndex + 1;
+            const hasNextRound = nextRoundIndex < placement.roundDetails.rounds.length;
+            
+            // Update the current round
+            await this.placement.findOneAndUpdate(
+                { _id: id, "roundDetails.rounds._id": roundId },
+                { 
+                    $set: { 
+                        "roundDetails.rounds.$.resultMessage": resultMessage, 
+                        "roundDetails.rounds.$.resultDescription": resultDescription,
+                        "roundDetails.rounds.$.roundStatus": "completed" // Update to completed
+                    }
+                }
+            );
+            
+            // If there's a next round, update it separately
+            if (hasNextRound && selectedStudents.length > 0) {
+                const nextRoundId = placement.roundDetails.rounds[nextRoundIndex]._id;
+                
+                // For each selected student, ensure they're added to the next round
+                for (const studentId of selectedStudents) {
+                    await this.placement.findOneAndUpdate(
+                        { 
+                            _id: id, 
+                            "roundDetails.rounds._id": nextRoundId,
+                            // Only add if not already in the applicant list
+                            "roundDetails.rounds.$.applicantStudents": { $ne: studentId }
+                        },
+                        {
+                            $push: { "roundDetails.rounds.$.applicantStudents": studentId },
+                            $set: { "roundDetails.rounds.$.roundStatus": "ongoing" }
+                        }
+                    );
+                }
+            }
+            
+            // Return the fully updated placement
+            return await this.placement.findById(id);
         } catch (error) {
             console.error("Error in declareResult:", error);
             throw error;

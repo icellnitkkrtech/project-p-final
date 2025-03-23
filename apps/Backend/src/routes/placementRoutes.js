@@ -127,8 +127,8 @@ placementRoutes.get("/:id/rounds/all", (req, res) => {
     placementController.getAllRounds(req, res);
 });
 
-placementRoutes.put("/:id/rounds/:roundId/update-status", (req, res) => {
-    placementController.updateRoundStatus(req, res);
+placementRoutes.put('/placement/:id/rounds/:roundId/selected-students', async (req, res) => {
+    await placementController.updateSelectedStudents(req, res);
 });
 
 export default placementRoutes;

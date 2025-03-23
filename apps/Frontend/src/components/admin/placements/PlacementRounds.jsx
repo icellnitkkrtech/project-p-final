@@ -95,6 +95,7 @@ const PlacementRounds = ({ placementId }) => {
       } else {
         setSelectedRound(null);
       }
+      setAppearedStudents(response.appearedStudents || {});
     } catch (err) {
       console.log("Error",err);
       setError("Failed to load placement rounds.");
@@ -320,18 +321,29 @@ const PlacementRounds = ({ placementId }) => {
     }
   };
 
-  const fetchAppearedStudents = async (roundId) => {
+  const handleStudentSelection = async (roundId, student) => {
     try {
-      const response = await placementService.getAppearedStudents(placementId, roundId);
-      console.log("Appeared students response for round", roundId, ":", response);
+      await placementService.updateSelectedStudents(placementId, roundId, student._id);
       
-      // Store the populated student details
+      // Refresh the appeared students data
+      const updatedStudents = await placementService.getAppearedStudentsForRound(placementId, roundId);
       setAppearedStudents(prev => ({
         ...prev,
-        [roundId]: response.students || []
+        [roundId]: updatedStudents
       }));
+
+      setSnackbar({
+        open: true,
+        message: "Student selected successfully",
+        severity: "success"
+      });
     } catch (error) {
-      console.error("Error fetching appeared students for round", roundId, ":", error);
+      console.error("Error selecting student:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to select student",
+        severity: "error"
+      });
     }
   };
 
@@ -629,7 +641,7 @@ const PlacementRounds = ({ placementId }) => {
             <Card key={round._id} sx={{ mb: 2, p: 2 }}>
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle1" gutterBottom>
-                  Appeared Students ({round.appearedStudents?.length || 0})
+                  Appeared Students ({appearedStudents[round._id]?.length || 0})
                 </Typography>
                 {appearedStudents[round._id]?.length > 0 ? (
                   <TableContainer component={Paper}>
@@ -640,6 +652,7 @@ const PlacementRounds = ({ placementId }) => {
                           <TableCell>Name</TableCell>
                           <TableCell>Department</TableCell>
                           <TableCell>CGPA</TableCell>
+                          <TableCell>Action</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -656,6 +669,19 @@ const PlacementRounds = ({ placementId }) => {
                             </TableCell>
                             <TableCell>
                               {student.academics?.cgpa}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="small"
+                                onClick={() => handleStudentSelection(round._id, student)}
+                                disabled={round.selectedStudents?.includes(student._id)}
+                              >
+                                {round.selectedStudents?.includes(student._id) 
+                                  ? 'Selected' 
+                                  : 'Select'}
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}

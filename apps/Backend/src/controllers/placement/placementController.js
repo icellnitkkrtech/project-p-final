@@ -199,14 +199,57 @@ export default class PlacementController {
     
     async updateSelectedStudents(req, res) {
         try {
-            const { selectedStudents } = req.body;
-            const response = await this.placementService.updateSelectedStudents(req.params.id, req.params.round_id, selectedStudents);
-            if (!response) {
+            const { id, round_id } = req.params;
+            const { studentId } = req.body;
+
+            console.log("Updating selected students with params:", {
+                driveId: id,
+                roundId: round_id,
+                studentId: studentId
+            });
+
+            // First verify if the drive exists
+            const drive = await this.placementService.getPlacementById(id);
+            if (!drive) {
+                console.log("Drive not found with ID:", id);
+                return res.status(404).json({ message: "Placement drive not found" });
+            }
+
+            // Then verify if the round exists
+            const round = drive.roundDetails.rounds.find(
+                r => r._id.toString() === round_id
+            );
+            if (!round) {
+                console.log("Round not found with ID:", round_id);
                 return res.status(404).json({ message: "Round not found" });
             }
-            res.status(200).json(response);
+
+            // If both exist, proceed with the update
+            const updatedDrive = await this.placementService.updateSelectedStudents(id, round_id, studentId);
+
+            if (!updatedDrive) {
+                console.log("Update operation failed");
+                return res.status(404).json({ message: "Failed to update selected students" });
+            }
+
+            // Get the updated round
+            const updatedRound = updatedDrive.roundDetails.rounds.find(
+                r => r._id.toString() === round_id
+            );
+
+            console.log("Successfully updated round with selected student");
+            res.status(200).json({
+                success: true,
+                message: "Student selected successfully",
+                data: updatedRound
+            });
+
         } catch (error) {
-            res.status(500).json({ message: "Error updating selected students", error });
+            console.error("Error in updateSelectedStudents:", error);
+            res.status(500).json({ 
+                message: "Error updating selected students",
+                error: error.message 
+            });
         }
     }
     async declareResults(req, res) {
@@ -317,46 +360,6 @@ export default class PlacementController {
             res.status(200).json(response);
         } catch (error) {
             res.status(500).json({ message: "Error fetching rounds", error });
-        }
-    }
-    async getAppearedStudents(req, res) {
-        try {
-            const { id, roundId } = req.params;
-            
-            const drive = await this.placementService.findOne(
-                { 
-                    _id: id,
-                    "roundDetails.rounds._id": roundId 
-                }
-            ).populate({
-                path: 'roundDetails.rounds.appearedStudents',
-                select: 'personalInfo academics' // Select the fields we want
-            });
-
-            if (!drive) {
-                return res.status(404).json({ message: "Drive not found" });
-            }
-
-            const round = drive.roundDetails.rounds.find(
-                r => r._id.toString() === roundId
-            );
-
-            if (!round) {
-                return res.status(404).json({ message: "Round not found" });
-            }
-
-            // Return populated student details
-            res.status(200).json({
-                students: round.appearedStudents || [],
-                selectedStudents: round.selectedStudents || []
-            });
-
-        } catch (error) {
-            console.error("Error getting appeared students:", error);
-            res.status(500).json({ 
-                message: "Error getting appeared students",
-                error: error.message 
-            });
         }
     }
 }
