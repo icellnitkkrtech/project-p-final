@@ -1,5 +1,6 @@
 import axios from '../../config/axios';
 import { API_BASE_URL } from '../../config/constants.js';
+import studentService from './studentService';
 
 const placementService = {
     //1 Create a placement drive
@@ -77,7 +78,30 @@ const placementService = {
     getApplicantsForRound: async (id, roundId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/applicant-students`);
-            return response.data || [];
+            const students = response.data?.data?.data?.applicantStudents || [];
+            
+            // Fetch full details for each student using studentService
+            const studentsWithDetails = await Promise.all(
+                students.map(async (student) => {
+                    try {
+                        const details = await studentService.getStudentById(student._id);
+                        return details?.data || {
+                            _id: student._id,
+                            personalInfo: {},
+                            academics: {}
+                        };
+                    } catch (error) {
+                        console.error(`Error fetching details for student ${student._id}:`, error);
+                        return {
+                            _id: student._id,
+                            personalInfo: {},
+                            academics: {}
+                        };
+                    }
+                })
+            );
+            console.log("Fetched student details:", studentsWithDetails);
+            return studentsWithDetails;
         } catch (error) {
             console.error("Error fetching applicants for round:", error);
             return [];
@@ -88,7 +112,29 @@ const placementService = {
     getSelectedStudentsForRound: async (id, roundId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/selected-students`);
-            return response.data || [];
+            const students = response.data?.data || [];
+            
+            // Fetch full details for each student using studentService
+            const studentsWithDetails = await Promise.all(
+                students.map(async (student) => {
+                    try {
+                        const details = await studentService.getStudentById(student._id);
+                        return details?.data || {
+                            _id: student._id,
+                            personalInfo: {},
+                            academics: {}
+                        };
+                    } catch (error) {
+                        console.error(`Error fetching details for student ${student._id}:`, error);
+                        return {
+                            _id: student._id,
+                            personalInfo: {},
+                            academics: {}
+                        };
+                    }
+                })
+            );
+            return studentsWithDetails;
         } catch (error) {
             console.error("Error fetching selected students for round:", error);
             return [];
@@ -99,7 +145,29 @@ const placementService = {
     getAppearedStudentsForRound: async (id, roundId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/appeared-students`);
-            return response.data || [];
+            const students = response.data?.data || [];
+            
+            // Fetch full details for each student using studentService
+            const studentsWithDetails = await Promise.all(
+                students.map(async (student) => {
+                    try {
+                        const details = await studentService.getStudentById(student._id);
+                        return details?.data || {
+                            _id: student._id,
+                            personalInfo: {},
+                            academics: {}
+                        };
+                    } catch (error) {
+                        console.error(`Error fetching details for student ${student._id}:`, error);
+                        return {
+                            _id: student._id,
+                            personalInfo: {},
+                            academics: {}
+                        };
+                    }
+                })
+            );
+            return studentsWithDetails;
         } catch (error) {
             console.error("Error fetching appeared students for round:", error);
             return [];

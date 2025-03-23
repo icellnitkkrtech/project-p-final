@@ -126,7 +126,7 @@ export default class PlacementModel {
             ).populate({
                 path: "roundDetails.rounds.applicantStudents",
                 model: "Student",
-                select: "name email registrationNumber branch" // Add fields you want to retrieve
+                select: "name email branch" // Add fields you want to retrieve
             });
 
             if (!result) {
@@ -149,9 +149,9 @@ export default class PlacementModel {
     async getSelectedStudentsForRound(id, roundId) {
         console.log("Placement Model: getSelectedStudentsForRound called");
         try {
-            return await this.placementDrive.findOne(
+            return await this.placement.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
-                { "roundDetails.rounds.$.selectedStudents": 1 }
+                { "roundDetails.rounds.$": 1 }
             ).populate({ path: "roundDetails.rounds.selectedStudents", model: "Student" });
         } catch (error) {
             console.error("Error in getSelectedStudentsForRound:", error);
@@ -162,7 +162,7 @@ export default class PlacementModel {
     async getAppearedStudentsForRound(id, roundId) {
         console.log("Placement Model: getApperaredStudentsForRound called");
         try {
-            return await this.placementDrive.findOne(
+            return await this.placement.findOne(
                 { _id: id, "roundDetails.rounds._id": roundId },
                 { "roundDetails.rounds.$.appearedStudents": 1 }
             ).populate({ path: "roundDetails.rounds.appearedStudents", model: "Student" });
