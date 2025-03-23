@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 import { useParams } from 'react-router-dom';
 import jnfService from '../../../services/admin/jnfService';
@@ -14,7 +14,8 @@ import {
     Button,
     useTheme,
     Stack,
-    Divider
+    Divider,
+    IconButton
 } from '@mui/material';
 import {
     Business as BusinessIcon,
@@ -23,7 +24,8 @@ import {
     Assessment as AssessmentIcon,
     Info as InfoIcon,
     Preview as PreviewIcon,
-    CheckCircle as CheckIcon
+    CheckCircle as CheckIcon,
+    Close as CloseIcon
 } from '@mui/icons-material';
 
 // Keep existing imports
@@ -33,6 +35,7 @@ import ReviewStep from './steps/ReviewStep';
 import SelectionProcessStep from './steps/SelectionProcessSteps';
 import EligibleBranchesStep from './steps/EligibleBranchesStep';
 import AdditionalDetailsStep from './steps/AdditionalDetailsStep';
+import DraftConfirmDialog from './DraftConfirmDialog';
 
 const validateJNF = (formData) => {
     const errors = [];
@@ -101,7 +104,7 @@ const steps = [
     { number: 6, title: 'Review', icon: PreviewIcon }
 ];
 
-const index = ({ initialData, onSubmit, isEditing, onClose }) => { // Add onClose to props
+const Index = forwardRef(({ initialData, onSubmit, isEditing, onClose }, ref) => { // Add onClose to props
     const { id } = useParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -530,6 +533,11 @@ const index = ({ initialData, onSubmit, isEditing, onClose }) => { // Add onClos
                         onClose && onClose();
                     }
                 }
+                if (response.success) {
+                    alert('JNF submitted successfully');
+                    // Close dialog after successful submission
+                    onClose && onClose();
+                } 
             }
 
             // Show success message
@@ -542,6 +550,77 @@ const index = ({ initialData, onSubmit, isEditing, onClose }) => { // Add onClos
             setLoading(false);
         }
     };
+
+    const [showDraftDialog, setShowDraftDialog] = useState(false);
+
+    // Update handleSaveDraft to validate essential fields
+    const handleSaveDraft = async () => {
+        try {
+            // Validate essential fields
+            if (!formData.companyDetails?.name?.trim()) {
+                alert('Company name is required even for drafts');
+                return;
+            }
+            if (!formData.companyDetails?.email?.trim()) {
+                alert('Company email is required even for drafts');
+                return;
+            }
+            // Validate email format
+            const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(formData.companyDetails.email)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            setLoading(true);
+            const response = await jnfService.saveDraft(formData);
+            if (response.success) {
+                alert('Form saved as draft successfully');
+                onClose && onClose();
+            }
+        } catch (error) {
+            alert('Failed to save draft: ' + error.message);
+        } finally {
+            setLoading(false);
+            setShowDraftDialog(false);
+        }
+    };
+
+    // Update handleCloseAttempt if needed
+    const handleCloseAttempt = () => {
+        // Check if form has any data
+        const hasData = Object.keys(formData).some(key => {
+            if (typeof formData[key] === 'object') {
+                return Object.keys(formData[key]).some(k => formData[key][k]);
+            }
+            return formData[key];
+        });
+
+        if (hasData) {
+            setShowDraftDialog(true);
+        } else {
+            onClose && onClose();
+        }
+    };
+
+    useImperativeHandle(ref, () => ({
+        formData,
+        handleSaveDraft,
+        hasUnsavedChanges: () => {
+            return Object.keys(formData).some(key => {
+                if (typeof formData[key] === 'object') {
+                    return Object.keys(formData[key]).some(k => 
+                        formData[key][k] !== '' && 
+                        formData[key][k] !== null && 
+                        formData[key][k] !== undefined
+                    );
+                }
+                return formData[key] !== '' && 
+                       formData[key] !== null && 
+                       formData[key] !== undefined;
+            });
+        }
+    }));
 
     const renderStep = () => {
         switch (currentStep) {
@@ -610,12 +689,22 @@ const index = ({ initialData, onSubmit, isEditing, onClose }) => { // Add onClos
                         sx={{
                             p: 3,
                             background: `linear-gradient(120deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                            color: 'white'
+                            color: 'white',
+                            position: 'relative'
                         }}
                     >
                         <Typography variant="h4" fontWeight="600">
                             Job Notification Form
                         </Typography>
+                        {/* Add close button in header */}
+                        <Box sx={{ position: 'absolute', right: 16, top: 16 }}>
+                            {/* <IconButton
+                                onClick={handleCloseAttempt}
+                                sx={{ color: 'white' }}
+                            >
+                                <CloseIcon />
+                            </IconButton> */}
+                        </Box>
                     </Box>
 
                     {/* Steps Navigation */}
@@ -710,30 +799,60 @@ const index = ({ initialData, onSubmit, isEditing, onClose }) => { // Add onClos
                             Previous
                         </Button>
 
-                        {currentStep === 6 ? (
+                        <Box>
                             <Button
-                                variant="contained"
-                                color="success"
-                                onClick={handleSubmit}
+                                variant="outlined"
+                                onClick={handleSaveDraft}
+                                sx={{ mr: 1 }}
                                 disabled={loading}
-                                sx={{ minWidth: 120 }}
                             >
-                                {loading ? 'Submitting...' : 'Submit'}
+                                Save as Draft
                             </Button>
-                        ) : (
-                            <Button
-                                variant="contained"
-                                onClick={() => setCurrentStep(prev => Math.min(prev + 1, 6))}
-                                sx={{ minWidth: 120 }}
-                            >
-                                Next
-                            </Button>
-                        )}
+                            {currentStep === 6 ? (
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={handleSubmit}
+                                    disabled={loading}
+                                    sx={{ minWidth: 120 }}
+                                >
+                                    {loading ? 'Submitting...' : 'Submit'}
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    onClick={() => setCurrentStep(prev => Math.min(prev + 1, 6))}
+                                    sx={{ minWidth: 120 }}
+                                >
+                                    Next
+                                </Button>
+                            )}
+                        </Box>
                     </Stack>
                 </Paper>
             </motion.div>
+
+            {/* Add draft dialog */}
+            <DraftConfirmDialog
+                open={showDraftDialog}
+                onClose={(action) => {
+                    setShowDraftDialog(false);
+                    switch (action) {
+                        case 'discard':
+                            // Close without saving
+                            onClose && onClose();
+                            break;
+                        case 'keep':
+                            // Just close the dialog and continue editing
+                            break;
+                        default:
+                            break;
+                    }
+                }}
+                onSaveDraft={handleSaveDraft}
+            />
         </Container>
     );
-};
+});
 
-export default index;
+export default Index;
