@@ -1,5 +1,5 @@
 import axios from '../../config/axios';
-import { API_BASE_URL } from '../../config/constants';
+import { API_BASE_URL } from '../../config/constants.js';
 
 const placementService = {
     //1 Create a placement drive
@@ -75,20 +75,35 @@ const placementService = {
     
     //10 Get applicants for a round
     getApplicantsForRound: async (id, roundId) => {
-        const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/applicant-students`);
-        return response.data;
+        try {
+            const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/applicant-students`);
+            return response.data || [];
+        } catch (error) {
+            console.error("Error fetching applicants for round:", error);
+            return [];
+        }
     },
     
     //11 Get selected students for a round
     getSelectedStudentsForRound: async (id, roundId) => {
-        const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/selected-students`);
-        return response.data;
+        try {
+            const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/selected-students`);
+            return response.data || [];
+        } catch (error) {
+            console.error("Error fetching selected students for round:", error);
+            return [];
+        }
     },
     
     //12 Get appeared students for a round
     getAppearedStudentsForRound: async (id, roundId) => {
-        const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/appeared-students`);
-        return response.data;
+        try {
+            const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/appeared-students`);
+            return response.data || [];
+        } catch (error) {
+            console.error("Error fetching appeared students for round:", error);
+            return [];
+        }
     },
     
     //13 Update selected students in a round
@@ -143,7 +158,13 @@ const placementService = {
     deleteNotification: async (id, notificationId) => {
         const response = await axios.delete(`${API_BASE_URL}/placement/${id}/notifications/${notificationId}/delete`);
         return response.data;
-    }
+    },
+
+    //22 Get application details
+    getApplicationDetails: async (applicationId) => {
+        const response = await axios.get(`${API_BASE_URL}/student/applications/detail/${applicationId}`);
+        return response.data;
+      },
 };
 
 export default placementService;

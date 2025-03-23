@@ -26,27 +26,19 @@ const StatusButton = ({ job, onReview }) => {
 
     const handleReview = async () => {
         if (statusToUpdate) {
-            setLoading(true);
             try {
-                const response = await jnfService.updateStatus(job._id, statusToUpdate);
-                if (response.success) {
-                    setCurrentStatus(statusToUpdate);
-                    onReview(job._id, statusToUpdate);
-                    alert(`JNF ${statusToUpdate} successfully`);
-                }
+                await jnfService.update(job._id, { status: statusToUpdate });
+                onReview(job._id, statusToUpdate);
             } catch (error) {
                 console.error("Error updating JNF status:", error);
-                alert(`Failed to update status: ${error.message}`);
-            } finally {
-                setLoading(false);
-                handleClose();
             }
         }
+        handleClose();
     };
 
     return (
         <>
-            {currentStatus === 'pending' ? (
+            {job.status === 'pending' ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
                     <Tooltip title="Accept" arrow>
                         <IconButton
@@ -54,7 +46,6 @@ const StatusButton = ({ job, onReview }) => {
                             color="success"
                             size="small"
                             onClick={() => handleConfirm('approved')}
-                            disabled={loading}
                         >
                             <CheckCircleOutlineIcon />
                         </IconButton>
@@ -65,7 +56,6 @@ const StatusButton = ({ job, onReview }) => {
                             color="error"
                             size="small"
                             onClick={() => handleConfirm('rejected')}
-                            disabled={loading}
                         >
                             <CancelOutlinedIcon />
                         </IconButton>
@@ -74,33 +64,23 @@ const StatusButton = ({ job, onReview }) => {
             ) : (
                 <Typography
                     variant="body2"
-                    color={currentStatus === 'approved' ? 'success.main' : 'error.main'}
+                    color={job.status === 'approved' ? 'success.main' : 'error.main'}
                 >
-                    {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+                    {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                 </Typography>
             )}
 
             <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>Confirm </DialogTitle>
+                <DialogTitle>Confirm!</DialogTitle>
                 <DialogContent>
-                    Are you sure you want to {statusToUpdate} this JNF?
+                    Are you sure you want to set this to {statusToUpdate}?
                 </DialogContent>
                 <DialogActions>
-                    <Button 
-                        onClick={handleClose} 
-                        color="secondary"
-                        disabled={loading}
-                    >
+                    <Button onClick={handleClose} color="secondary">
                         Cancel
                     </Button>
-                    <Button 
-                        onClick={handleReview} 
-                        color="primary" 
-                        variant="contained"
-                        autoFocus
-                        disabled={loading}
-                    >
-                        {loading ? 'Updating...' : 'Confirm'}
+                    <Button onClick={handleReview} color="primary" autoFocus>
+                        Confirm
                     </Button>
                 </DialogActions>
             </Dialog>

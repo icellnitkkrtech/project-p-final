@@ -21,32 +21,22 @@ import { useState } from 'react';
 import studentService from '../../../services/admin/studentService';
 import { Navigate } from 'react-router-dom';
 
-const StudentRegistration = () => {
+const StudentRegistration = ({ onRegistrationSuccess }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [studentData, setStudentData] = useState({
     personalInfo: {
       name: '',
       rollNumber: '',
       department: '',
-      batchStartYear: '',
-      batchEndYear: '',
-      gender: '',
-      category: ''
+      Gender: '', // Capital G to match schema
+      category: '',
+      batch: ''
     },
     academics: {
       cgpa: '',
       tenthMarks: '',
-      twelfthMarks: '',
-    },
-    secondaryEmail: '',
-    skills: [],
-    education: [],
-    experience: [],
-    projects: [],
-    socialLinks: {
-      github: '',
-      linkedIn: '',
-    },
+      twelfthMarks: ''
+    }
   });
 
   // Predefined options for dropdowns
@@ -104,6 +94,7 @@ const StudentRegistration = () => {
   };
 
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const steps = [
     'Personal Information',
@@ -136,17 +127,82 @@ const StudentRegistration = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
-
+    setSuccessMessage('');
+    
     try {
-      const response = await studentService.registerStudentByAdmin(studentData);
-      if (response.statusCode !== 201) {
-        setErrorMessage(response.message);
-      } else {
-        console.log('Student registered successfully:', response.data);
+      const payload = {
+        personalInfo: {
+          name: studentData.personalInfo.name,
+          rollNumber: Number(studentData.personalInfo.rollNumber),
+          department: studentData.personalInfo.department,
+          Gender: studentData.personalInfo.Gender,
+          category: studentData.personalInfo.category,
+          batch: Number(studentData.personalInfo.batch)
+        },
+        academics: {
+          cgpa: Number(studentData.academics.cgpa),
+          tenthMarks: Number(studentData.academics.tenthMarks),
+          twelfthMarks: Number(studentData.academics.twelfthMarks)
+        }
+      };
+
+      // Add detailed logging
+      console.log('Form Data:', studentData);
+      console.log('Payload being sent:', JSON.stringify(payload, null, 2));
+
+      // Validate payload before sending
+      const missingFields = [];
+      
+      // Check personalInfo fields
+      Object.entries(payload.personalInfo).forEach(([key, value]) => {
+        if (!value && value !== 0) {
+          missingFields.push(`personalInfo.${key}`);
+        }
+      });
+
+      // Check academics fields
+      Object.entries(payload.academics).forEach(([key, value]) => {
+        if (!value && value !== 0) {
+          missingFields.push(`academics.${key}`);
+        }
+      });
+
+      if (missingFields.length > 0) {
+        console.log('Missing fields:', missingFields);
+        setErrorMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        return;
+      }
+
+      const response = await studentService.registerStudentByAdmin(payload);
+      console.log('Server Response:', response);
+
+      if (response.statusCode === 201) {
+        setSuccessMessage('Student registered successfully!');
+        setStudentData({
+          personalInfo: {
+            name: '',
+            rollNumber: '',
+            department: '',
+            Gender: '',
+            category: '',
+            batch: ''
+          },
+          academics: {
+            cgpa: '',
+            tenthMarks: '',
+            twelfthMarks: ''
+          }
+        });
+        onRegistrationSuccess?.();
       }
     } catch (error) {
-      setErrorMessage('An error occurred during registration.');
-      console.error('Registration error:', error);
+      console.error('Detailed error:', {
+        message: error.message,
+        response: error.response?.data,
+        data: error.response?.data?.data,
+        status: error.response?.status
+      });
+      setErrorMessage(error.response?.data?.message || 'Registration failed');
     }
   };
 
@@ -193,15 +249,13 @@ const StudentRegistration = () => {
               <FormControl fullWidth required>
                 <InputLabel>Gender</InputLabel>
                 <Select
-                  value={studentData.personalInfo.gender}
-                  onChange={(e) => handleChange('personalInfo', 'gender', e.target.value)}
+                  value={studentData.personalInfo.Gender}
+                  onChange={(e) => handleChange('personalInfo', 'Gender', e.target.value)}
                   label="Gender"
                 >
-                  {genderOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="Male">Male</MenuItem>
+                  <MenuItem value="Female">Female</MenuItem>
+                  <MenuItem value="Other">Other</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -221,40 +275,20 @@ const StudentRegistration = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth required>
-                <InputLabel>Batch Start Year</InputLabel>
-                <Select
-                  value={studentData.personalInfo.batchStartYear}
-                  onChange={(e) => handleBatchYearChange('batchStartYear', e.target.value)}
-                  label="Batch Start Year"
-                >
-                  {years.map((year) => (
-                    <MenuItem key={year} value={year.toString()}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth required>
-                <InputLabel>Batch End Year</InputLabel>
-                <Select
-                  value={studentData.personalInfo.batchEndYear}
-                  onChange={(e) => handleBatchYearChange('batchEndYear', e.target.value)}
-                  label="Batch End Year"
-                  disabled={!studentData.personalInfo.batchStartYear}
-                >
-                  {years
-                    .filter(year => year > parseInt(studentData.personalInfo.batchStartYear || 0))
-                    .map((year) => (
-                      <MenuItem key={year} value={year.toString()}>
-                        {year}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Batch Year"
+                type="number"
+                value={studentData.personalInfo.batch}
+                onChange={(e) => handleChange('personalInfo', 'batch', e.target.value)}
+                required
+                helperText="Enter admission year (e.g., 2020)"
+                inputProps={{
+                  min: 2000,
+                  max: 2099
+                }}
+              />
             </Grid>
           </Grid>
         );
@@ -281,6 +315,9 @@ const StudentRegistration = () => {
     <Box>
       <Card sx={{ mb: 3 }}>
         <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Register New Student
+          </Typography>
           <Stepper activeStep={activeStep} alternativeLabel>
             {steps.map((label) => (
               <Step key={label}>
@@ -295,6 +332,7 @@ const StudentRegistration = () => {
         <CardContent>
           <form onSubmit={handleSubmit}>
             {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+            {successMessage && <Alert severity="success">{successMessage}</Alert>}
             {renderStepContent(activeStep)}
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, gap: 2 }}>
@@ -315,3 +353,4 @@ const StudentRegistration = () => {
 };
 
 export default StudentRegistration;
+

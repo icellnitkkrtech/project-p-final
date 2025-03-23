@@ -10,11 +10,21 @@ import {
   IconButton,
   Card,
   CardContent,
-  Box
+  Box,
+  Chip
 } from '@mui/material';
 import { Add, Delete } from '@mui/icons-material';
 
-const PlacementInfoForm = ({ formData, onChange }) => {
+const PlacementInfoForm = ({ formData = {}, onChange }) => {
+  // Add default empty object to prevent undefined errors
+  const {
+    status = 'not_placed',
+    offersReceived = 0,
+    company = '',
+    role = '',
+    highestPackage = ''
+  } = formData;
+
   const handleInternshipChange = (index, field, value) => {
     const updatedInternships = [...(formData.internships || [])];
     updatedInternships[index] = {
@@ -42,51 +52,59 @@ const PlacementInfoForm = ({ formData, onChange }) => {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12} md={6}>
-        <FormControl fullWidth>
-          <InputLabel>Placement Status</InputLabel>
-          <Select
-            value={formData.status || ''}
-            onChange={(e) => onChange('status', e.target.value)}
-          >
-            <MenuItem value="Placed">Placed</MenuItem>
-            <MenuItem value="Unplaced">Unplaced</MenuItem>
-            <MenuItem value="Not Eligible">Not Eligible</MenuItem>
-          </Select>
-        </FormControl>
+        <TextField
+          select
+          fullWidth
+          label="Placement Status"
+          value={status}
+          onChange={(e) => onChange('status', e.target.value)}
+          required
+        >
+          <MenuItem value="not_placed">Not Placed</MenuItem>
+          <MenuItem value="placed">Placed</MenuItem>
+          <MenuItem value="internship">Internship</MenuItem>
+        </TextField>
       </Grid>
 
-      {formData.status === 'Placed' && (
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          type="number"
+          label="Offers Received"
+          value={offersReceived}
+          onChange={(e) => onChange('offersReceived', e.target.value)}
+          inputProps={{ min: 0 }}
+        />
+      </Grid>
+
+      {status === 'placed' && (
         <>
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Company"
-              value={formData.company || ''}
+              value={company}
               onChange={(e) => onChange('company', e.target.value)}
             />
           </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Role"
+              value={role}
+              onChange={(e) => onChange('role', e.target.value)}
+            />
+          </Grid>
+
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Package (LPA)"
-              value={formData.package || ''}
-              onChange={(e) => onChange('package', e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Job Role"
-              value={formData.jobRole || ''}
-              onChange={(e) => onChange('jobRole', e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Location"
-              value={formData.location || ''}
-              onChange={(e) => onChange('location', e.target.value)}
+              type="number"
+              value={highestPackage}
+              onChange={(e) => onChange('highestPackage', e.target.value)}
+              inputProps={{ step: 0.1, min: 0 }}
             />
           </Grid>
         </>
@@ -151,4 +169,4 @@ const PlacementInfoForm = ({ formData, onChange }) => {
   );
 };
 
-export default PlacementInfoForm; 
+export default PlacementInfoForm;

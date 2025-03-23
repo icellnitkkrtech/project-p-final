@@ -289,7 +289,21 @@ export default class StudentModel {
   }
 
   async create(data) {
-    return this.student.create(data);
+    try {
+      // Validate batch format before creating
+      if (data.personalInfo?.batch && !/^\d{4}-\d{4}$/.test(data.personalInfo.batch)) {
+        return new apiResponse(400, null, "Invalid batch format. Use YYYY-YYYY");
+      }
+
+      const student = await this.student.create(data);
+      return new apiResponse(201, student, "Student created successfully");
+    } catch (error) {
+      console.error('Student creation error:', error);
+      if (error.name === 'ValidationError') {
+        return new apiResponse(400, null, error.message);
+      }
+      return new apiResponse(500, null, error.message);
+    }
   }
 
   async deleteStudent(id) {

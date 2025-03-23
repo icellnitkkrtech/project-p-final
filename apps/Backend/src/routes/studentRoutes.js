@@ -91,4 +91,9 @@ studentRouter.post("/revoke-debour/:id", (req, res) =>
   StudentController.revokeDebour(req, res)
 );
 
+// Add this route
+studentRouter.put("/update-cgpa/:rollNumber", (req, res) =>
+  StudentController.updateStudentCGPA(req, res)
+);
+
 export default studentRouter;

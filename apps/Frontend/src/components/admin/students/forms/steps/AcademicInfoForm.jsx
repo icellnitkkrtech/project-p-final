@@ -37,13 +37,14 @@ const AcademicInfoForm = ({ formData, onChange }) => {
         />
       </Grid>
 
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={4}>
         <TextField
           fullWidth
-          label="CGPA"
           type="number"
+          label="CGPA"
           value={formData.cgpa || ''}
           onChange={(e) => onChange('cgpa', e.target.value)}
+          required
           inputProps={{ step: 0.01, min: 0, max: 10 }}
         />
       </Grid>
@@ -59,25 +60,27 @@ const AcademicInfoForm = ({ formData, onChange }) => {
         />
       </Grid>
 
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={4}>
         <TextField
           fullWidth
-          label="10th Marks (%)"
           type="number"
+          label="10th Marks"
           value={formData.tenthMarks || ''}
           onChange={(e) => onChange('tenthMarks', e.target.value)}
-          inputProps={{ min: 0, max: 100 }}
+          required
+          inputProps={{ step: 0.01, min: 0, max: 100 }}
         />
       </Grid>
 
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={4}>
         <TextField
           fullWidth
-          label="12th Marks (%)"
           type="number"
+          label="12th Marks"
           value={formData.twelfthMarks || ''}
           onChange={(e) => onChange('twelfthMarks', e.target.value)}
-          inputProps={{ min: 0, max: 100 }}
+          required
+          inputProps={{ step: 0.01, min: 0, max: 100 }}
         />
       </Grid>
     </Grid>
