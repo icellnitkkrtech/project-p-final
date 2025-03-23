@@ -64,4 +64,40 @@ jnfRouter.put('/updateStatus/:id',
     (req, res) => jnfController.updateStatus(req, res)
 );
 
+// Draft routes
+jnfRouter.post('/draft', 
+        upload.single('jobDescriptionFile'),
+    handleFileUploadError,
+    async (req, res) => {
+        try {
+            const formData = JSON.parse(req.body.formData);
+            
+            // Handle file upload
+            if (req.file) {
+                const fileIndex = req.body.fileJobProfileIndex;
+                formData.jobProfiles[fileIndex].jobDescription.file = req.file.path;
+            }
+
+            const result = await jnfController.saveDraft(formData);
+            
+            if (result.success) {
+                res.status(200).json(result);
+            } else {
+                res.status(400).json(result);
+            }
+        } catch (error) {
+            console.error('Error in draft route:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Internal server error'
+            });
+        }
+    }
+);
+
+jnfRouter.get('/drafts',
+   
+    (req, res) => jnfController.getDrafts(req, res)
+);
+
 export default jnfRouter;

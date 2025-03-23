@@ -103,4 +103,34 @@ export default class jnfServices {
             return new apiResponse(500, null, error.message);
         }
     }
+
+    async createDraft(draftData) {
+        try {
+            const draft = await this.jnfModel.saveDraft(draftData);
+            if (!draft) {
+                throw new Error('Failed to create draft');
+            }
+            return draft;
+        } catch (error) {
+            console.error('Error in createDraft service:', error);
+            throw error;
+        }
     }
+
+    async updateDraft(id, draftData) {
+        try {
+            const draft = await this.jnfModel.findByIdAndUpdate(
+                id,
+                { ...draftData, lastModified: new Date() },
+                { new: true }
+            );
+            if (!draft) {
+                throw new Error('Draft not found');
+            }
+            return draft;
+        } catch (error) {
+            console.error('Error in updateDraft service:', error);
+            throw error;
+        }
+    }
+}
