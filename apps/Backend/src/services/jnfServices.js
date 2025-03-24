@@ -23,12 +23,33 @@ export default class jnfServices {
             return new apiResponse(500, null, error.message);
         }
     }
-    async createJNF(req, res) {
+    async createJNF(jnfData) {
         try {
-            console.log(req);
-            const response = await this.jnfModel.createJnf(req);
-            return new apiResponse(200, response, "JNF Created Successfully");
+            // Validate the input data
+            if (!jnfData) {
+                throw new Error('JNF data is required');
+            }
+
+            if (!jnfData.submittedBy) {
+                throw new Error('User ID is required');
+            }
+
+            console.log('Creating JNF with data:', {
+                submittedBy: jnfData.submittedBy,
+                companyName: jnfData.companyDetails?.name
+            });
+
+            // Create the JNF
+            const response = await this.jnfModel.createJnf(jnfData);
+
+            // Check if creation was successful
+            if (!response || response.statusCode !== 200) {
+                throw new Error(response?.message || 'Failed to create JNF');
+            }
+
+            return new apiResponse(200, response.data, "JNF Created Successfully");
         } catch (error) {
+            console.error('Error in createJNF service:', error);
             return new apiResponse(500, null, error.message);
         }
     }

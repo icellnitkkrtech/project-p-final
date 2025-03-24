@@ -41,7 +41,7 @@ jnfRouter.delete("/delete/:id", (req, res) => {
   jnfController.deleteJNF(req, res);
 });//done
 //create jnf
-jnfRouter.post('/create', 
+jnfRouter.post('/create',  authVerify,
   upload.single('jobDescriptionFile'), 
   handleFileUploadError,
   (req, res) => jnfController.createJNF(req, res)

@@ -13,6 +13,11 @@ const authVerify = asyncHandler(async (req, res, next) => {
     }
 
     const decodedToken = verify(token, process.env.ACCESS_TOKEN_SECRET);
+    console.log("Decoded token:", { 
+      userId: decodedToken?._id, 
+      role: decodedToken?.role,
+      email: decodedToken?.email
+    });
     const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
     
     if (!user) {
@@ -20,6 +25,7 @@ const authVerify = asyncHandler(async (req, res, next) => {
     }
 
     req.user = user;
+    req.token = token;
     next();
   } catch (error) {
     console.error("Auth Error:", error);
