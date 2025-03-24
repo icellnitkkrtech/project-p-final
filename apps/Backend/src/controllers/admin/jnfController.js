@@ -29,7 +29,8 @@ export default class JNFController {
     async createJNF(req, res) {
         try {
             const jnfData = JSON.parse(req.body.formData); // Parse the stringified form data
-            
+            jnfData.submittedBy = req.user._id;
+            jnfData.submissionDate = new Date();
             // If file was uploaded, add file path to job description
             if (req.file) {
                 const jobProfileIndex = parseInt(req.body.fileJobProfileIndex);
@@ -50,7 +51,7 @@ export default class JNFController {
             // Delete uploaded file if there was an error
             if (req.file) {
                 fs.unlink(req.file.path, (err) => {
-                    if (err) console.error('Error deleting file:', err);
+                    if (err) console.error('Error creating file:', err);
                 });
             }
             res.status(500).json(new apiResponse(500, null, error.message));

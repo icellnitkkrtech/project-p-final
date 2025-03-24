@@ -19,8 +19,11 @@ const jnfService = {
 
   async create(formData) {
     try {
+          // Get auth token from localStorage
+          const token = localStorage.getItem('authToken');
         const config = {
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'multipart/form-data'
             }
         };

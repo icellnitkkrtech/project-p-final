@@ -19,7 +19,7 @@ companyRouter.get("/all", authVerify, (req, res) => {
   return companyController.getAllCompanies(req, res);
 });
 
-companyRouter.get("/getone/:id", authVerify, (req, res) => {
+companyRouter.get("/getone/:id",  (req, res) => {
   companyController.getCompany(req, res);
 });//done
 
@@ -33,7 +33,7 @@ companyRouter.delete("/delete/:id_company/:id_user", authVerify, (req, res) => {
 });
 
 // JNF related routes
-companyRouter.post("/:id/add-jnf", authVerify, (req, res) => {
+companyRouter.post("/:id/add-jnf",  (req, res) => {
   companyController.addJNFToCompany(req, res);
 });
 

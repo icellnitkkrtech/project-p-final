@@ -1,6 +1,9 @@
-import React, { useEffect ,useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import BeatLoader from "react-spinners/BeatLoader";
 import {
-    Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow, Paper, Typography, IconButton, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
+    Table, TableBody, TableCell, Tooltip, TableContainer, 
+    TableHead, TableRow, Paper, Typography, IconButton, 
+    Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Box
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -11,7 +14,8 @@ import StatusButton from './StatusButton';
 import ActionButtons from './ActionButtons';
 import { Delete } from '@mui/icons-material';
 import jnfService from '../../../services/admin/jnfService';
-const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
+
+const JNFTable = ({ jnfs, onView, onDelete, onReview, isLoading }) => {
     const [expanded, setExpanded] = useState(null);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -28,7 +32,7 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const handleAssignClick = (job) => {
         setSelectedJob(job);
         setAssignDialogOpen(true);
-        };
+    };
 
     const handleDeleteClick = (job) => {
         setSelectedJob(job);
@@ -77,6 +81,24 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
 
         fetchPCCUsers();
     }, []);
+
+    if (isLoading) {
+        return (
+            <Box 
+                display="flex" 
+                justifyContent="center" 
+                alignItems="center" 
+                minHeight="400px"
+            >
+                <BeatLoader 
+                    color="#1976d2" // Material-UI primary blue
+                    loading={true}
+                    size={15}
+                    speedMultiplier={0.8}
+                />
+            </Box>
+        );
+    }
 
     return (
         <>

@@ -252,6 +252,10 @@ const JNFSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    placementDrive: {
+      type: Schema.Types.ObjectId,
+      ref: 'PlacementDrive'
+  },
     reviewComments: String,
     submissionDate: Date,
     reviewDate: Date,

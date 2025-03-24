@@ -14,15 +14,23 @@ const JNFManagement = ({ searchTerm }) => {
     const [tab, setTab] = useState('all');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
-
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
     const handleViewJNF = (jnfItem) => setSelectedJNF(jnfItem);
     const handleOpenCreateDialog = () => setIsCreateDialogOpen(true);
     const handleCloseCreateDialog = () => setIsCreateDialogOpen(false);
 
     useEffect(() => {
         const fetchAllJNFs = async () => {
+            try {
             const response = await jnfService.getAll();
             setJnfs(response.data);
+            } catch (error) {
+                console.error("Error fetching JNFs:", error);
+              
+    }finally {
+        setLoading(false);
+    }
         };
         fetchAllJNFs();
         }, []);
@@ -93,7 +101,7 @@ const JNFManagement = ({ searchTerm }) => {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', mt: 2 }}>
             <NFHeader tab={tab} setTab={setTab} onCreate={handleOpenCreateDialog} title = {"JNF"}/>
-            <JNFTable jnfs= {filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview} onEdit={(jnf) => {
+            <JNFTable jnfs= {filteredJnfs} onView={handleViewJNF} onDelete={handleDeleteJNF} onReview={handleReview}  isLoading={loading} onEdit={(jnf) => {
                     setSelectedJNF(jnf);
                     setEditDialogOpen(true);
                 }} />

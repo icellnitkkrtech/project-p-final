@@ -45,7 +45,39 @@ export default class companyModel {
             return new apiResponse(500, null, error.message);
         }
     }
-
+    async createCompanyBYAdmin(companyData, userId) {
+        console.log("Company Model: createCompany called");
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+    
+            if (!companyData.companyName) {
+                throw new Error('Company name is required');
+            }
+    
+            if (!companyData.email) {
+                throw new Error('Company email is required');
+            }
+    
+            const createdCompany = await this.company.create({
+                user: userId,
+                companyName: companyData.companyName,
+                email: companyData.email,
+                website: companyData.website,
+                JNFs: companyData.JNFs || [], // Handle JNFs array if provided
+                recruitmentStatus: companyData.recruitmentStatus || 'upcoming',
+                hiringSince: companyData.hiringSince || new Date(),
+                status: 'active'
+            });
+    
+            console.log("Created company:", createdCompany);
+            return new apiResponse(201, createdCompany, "Company created successfully");
+        } catch (error) {
+            console.error("Error creating company:", error);
+            return new apiResponse(500, null, error.message);
+        }
+    }
     async findCompanyById(id) {
         console.log("Model layer: findCompanyById called");
     
