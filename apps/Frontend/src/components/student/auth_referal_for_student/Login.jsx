@@ -50,6 +50,7 @@ const Login = () => {
         const studentResponse = await axios.get(
           `/student/profile/user/${user._id}`
         );
+
         // console.log(studentResponse);
         if (studentResponse.data.statusCode === 200) {
           const studentData = studentResponse.data.data;
