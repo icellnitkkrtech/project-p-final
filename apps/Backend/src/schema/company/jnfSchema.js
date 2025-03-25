@@ -1,12 +1,25 @@
-
 import { Schema as _Schema, model } from 'mongoose';
 const Schema = _Schema;
 
 const JNFSchema = new Schema(
   {
     companyDetails: {
-      name: { type: String, required: true },
-      email: { type: String, required: true },
+      name: { 
+        type: String, 
+        required: true, // Always required
+        trim: true
+      },
+      email: { 
+        type: String, 
+        required: true, // Always required
+        trim: true,
+        validate: {
+          validator: function(v) {
+            return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
+          },
+          message: 'Please enter a valid email'
+        }
+      },
       website: String,
       companyType: {
         type: String,
@@ -229,7 +242,7 @@ const JNFSchema = new Schema(
     status: {
       type: String,
       enum: ["draft", "submitted", "pending", "approved", "rejected"],
-      default: "draft",
+      default: "pending",
     },
     submittedBy: {
       type: Schema.Types.ObjectId,
@@ -239,12 +252,62 @@ const JNFSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    placementDrive: {
+      type: Schema.Types.ObjectId,
+      ref: 'PlacementDrive'
+  },
     reviewComments: String,
     submissionDate: Date,
     reviewDate: Date,
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    validateBeforeSave: true // Enable validation by default
+  }
 );
+
+// Pre-save middleware to handle draft validation
+JNFSchema.pre('save', function(next) {
+  if (this.status === 'draft') {
+    // Only validate required fields for drafts
+    if (!this.companyDetails.name || !this.companyDetails.email) {
+      next(new Error('Company name and email are required even for drafts'));
+      return;
+    }
+  }
+  next();
+});
+
+// Add custom validation method
+JNFSchema.methods.validateDraft = function() {
+  const errors = [];
+  
+  // Minimal validation for drafts
+  if (!this.companyDetails?.name) {
+    errors.push('Company name is required even for drafts');
+  }
+
+  if (this.companyDetails?.email && 
+      !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(this.companyDetails.email)) {
+    errors.push('Invalid email format');
+  }
+
+  return errors;
+};
+
+// Add static method to save drafts
+JNFSchema.statics.saveDraft = async function(draftData) {
+  const jnf = new this(draftData);
+  jnf.status = 'draft';
+  
+  // Validate draft
+  const errors = jnf.validateDraft();
+  if (errors.length > 0) {
+    throw new Error(errors.join(', '));
+  }
+
+  return await jnf.save();
+};
 
 const JNF = model('JNF', JNFSchema);
 export default JNF;

@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import BeatLoader from "react-spinners/BeatLoader";
 import {
-    Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow, Paper, Typography, IconButton, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
+    Table, TableBody, TableCell, Tooltip, TableContainer, 
+    TableHead, TableRow, Paper, Typography, IconButton, 
+    Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Box
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -11,12 +14,16 @@ import StatusButton from './StatusButton';
 import ActionButtons from './ActionButtons';
 import { Delete } from '@mui/icons-material';
 import jnfService from '../../../services/admin/jnfService';
-const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
+
+const JNFTable = ({ jnfs, onView, onDelete, onReview, isLoading }) => {
     const [expanded, setExpanded] = useState(null);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState(null);
     const [assignedTasks, setAssignedTasks] = useState({});
+    const [pccUsers, setPccUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const handleExpandClick = (jobId) => {
         setExpanded(expanded === jobId ? null : jobId);
@@ -25,12 +32,24 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
     const handleAssignClick = (job) => {
         setSelectedJob(job);
         setAssignDialogOpen(true);
-        };
+    };
 
     const handleDeleteClick = (job) => {
         setSelectedJob(job);
         setDeleteDialogOpen(true);
-        console.log("delete this job or not???",job);
+    };
+
+    const handleConfirmDelete = async () => {
+        try {
+            if (!selectedJob?._id) return;
+            
+            await jnfService.delete(selectedJob._id);
+            setDeleteDialogOpen(false);
+            setSelectedJob(null);
+            onDelete(selectedJob._id); // This will update the parent component's state
+        } catch (error) {
+            console.error("Error deleting JNF:", error);
+        }
     };
 
     const handleAssign = (assignedTask) => {
@@ -43,14 +62,43 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
         }));
     };
 
-    const handleDelete = async (jobId) => {
-        try {
-            await jnfService.delete(jobId);
-            // setJnf((prevJnf) => prevJnf.filter((job) => job._id !== jobId));
-        } catch (error) {
-            console.error("Error deleting JNF:", error);
-        }
-    };
+    //for fetching pcc from backend server
+    useEffect(() => {
+        const fetchPCCUsers = async () => {
+            try {
+                const response = await jnfService.getPCC();
+                console.log("pcc ",response);
+                if (response.data.success) {
+                    setPccUsers(response.data.data);
+                }
+            } catch (error) {
+                setError(error.message);
+                console.error('Error fetching PCC users:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPCCUsers();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <Box 
+                display="flex" 
+                justifyContent="center" 
+                alignItems="center" 
+                minHeight="400px"
+            >
+                <BeatLoader 
+                    color="#1976d2" // Material-UI primary blue
+                    loading={true}
+                    size={15}
+                    speedMultiplier={0.8}
+                />
+            </Box>
+        );
+    }
 
     return (
         <>
@@ -93,7 +141,7 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                                                     <IconButton
                                                         color="error"
                                                         size="small"
-                                                        onClick={() => handleDelete(job._id)}
+                                                        onClick={() => handleDeleteClick(job)} // Changed from handleDelete to handleDeleteClick
                                                         sx={{ padding: 0.5 }}
                                                     >
                                                         <Delete fontSize="small" />
@@ -135,22 +183,20 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview }) => {
                 open={assignDialogOpen}
                 onClose={() => setAssignDialogOpen(false)}
                 onAssign={handleAssign}
-                users={[
-                    { id: 1, name: 'Mohit(PCC)', email: 'mohit@example.com' },
-                    { id: 2, name: 'Muskan(PCC)', email: 'muskan@example.com' },
-                    { id: 3, name: 'Mohan(PCC)', email: 'mohan@example.com' },
-                ]}
+                users={pccUsers}
+                loading={loading}
+                error={error}
                 job={selectedJob}
             />
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 job={selectedJob}
-                onClose={() => setDeleteDialogOpen(false)}
-                onConfirm={() => {
-                    onDelete(selectedJob.id);
+                onClose={() => {
                     setDeleteDialogOpen(false);
+                    setSelectedJob(null);
                 }}
+                onConfirm={handleConfirmDelete}
             />
         </>
     );

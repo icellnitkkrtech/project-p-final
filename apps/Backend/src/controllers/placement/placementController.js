@@ -89,7 +89,7 @@ export default class PlacementController {
         try {
             const response = await this.placementService.deleteRound(req.params.id, req.params.round_id);
             if (!response) {
-                return res.status(404).json({ message: "Placement drive not found" });
+                return res.status(404).json({ message: "Round not found" });
             }
             res.status(200).json({ message: "Round deleted successfully" });
         } catch (error) {
@@ -147,13 +147,28 @@ export default class PlacementController {
 
     async getApplicantsForRound(req, res) {
         try {
-            const response = await this.placementService.getApplicantsForRound(req.params.id, req.params.round_id);
+            const { id, round_id } = req.params;
+            const response = await this.placementService.getApplicantsForRound(id, round_id);
+            
             if (!response) {
-                return res.status(404).json({ message: "Round not found" });
+                return res.status(404).json({ 
+                    success: false,
+                    message: "Round not found or no applicants available" 
+                });
             }
-            res.status(200).json(response);
+
+            res.status(200).json({
+                success: true,
+                data: response,
+                message: "Successfully retrieved applicants for round"
+            });
         } catch (error) {
-            res.status(500).json({ message: "Error fetching applicants", error });
+            console.error("Error in getApplicantsForRound controller:", error);
+            res.status(500).json({ 
+                success: false,
+                message: "Error fetching applicants",
+                error: error.message 
+            });
         }
     }
 
@@ -180,16 +195,34 @@ export default class PlacementController {
             res.status(500).json({ message: "Error fetching appeared students", error });
         }
     }
+    
+    
     async updateSelectedStudents(req, res) {
         try {
-            const { selectedStudents } = req.body;
-            const response = await this.placementService.updateSelectedStudents(req.params.id, req.params.round_id, selectedStudents);
-            if (!response) {
-                return res.status(404).json({ message: "Round not found" });
+            const { id, round_id } = req.params;
+            const { studentId } = req.body;
+
+            const updatedDrive = await this.placementService.updateSelectedStudents(id, round_id, studentId);
+
+            if (!updatedDrive) {
+                return res.status(404).json({ message: "Failed to update selected students" });
             }
-            res.status(200).json(response);
+
+            const updatedRound = updatedDrive.roundDetails.rounds.find(
+                r => r._id.toString() === round_id
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Student selected successfully",
+                data: updatedRound
+            });
+
         } catch (error) {
-            res.status(500).json({ message: "Error updating selected students", error });
+            res.status(500).json({ 
+                message: "Error updating selected students",
+                error: error.message 
+            });
         }
     }
     async declareResults(req, res) {

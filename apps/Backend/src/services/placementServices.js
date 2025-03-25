@@ -1,5 +1,5 @@
 import PlacementModel from "../models/placementModel.js";
-
+import apiResponse from "../utils/apiResponse.js";
 export default class PlacementService {
     constructor() {
         this.placementModel = new PlacementModel();
@@ -87,9 +87,14 @@ export default class PlacementService {
     }
     async getApplicantsForRound(id, roundId) {
         try {
-            return await this.placementModel.getApplicantsForRound(id, roundId);
+            const result = await this.placementModel.getApplicantsForRound(id, roundId);
+            if (!result) {
+                return new apiResponse(404, null, "Round not found or no applicants available");
+            }
+            return new apiResponse(200, result, "Successfully retrieved applicants");
         } catch (error) {
-            throw new Error("Error fetching applicants: " + error.message);
+            console.error("Error in getApplicantsForRound service:", error);
+            return new apiResponse(500, null, error.message);
         }
     }
     async getSelectedStudentsForRound(id, roundId) {
@@ -106,9 +111,9 @@ export default class PlacementService {
             throw new Error("Error fetching appeared students: " + error.message);
         }
     }
-    async updateSelectedStudents(id, roundId, students) {
+    async updateSelectedStudents(id, roundId, studentId) {
         try {
-            return await this.placementModel.updateSelectedStudents(id, roundId, students);
+            return await this.placementModel.updateSelectedStudents(id, roundId, studentId);
         } catch (error) {
             throw new Error("Error updating selected students: " + error.message);
         }
@@ -120,7 +125,7 @@ export default class PlacementService {
             throw new Error("Error declaring results: " + error.message);
         }
     }
-    async getResults(id, roundId){
+    async getResults(id, roundId) {
         try {
             return await this.placementModel.getResults(id, roundId);
         } catch (error) {
@@ -169,7 +174,7 @@ export default class PlacementService {
             throw new Error("Error deleting notification: " + error.message);
         }
     }
-    async getAllRounds(id){
+    async getAllRounds(id) {
         try {
             return await this.placementModel.getAllRounds(id);
         } catch (error) {

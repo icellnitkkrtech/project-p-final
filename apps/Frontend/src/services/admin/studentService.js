@@ -17,11 +17,30 @@ const studentService = {
     }
   },
   registerStudentByAdmin: async (studentData) => {
-    const response = await axios.post(
-      `${API_BASE_URL}/student/register/admin`,
-      studentData
-    );
-    return response.data;
+    try {
+      console.log('Service received data:', JSON.stringify(studentData, null, 2));
+
+      const response = await axios.post(
+        `${API_BASE_URL}/student/register/admin`,
+        studentData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Service received response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Service error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
+    }
   },
   createStudent: async (studentData) => {
     const formData = new FormData();
@@ -42,25 +61,16 @@ const studentService = {
   },
 
   updateStudent: async (id, studentData) => {
-    const formData = new FormData();
-    Object.keys(studentData).forEach((key) => {
-      if (studentData[key] instanceof File) {
-        formData.append(key, studentData[key]);
-      } else if (typeof studentData[key] === "object") {
-        formData.append(key, JSON.stringify(studentData[key]));
-      } else {
-        formData.append(key, studentData[key]);
-      }
-    });
-
-    const response = await axios.put(
-      `${API_BASE_URL}/student/${id}`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
-    );
-    return response.data;
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/student/profile/${id}`,
+        studentData
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
   },
 
   deleteStudent: async (studentId, reason) => {
@@ -178,6 +188,10 @@ const studentService = {
     );
     return response.data;
   },
+  getStudentApplications : async (studentId) => {
+    const response = await axios.get(`${API_BASE_URL}/student/applications/${studentId}`);
+    return response.data;
+  }
 };
 
 export default studentService;

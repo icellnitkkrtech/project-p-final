@@ -58,7 +58,7 @@ const DriveManagement = () => {
   const applicationDetails = placementData?.applicationDetails || {};
 
   return (
-    <Container>
+     <Container>
       <Tabs value={tabIndex} onChange={handleChange} centered>
         <Tab label="Drive Overview" />
         <Tab label="Students" />
@@ -66,12 +66,10 @@ const DriveManagement = () => {
         <Tab label="Notifications" />
       </Tabs>
       <Box mt={2}>
-        {tabIndex === 0 && <PlacementOverview id = {placementId}/>}
-        {tabIndex === 1 && (
-          <PlacementStudents id = {placementId}/>
-        )}
-        {tabIndex === 2 && <PlacementRounds placementId = {placementId} />}
-        {tabIndex === 3 && <PlacementNotifications students={applicationDetails.appliedStudents} />}
+        {tabIndex === 0 && <PlacementOverview id={placementId} />}
+        {tabIndex === 1 && <PlacementStudents placementId={placementId} />}
+        {tabIndex === 2 && <PlacementRounds placementId={placementId} />}
+        {tabIndex === 3 && <PlacementNotifications students={placementData?.applicationDetails?.appliedStudents} />}
       </Box>
     </Container>
   );

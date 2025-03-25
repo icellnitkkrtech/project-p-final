@@ -32,6 +32,14 @@ const Login = () => {
     setLoading(true);
     setError("");
 
+    // Validate email domain
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@nitkkr\.ac\.in$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please use your NIT Kurukshetra email (@nitkkr.ac.in)");
+      setLoading(false);
+      return;
+    }
+
     try {
       // Step 1: User Authentication
       const loginResponse = await axios.post("/user/login", formData);

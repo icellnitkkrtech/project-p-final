@@ -174,26 +174,26 @@ const placementDriveSchema = new mongoose.Schema(
 
     // Rounds
     roundDetails: {
-      rounds: [
-        {
-          roundNumber: { type: Number, required: true },
-          roundName: { type: String, required: true },
-          roundType: { type: String, enum: ["online", "offline"] },
-          roundDate: { type: Date },
-          roundDuration: { type: String },
-          venue: { type: String },
-          roundStatus: {
-            type: String,
-            enum: ["upcoming", "ongoing", "completed"],
-            default: "upcoming",
-          },
-          applicantStudents: { type: [mongoose.Schema.Types.ObjectId], ref: "Student", default: [] },
-          appearedStudents: { type: [mongoose.Schema.Types.ObjectId], ref: "Student", default: [] },
-          selectedStudents: { type: [mongoose.Schema.Types.ObjectId], ref: "Student", default: [] },
-          resultMessage: { type: String, default: "" },
-          resultDescription: { type: String, default: "" },
+      rounds: [{
+        roundNumber: { type: Number, required: true },
+        roundName: { type: String, required: true },
+        roundStatus: {
+          type: String,
+          enum: ['upcoming', 'ongoing', 'completed'],
+          default: 'upcoming'
         },
-      ],
+        startTime: { type: Date, required: true },
+        endTime: { type: Date, required: true },
+        venue: { type: String },
+        roundDurationHours: { type: Number },
+        roundDurationMinutes: { type: Number },
+        applicantStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+        appearedStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+        selectedStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+        resultMessage: { type: String },
+        resultDescription: { type: String },
+        resultDeclaredAt: { type: Date }
+      }]
     },
 
     // Notification Logs
@@ -205,11 +205,46 @@ const placementDriveSchema = new mongoose.Schema(
       },
     ],
 
+    // Add status tracking for the overall drive
+    driveStatus: {
+      type: String,
+      enum: ['upcoming', 'ongoing', 'completed'],
+      default: 'upcoming'
+    },
+
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
   },
   { timestamps: true }
 );
+
+// Middleware to automatically update round status based on time
+placementDriveSchema.pre('save', function(next) {
+  const now = new Date();
+  
+  this.roundDetails.rounds.forEach(round => {
+    if (round.startTime && round.endTime) {
+      if (round.startTime <= now && round.endTime >= now) {
+        round.roundStatus = 'ongoing';
+      } else if (round.endTime < now) {
+        round.roundStatus = 'completed';
+      }
+    }
+  });
+
+  // Update drive status based on rounds
+  const allRounds = this.roundDetails.rounds;
+  if (allRounds.length > 0) {
+    const lastRound = allRounds[allRounds.length - 1];
+    if (lastRound.roundStatus === 'completed') {
+      this.driveStatus = 'completed';
+    } else if (allRounds.some(round => round.roundStatus === 'ongoing')) {
+      this.driveStatus = 'ongoing';
+    }
+  }
+
+  next();
+});
 
 // Add this middleware to update company status when drive status changes
 placementDriveSchema.post('save', async function(doc) {

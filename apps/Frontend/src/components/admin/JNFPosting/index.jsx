@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 import { useParams } from 'react-router-dom';
 import jnfService from '../../../services/admin/jnfService';
@@ -14,7 +14,8 @@ import {
     Button,
     useTheme,
     Stack,
-    Divider
+    Divider,
+    IconButton
 } from '@mui/material';
 import {
     Business as BusinessIcon,
@@ -23,7 +24,8 @@ import {
     Assessment as AssessmentIcon,
     Info as InfoIcon,
     Preview as PreviewIcon,
-    CheckCircle as CheckIcon
+    CheckCircle as CheckIcon,
+    Close as CloseIcon
 } from '@mui/icons-material';
 
 // Keep existing imports
@@ -33,6 +35,65 @@ import ReviewStep from './steps/ReviewStep';
 import SelectionProcessStep from './steps/SelectionProcessSteps';
 import EligibleBranchesStep from './steps/EligibleBranchesStep';
 import AdditionalDetailsStep from './steps/AdditionalDetailsStep';
+import DraftConfirmDialog from './DraftConfirmDialog';
+
+const validateJNF = (formData) => {
+    const errors = [];
+
+    // Company Details Validation
+    if (!formData.companyDetails.name) errors.push('Company name is required');
+    if (!formData.companyDetails.email) errors.push('Company email is required');
+    if (!formData.companyDetails.companyType) errors.push('Company type is required');
+    if (!formData.companyDetails.domain) errors.push('Company domain is required');
+
+    // Job Profiles Validation
+    formData.jobProfiles.forEach((profile, index) => {
+        if (!profile.designation) errors.push(`Job designation is required for Profile ${index + 1}`);
+        // if (!profile.jobDescription.description) errors.push(`Job description is required for Profile ${index + 1}`);
+        if (profile.jobDescription.attachFile && !profile.jobDescription.file) {
+            errors.push(`Job description file is required when attachment is enabled for Profile ${index + 1}`);
+        }
+        if (!profile.ctc) errors.push(`CTC is required for Profile ${index + 1}`);
+        if (!profile.jobType) errors.push(`Job type is required for Profile ${index + 1}`);
+    });
+
+    // Selection Process Validation
+    formData.selectionProcessForProfiles.forEach((profile, index) => {
+        if (!profile.rounds || profile.rounds.length === 0) {
+            errors.push(`At least one selection round is required for Profile ${index + 1}`);
+        }
+        if (!profile.expectedRecruits) errors.push(`Expected recruits is required for Profile ${index + 1}`);
+    });
+
+    // Eligibility Criteria Validation
+    if (!formData.eligibilityCriteria.minCgpa) errors.push('Minimum CGPA is required');
+
+    // Bond Details Validation
+    if (formData.bondDetails.hasBond && !formData.bondDetails.details) {
+        errors.push('Bond details are required when bond is applicable');
+    }
+
+    // Point of Contact Validation
+    if (!formData.pointOfContact || formData.pointOfContact.length === 0) {
+        errors.push('At least one point of contact is required');
+    } else {
+        formData.pointOfContact.forEach((contact, index) => {
+            if (!contact.name) errors.push(`Contact name is required for Contact ${index + 1}`);
+            if (!contact.email) errors.push(`Contact email is required for Contact ${index + 1}`);
+            if (!contact.mobile) errors.push(`Contact mobile is required for Contact ${index + 1}`);
+        });
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors
+    };
+};
+
+// Add this helper function to format error messages
+const formatErrorMessages = (errors) => {
+    return errors.join('\n');
+};
 
 const steps = [
     { number: 1, title: 'Company Details', icon: BusinessIcon },
@@ -43,13 +104,13 @@ const steps = [
     { number: 6, title: 'Review', icon: PreviewIcon }
 ];
 
-const index = () => {
+const Index = forwardRef(({ initialData, onSubmit, isEditing, onClose }, ref) => { // Add onClose to props
     const { id } = useParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const theme = useTheme();
     const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(initialData || {
         // Company Details - structure mostly the same
         companyDetails: {
             name: '',
@@ -183,8 +244,15 @@ const index = () => {
             contests: ''
         },
 
-        status: 'draft',
+        status: 'pending',
     });
+
+    // Add useEffect to handle initialData changes
+    useEffect(() => {
+        if (initialData) {
+            setFormData(initialData);
+        }
+    }, [initialData]);
 
     // Handlers
     const handleCompanyInputChange = (e) => {
@@ -416,33 +484,144 @@ const index = () => {
 
     const handleSubmit = async () => {
         try {
+            const validation = validateJNF(formData);
+            if (!validation.valid) {
+                alert(formatErrorMessages(validation.errors));
+                return;
+            }
+
             setLoading(true);
             setError(null);
+
+            const formDataToSend = new FormData();
             
-            // Format job profiles for submission
-            const formattedData = {
+            // Check for file attachments
+            formData.jobProfiles.forEach((profile, index) => {
+                if (profile.jobDescription.attachFile && profile.jobDescription.file) {
+                    formDataToSend.append('jobDescriptionFile', profile.jobDescription.file);
+                    formDataToSend.append('fileJobProfileIndex', index.toString());
+                }
+            });
+            
+            // Update data with status change
+            const dataToSend = {
                 ...formData,
-                submittedBy: id,
-                submissionDate: new Date()
+                status: 'pending',
+                submissionDate: new Date().toISOString()
             };
-    
-            console.log("Final formatted data for submission:", formattedData);
-            
-            // Use jnfService instead of direct axios call
-            const response = await jnfService.create(formattedData);
-            
-            if (response) {
-                alert('JNF submitted successfully');
-                console.log("response", response);
+
+// Add the form data
+            formDataToSend.append('formData', JSON.stringify(dataToSend));
+
+            let response;
+            if (isEditing && formData._id) {
+                response = await jnfService.update(formData._id, formDataToSend);
+                if (response?.data) {
+                    if (onSubmit) {
+                        onSubmit(response.data);
+                    }
+                    if (onClose) {
+                        onClose(); // Close dialog after successful update
+                    }
+                    alert('JNF updated successfully');
+                }
+            } else {
+                response = await jnfService.create(formDataToSend);
+                if (response?.data) {
+                    if (onSubmit) {
+                        onSubmit(response.data);
+                        onClose && onClose();
+                    }
+                }
+                if (response.success) {
+                    alert('JNF submitted successfully');
+                    // Close dialog after successful submission
+                    onClose && onClose();
+                } 
             }
+
+            // Show success message
+            alert(`JNF ${isEditing ? 'updated' : 'submitted'} successfully`);
+
         } catch (err) {
-            alert('Failed to submit JNF');
-            setError(err?.message || 'Failed to submit JNF');
-            console.error('Error submitting JNF:', err);
+            setError(err?.message || `Failed to ${isEditing ? 'update' : 'submit'} JNF`);
+            alert(`Failed to ${isEditing ? 'update' : 'submit'} JNF: ${err.message}`);
         } finally {
             setLoading(false);
         }
     };
+
+    const [showDraftDialog, setShowDraftDialog] = useState(false);
+
+    // Update handleSaveDraft to validate essential fields
+    const handleSaveDraft = async () => {
+        try {
+            // Validate essential fields
+            if (!formData.companyDetails?.name?.trim()) {
+                alert('Company name is required even for drafts');
+                return;
+            }
+            if (!formData.companyDetails?.email?.trim()) {
+                alert('Company email is required even for drafts');
+                return;
+            }
+            // Validate email format
+            const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(formData.companyDetails.email)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            setLoading(true);
+            const response = await jnfService.saveDraft(formData);
+            if (response.success) {
+                alert('Form saved as draft successfully');
+                onClose && onClose();
+            }
+        } catch (error) {
+            alert('Failed to save draft: ' + error.message);
+        } finally {
+            setLoading(false);
+            setShowDraftDialog(false);
+        }
+    };
+
+    // Update handleCloseAttempt if needed
+    const handleCloseAttempt = () => {
+        // Check if form has any data
+        const hasData = Object.keys(formData).some(key => {
+            if (typeof formData[key] === 'object') {
+                return Object.keys(formData[key]).some(k => formData[key][k]);
+            }
+            return formData[key];
+        });
+
+        if (hasData) {
+            setShowDraftDialog(true);
+        } else {
+            onClose && onClose();
+        }
+    };
+
+    useImperativeHandle(ref, () => ({
+        formData,
+        handleSaveDraft,
+        hasUnsavedChanges: () => {
+            return Object.keys(formData).some(key => {
+                if (typeof formData[key] === 'object') {
+                    return Object.keys(formData[key]).some(k => 
+                        formData[key][k] !== '' && 
+                        formData[key][k] !== null && 
+                        formData[key][k] !== undefined
+                    );
+                }
+                return formData[key] !== '' && 
+                       formData[key] !== null && 
+                       formData[key] !== undefined;
+            });
+        }
+    }));
+
     const renderStep = () => {
         switch (currentStep) {
             case 1:
@@ -510,12 +689,22 @@ const index = () => {
                         sx={{
                             p: 3,
                             background: `linear-gradient(120deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                            color: 'white'
+                            color: 'white',
+                            position: 'relative'
                         }}
                     >
                         <Typography variant="h4" fontWeight="600">
                             Job Notification Form
                         </Typography>
+                        {/* Add close button in header */}
+                        <Box sx={{ position: 'absolute', right: 16, top: 16 }}>
+                            {/* <IconButton
+                                onClick={handleCloseAttempt}
+                                sx={{ color: 'white' }}
+                            >
+                                <CloseIcon />
+                            </IconButton> */}
+                        </Box>
                     </Box>
 
                     {/* Steps Navigation */}
@@ -610,30 +799,60 @@ const index = () => {
                             Previous
                         </Button>
 
-                        {currentStep === 6 ? (
+                        <Box>
                             <Button
-                                variant="contained"
-                                color="success"
-                                onClick={handleSubmit}
+                                variant="outlined"
+                                onClick={handleSaveDraft}
+                                sx={{ mr: 1 }}
                                 disabled={loading}
-                                sx={{ minWidth: 120 }}
                             >
-                                {loading ? 'Submitting...' : 'Submit'}
+                                Save as Draft
                             </Button>
-                        ) : (
-                            <Button
-                                variant="contained"
-                                onClick={() => setCurrentStep(prev => Math.min(prev + 1, 6))}
-                                sx={{ minWidth: 120 }}
-                            >
-                                Next
-                            </Button>
-                        )}
+                            {currentStep === 6 ? (
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={handleSubmit}
+                                    disabled={loading}
+                                    sx={{ minWidth: 120 }}
+                                >
+                                    {loading ? 'Submitting...' : 'Submit'}
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    onClick={() => setCurrentStep(prev => Math.min(prev + 1, 6))}
+                                    sx={{ minWidth: 120 }}
+                                >
+                                    Next
+                                </Button>
+                            )}
+                        </Box>
                     </Stack>
                 </Paper>
             </motion.div>
+
+            {/* Add draft dialog */}
+            <DraftConfirmDialog
+                open={showDraftDialog}
+                onClose={(action) => {
+                    setShowDraftDialog(false);
+                    switch (action) {
+                        case 'discard':
+                            // Close without saving
+                            onClose && onClose();
+                            break;
+                        case 'keep':
+                            // Just close the dialog and continue editing
+                            break;
+                        default:
+                            break;
+                    }
+                }}
+                onSaveDraft={handleSaveDraft}
+            />
         </Container>
     );
-};
+});
 
-export default index;
+export default Index;

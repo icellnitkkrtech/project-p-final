@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container,Dialog, DialogActions, DialogContent, DialogTitle, Box, TextField, Button, MenuItem, Typography, Grid,Stepper, Step, StepLabel, Checkbox, FormControlLabel, Stack, Paper, Grid2, Snackbar, Alert } from "@mui/material";
 import placementService from "../../../services/admin/placementService";
 import { time } from "framer-motion";
+import jnfService from "../../../services/admin/jnfService";
 
 const JOB_TYPES = {
   FTE: "fte",
@@ -95,7 +96,7 @@ const AddPlacementDialog = ({ open, handleClose }) => {
   const [formData, setFormData] = useState({
     placementDrive_title: "",
     companyDetails: { name: "", email: "", website: "", companyType: "", domain: "", description: "" },
-    jobProfile: { profileId: "negnek", course: "", designation: "", jobDescription: { description: "", attachFile: false, file: "" }, ctc: "", takeHome: "", perks: "", trainingPeriod: "", placeOfPosting: "", jobType: "", stipend: "", internDuration: "" },
+    jobProfile: { profileId: "negnek", course: "", designation: "", jobDescription: { description: "", attachFile: false, file: "" }, ctc: 0, takeHome: 0, perks: "", trainingPeriod: "", placeOfPosting: "", jobType: "", stipend: 0, internDuration: "" },
     eligibleBranchesForProfiles: [{ profileId: "negnek", branches: { 
       btech: btech.map(branch => ({ name: branch, eligible: false })), 
       mtech: mtech.map(({ dept, spl }) => ({ department:dept, specialization:spl, eligible:false})), 
@@ -116,6 +117,40 @@ const AddPlacementDialog = ({ open, handleClose }) => {
     message: "",
     severity: "success"
   });
+
+  const [jnfs, setJnfs] = useState([]);
+  const [availableJobProfiles, setAvailableJobProfiles] = useState([]);
+
+  // Add a new state to trigger the navigation effect
+  const [shouldCheckNavigation, setShouldCheckNavigation] = useState(false);
+
+  // Add useEffect to handle navigation
+  useEffect(() => {
+    if (shouldCheckNavigation) {
+      findAndNavigateToIncompleteStep();
+      setShouldCheckNavigation(false);
+    }
+  }, [shouldCheckNavigation, formData]);
+
+  useEffect(() => {
+    const fetchJNFs = async () => {
+      try {
+        const response = await jnfService.getAll();
+        const jnfData = response.data || [];
+        console.log('JNF Data:', jnfData);
+        setJnfs(Array.isArray(jnfData) ? jnfData : []);
+      } catch (error) {
+        console.error("Error fetching JNFs:", error);
+        setNotification({
+          open: true,
+          message: "Error fetching JNFs. Please try again.",
+          severity: "error"
+        });
+        setJnfs([]);
+      }
+    };
+    fetchJNFs();
+  }, []);
 
   const handleChange = (e, path) => {
     const { name, value, type, checked } = e.target;
@@ -237,6 +272,173 @@ const AddPlacementDialog = ({ open, handleClose }) => {
 
   const handleBack = () => setActiveStep(prev => prev - 1);
 
+  const handleJNFSelection = (selectedJnf) => {
+    if (!selectedJnf) return;
+
+    setAvailableJobProfiles(selectedJnf.jobProfiles || []);
+    
+    setFormData(prev => ({
+      ...prev,
+      companyDetails: {
+        name: selectedJnf.companyDetails?.name || "",
+        email: selectedJnf.companyDetails?.email || "",
+        website: selectedJnf.companyDetails?.website || "",
+        companyType: selectedJnf.companyDetails?.companyType || "",
+        domain: selectedJnf.companyDetails?.domain || "",
+        description: selectedJnf.companyDetails?.description || ""
+      }
+    }));
+
+    // Navigate to step 1 after setting company details
+    setActiveStep(1);
+  };
+
+  const handleJobProfileSelection = (selectedProfileId, selectedJnf) => {
+    if (!selectedProfileId || !selectedJnf) return;
+
+    console.log("\n=== Job Profile Selection Debug ===");
+    console.log("Selected Profile ID:", selectedProfileId);
+    
+    const jobProfile = selectedJnf.jobProfiles.find(profile => profile._id === selectedProfileId);
+    console.log("\nFound Job Profile:", jobProfile);
+
+    setFormData(prev => ({
+      ...prev,
+      jobProfile: {
+        ...prev.jobProfile,
+        profileId: jobProfile._id || "negnek",
+        course: jobProfile.course || "",
+        designation: jobProfile.designation || "",
+        jobDescription: {
+          description: jobProfile.jobDescription?.description || "",
+          attachFile: jobProfile.jobDescription?.attachFile || false,
+          file: jobProfile.jobDescription?.file || ""
+        },
+        ctc: (jobProfile.ctc ?? 0),
+        takeHome: (jobProfile.takeHome ?? 0),
+        perks: jobProfile.perks || "",
+        trainingPeriod: jobProfile.trainingPeriod || "",
+        placeOfPosting: jobProfile.placeOfPosting || "",
+        jobType: jobProfile.jobType || "",
+        stipend: (jobProfile.stipend ?? "").toString(),
+        internDuration: jobProfile.internDuration || ""
+      },
+      bondDetails: {
+        hasBond: selectedJnf.bondDetails?.hasBond || false,
+        details: selectedJnf.bondDetails?.details || ""
+      },
+      eligibleBranchesForProfiles: [{
+        profileId: selectedProfileId,
+        branches: {
+          btech: btech.map(branchName => {
+            const foundBranch = selectedJnf.eligibleBranchesForProfiles[0].branches.btech.find(
+              b => b.name === branchName
+            );
+            console.log(`Checking branch ${branchName}:`, foundBranch);
+            return {
+              name: branchName,
+              eligible: foundBranch?.eligible || false
+            };
+          }),
+          mtech: mtech.map(({ dept, spl }) => ({
+            department: dept,
+            specialization: spl,
+            eligible: selectedJnf.eligibleBranchesForProfiles[0].branches.mtech.some(
+              b => b.department === dept && b.specialization === spl && b.eligible
+            ) || false
+          })),
+          msc: msc.map(({ dept, spl }) => ({
+            department: dept,
+            specialization: spl,
+            eligible: selectedJnf.eligibleBranchesForProfiles[0].branches.msc.some(
+              b => b.department === dept && b.specialization === spl && b.eligible
+            ) || false
+          })),
+          phd: phd.map(({ dept, spl }) => ({
+            department: dept,
+            specialization: spl,
+            eligible: selectedJnf.eligibleBranchesForProfiles[0].branches.phd.some(
+              b => b.department === dept && b.specialization === spl && b.eligible
+            ) || false
+          }))
+        }
+      }],
+      selectionProcess: [{
+        profileId: selectedProfileId,
+        rounds: selectedJnf.selectionProcessForProfiles?.find(
+          process => process.profileId === "profile-0"
+        )?.rounds?.map((round, index) => ({
+          roundNumber: index + 1,
+          roundName: round.type,
+          details: round.details
+        })) || [{ roundNumber: 1, roundName: "", details: "" }],
+        expectedRecruits: selectedJnf.selectionProcessForProfiles?.find(
+          process => process.profileId === "profile-0"
+        )?.expectedRecruits?.toString() || "",
+        tentativeDate: selectedJnf.selectionProcessForProfiles?.find(
+          process => process.profileId === "profile-0"
+        )?.tentativeDate ? 
+          new Date(selectedJnf.selectionProcessForProfiles.find(
+            process => process.profileId === "profile-0"
+          ).tentativeDate).toISOString().split('T')[0] : ""
+      }],
+      eligibilityCriteria: {
+        minCgpa: (selectedJnf.eligibilityCriteria?.minCgpa ?? "").toString(),
+        backlogAllowed: (selectedJnf.eligibilityCriteria?.backlogAllowed ?? "").toString(),
+        otherEligibility: selectedJnf.eligibilityCriteria?.otherEligibility || ""
+      },
+      pointOfContact: selectedJnf.pointOfContact?.map(poc => ({
+        name: poc.name || "",
+        designation: poc.designation || "",
+        mobile: poc.mobile || "",
+        email: poc.email || ""
+      })) || [{ name: "", designation: "", mobile: "", email: "" }]
+    }));
+
+    // Trigger navigation check
+    setShouldCheckNavigation(true);
+  };
+
+  const findAndNavigateToIncompleteStep = () => {
+    // Check step 0 (Company Details)
+    if (!formData.companyDetails.name || 
+        !formData.companyDetails.email || 
+        !formData.companyDetails.companyType || 
+        !formData.companyDetails.domain) {
+      setActiveStep(0);
+      return;
+    }
+
+    // Check step 1 (Job Details)
+    if (!formData.jobProfile.profileId || 
+        !formData.jobProfile.course || 
+        !formData.jobProfile.jobType) {
+      setActiveStep(1);
+      return;
+    }
+
+    // Check step 2 (Eligibility Details)
+    if (!formData.eligibilityCriteria.minCgpa || 
+        !formData.eligibilityCriteria.backlogAllowed) {
+      setActiveStep(2);
+      return;
+    }
+
+    // Check step 3 (Selection & POC Details)
+    if (!formData.pointOfContact[0].name || 
+        !formData.pointOfContact[0].email) {
+      setActiveStep(3);
+      return;
+    }
+
+    // Check step 4 (Additional Details)
+    if (!formData.placementDrive_title || 
+        !formData.applicationDetails.applicationDeadline) {
+      setActiveStep(4);
+      return;
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
@@ -252,6 +454,64 @@ const AddPlacementDialog = ({ open, handleClose }) => {
         <Container>
         {activeStep === 0 && (
           <>
+            <Typography sx={{ mt: 4, mb: 2 }} variant="h5" color="primary">
+              JNF Selection
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Select JNF"
+                  defaultValue=""
+                  onChange={(e) => {
+                    const selectedJnf = jnfs.find(jnf => jnf._id === e.target.value);
+                    if (selectedJnf) {
+                      handleJNFSelection(selectedJnf);
+                    }
+                  }}
+                >
+                  <MenuItem value="" disabled>Select a JNF</MenuItem>
+                  {Array.isArray(jnfs) && jnfs.length > 0 ? (
+                    jnfs.map((jnf) => (
+                      <MenuItem key={jnf._id} value={jnf._id}>
+                        {jnf.companyDetails?.name || 'Unnamed Company'} - {jnf._id}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No JNFs available</MenuItem>
+                  )}
+                </TextField>
+              </Grid>
+
+              {/* Add Job Profile Selection */}
+              {availableJobProfiles.length > 0 && (
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Select Job Profile"
+                    defaultValue=""
+                    onChange={(e) => {
+                      const selectedJnf = jnfs.find(jnf => 
+                        jnf.jobProfiles?.some(profile => profile._id === e.target.value)
+                      );
+                      if (selectedJnf) {
+                        handleJobProfileSelection(e.target.value, selectedJnf);
+                      }
+                    }}
+                  >
+                    <MenuItem value="" disabled>Select a Job Profile</MenuItem>
+                    {availableJobProfiles.map((profile) => (
+                      <MenuItem key={profile._id} value={profile._id}>
+                        {profile.designation} - {profile.course} ({profile.jobType})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              )}
+            </Grid>
+            
             <Typography sx={{ mt: 4, mb: 2 }} variant="h5" color="primary">
               Company Details
             </Typography>
@@ -288,6 +548,35 @@ const AddPlacementDialog = ({ open, handleClose }) => {
         {activeStep === 1 && (
           <Container sx={{ mt: 4 }}>
             <Typography variant="h5" sx={{ my: 2 }} color="primary">
+              Job Profile Selection
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Select Job Profile"
+                  defaultValue=""
+                  onChange={(e) => {
+                    const selectedJnf = jnfs.find(jnf => 
+                      jnf.jobProfiles?.some(profile => profile._id === e.target.value)
+                    );
+                    if (selectedJnf) {
+                      handleJobProfileSelection(e.target.value, selectedJnf);
+                    }
+                  }}
+                >
+                  <MenuItem value="" disabled>Select a Job Profile</MenuItem>
+                  {availableJobProfiles.map((profile) => (
+                    <MenuItem key={profile._id} value={profile._id}>
+                      {profile.designation} - {profile.course} ({profile.jobType})
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+
+            <Typography variant="h5" sx={{ my: 2 }} color="primary">
               Job Details
             </Typography>
             <Grid container spacing={2}>
@@ -312,18 +601,32 @@ const AddPlacementDialog = ({ open, handleClose }) => {
                 </TextField>
               </Grid>
               <Grid item xs={12}>
-                <TextField label="Job Description" fullWidth multiline rows={3} name="description" value={formData.jobProfile.jobDescription.description} onChange={(e) => handleChange(e, "jobProfile.jobDescription.description")} />
+                <TextField 
+                  label="Job Description" 
+                  fullWidth 
+                  multiline 
+                  rows={3} 
+                  value={formData.jobProfile.jobDescription.description} 
+                  onChange={(e) => handleChange(e, "jobProfile.jobDescription.description")} 
+                />
               </Grid>
-              {["CTC", "Take Home Salary", "Training Period", "Place of Posting"].map((field, index) => (
+              {["ctc", "takeHome", "trainingPeriod", "placeOfPosting"].map((field, index) => (
                 <Grid item xs={12} sm={6} key={index}>
-                  <TextField label={field} fullWidth type={field.includes("Salary") ? "number" : "text"} name={field.toLowerCase().replace(/\s/g, '')} value={formData.jobProfile[field.toLowerCase().replace(/\s/g, '')]} onChange={(e) => handleChange(e, `jobProfile.${field.toLowerCase().replace(/\s/g, '')}`)} />
+                  <TextField 
+                    label={field}
+                    fullWidth
+                    type={field === "ctc" || field === "takeHome" || field === "stipend" ? "number" : "text"}
+                    name={field}
+                    value={formData.jobProfile[field]}
+                    onChange={(e) => handleChange(e, `jobProfile.${field}`)}
+                  />
                 </Grid>
               ))}
               {formData.jobProfile.jobType !== JOB_TYPES.FTE && (
                 <>
-                  {["Stipend", "Intern Duration"].map((field, index) => (
+                  {["stipend", "internDuration"].map((field, index) => (
                     <Grid item xs={12} sm={6} key={index}>
-                      <TextField label={field} fullWidth name={field.toLowerCase().replace(/\s/g, '')} value={formData.jobProfile[field.toLowerCase().replace(/\s/g, '')]} onChange={(e) => handleChange(e, `jobProfile.${field.toLowerCase().replace(/\s/g, '')}`)} />
+                      <TextField label={field} fullWidth name={field} value={formData.jobProfile[field]} onChange={(e) => handleChange(e, `jobProfile.${field}`)} />
                     </Grid>
                   ))}
                 </>
@@ -429,28 +732,6 @@ const AddPlacementDialog = ({ open, handleClose }) => {
                           </Box>
                         ))
                     )}
-
-
-                    {/* {formData.jobProfile.course === COURSES.PHD &&
-                      profile.branches.phd.map((dept, deptIndex) => (
-                        <Box key={dept.department} sx={{ mb: 2 }}>
-                          <Typography variant="h6" color="secondary">{dept.department}</Typography>
-                          {dept.specialization.map((spec, specIndex) => (
-                            <FormControlLabel
-                              key={spec.name}
-                              control={
-                                <Checkbox
-                                  checked={spec.eligible}
-                                  onChange={(e) =>
-                                    handleChange(e, `eligibleBranchesForProfiles.0.branches.phd.${deptIndex}.specialization.${specIndex}.eligible`)
-                                  }
-                                />
-                              }
-                              label={spec.name}
-                            />
-                          ))}
-                        </Box>
-                      ))} */}
                   </Container>
                 ) : null
               )}
@@ -462,10 +743,26 @@ const AddPlacementDialog = ({ open, handleClose }) => {
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <TextField label="Minimum CGPA" fullWidth margin="normal" type="number" value={formData.eligibilityCriteria.minCgpa} onChange={(e) => handleChange(e, "eligibilityCriteria.minCgpa")} required />
+                    <TextField 
+                      label="Minimum CGPA" 
+                      fullWidth 
+                      margin="normal" 
+                      type="number" 
+                      value={formData.eligibilityCriteria.minCgpa || ""} 
+                      onChange={(e) => handleChange(e, "eligibilityCriteria.minCgpa")} 
+                      required 
+                    />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField label="Backlogs Allowed" fullWidth margin="normal" type="number" value={formData.eligibilityCriteria.backlogAllowed} onChange={(e) => handleChange(e, "eligibilityCriteria.backlogAllowed")} required />
+                    <TextField 
+                      label="Backlogs Allowed" 
+                      fullWidth 
+                      margin="normal" 
+                      type="number" 
+                      value={formData.eligibilityCriteria.backlogAllowed || ""} 
+                      onChange={(e) => handleChange(e, "eligibilityCriteria.backlogAllowed")} 
+                      required 
+                    />
                   </Grid>
                 </Grid>
                 <TextField label="Other Eligibility Criteria" fullWidth margin="normal" value={formData.eligibilityCriteria.otherEligibility} onChange={(e) => handleChange(e, "eligibilityCriteria.otherEligibility")} />

@@ -58,30 +58,67 @@ export default class ApplicationModel {
         student: studentId,
         placementDrive: driveId,
         status: "applied",
-      });
+    });
 
-      await application.save();
+    await application.save();
 
-      // Update student's applications array
-      await this.student.findByIdAndUpdate(studentId, {
+    // Update student's applications array
+    await this.student.findByIdAndUpdate(studentId, {
         $push: { applications: application._id },
-      });
+    });
 
-      // Update placement drive's applicants array
-      await this.placementDrive.findByIdAndUpdate(driveId, {
-        $push: { applicantStudents: studentId },
-      });
+    // Fetch placement drive to check round details
+    // const drive = await this.placementDrive.findById(driveId);
+    if (!drive?.roundDetails?.rounds?.length) {
+        console.error("No rounds found in the drive");
+        return new apiResponse(500, null, "Drive rounds not properly configured");
+    }
 
-      return new apiResponse(
+    // Ensure round 1 exists
+    const roundExists = drive.roundDetails.rounds.some(
+        (round) => round.roundNumber === 1
+    );
+    if (!roundExists) {
+        console.error("Round 1 not found in the drive");
+        return new apiResponse(500, null, "Round 1 does not exist in drive details");
+    }
+
+    // Update placement drive: push student ID to `applicantStudents` in both global & rounds
+    const updatedDrive = await this.placementDrive.findByIdAndUpdate(
+        driveId,
+        {
+            $push: {
+                applicantStudents: studentId,
+            },
+            $addToSet: {
+                "roundDetails.rounds.$[round].applicantStudents": studentId,
+                "roundDetails.rounds.$[round].appearedStudents": studentId
+            }
+        },
+        {
+            arrayFilters: [{ "round.roundNumber": 1 }],  // Ensure roundNumber is correctly filtered
+            new: true,
+            runValidators: true
+        }
+    );
+
+    if (!updatedDrive) {
+        console.error("Failed to update drive with round details");
+        return new apiResponse(500, null, "Failed to update drive details");
+    }
+
+    console.log("Updated drive:", JSON.stringify(updatedDrive, null, 2));
+
+    return new apiResponse(
         201,
         application,
         "Application submitted successfully"
-      );
-    } catch (error) {
-      console.error("Application error:", error);
-      return new apiResponse(500, null, "Error creating application");
-    }
-  }
+    );
+} catch (error) {
+    console.error("Application error:", error);
+    return new apiResponse(500, null, "Error creating application");
+}
+}
 
   async getStudentApplications(studentId) {
     try {
@@ -110,7 +147,7 @@ export default class ApplicationModel {
           path: "timeline.updatedBy",
           select: "name email",
         });
-
+ console.log(applications)
       if (!applications || applications.length === 0) {
         return new apiResponse(404, [], "No applications found");
       }

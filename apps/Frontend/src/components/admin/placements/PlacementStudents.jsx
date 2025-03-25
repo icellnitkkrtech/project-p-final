@@ -1,56 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Tabs, Tab, Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, Checkbox
 } from "@mui/material";
+import placementService from "../../../services/admin/placementService";
 
-const StudentTable = ({ title, students = [], selectable = false, selectedStudents = [], onSelect, onSelectAll }) => (
-  <TableContainer >
+const StudentTable = ({ title, students = [] }) => (
+  <TableContainer>
     <Typography variant="h5" sx={{ p: 2 }}>{title}</Typography>
     <Table>
       <TableHead>
         <TableRow>
-          <TableCell>
-            {selectable && <Checkbox size="small" onChange={onSelectAll} />}
-          </TableCell>
-          {!selectable && (
-              <TableCell></TableCell> 
-              )}
-          <TableCell >ID</TableCell>
+          <TableCell>Roll Number</TableCell>
           <TableCell>Name</TableCell>
-          <TableCell>Email</TableCell>
-          <TableCell>Branch</TableCell>
+          <TableCell>Department</TableCell>
           <TableCell>CGPA</TableCell>
-          <TableCell>Backlogs</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {students.length > 0 ? (
           students.map((student) => (
-            <TableRow key={student.studentId}>
-              <TableCell>
-                {selectable && (
-                  <Checkbox
-                    size="small"
-                    checked={selectedStudents.some((s) => s.studentId === student.studentId)}
-                    onChange={() => onSelect(student)}
-                  />
-                )}
-              </TableCell>
-              {!selectable && (
-              <TableCell></TableCell> 
-              )}
-              <TableCell>{student.studentId}</TableCell>
-              <TableCell>{student.studentName}</TableCell>
-              <TableCell>{student.studentEmail}</TableCell>
-              <TableCell>{student.studentBranch}</TableCell>
-              <TableCell>{student.studentCgpa}</TableCell>
-              <TableCell>{student.studentBacklogs}</TableCell>
+            <TableRow key={student._id}>
+              <TableCell>{student.personalInfo.rollNumber}</TableCell>
+              <TableCell>{student.personalInfo.name}</TableCell>
+              <TableCell>{student.personalInfo.department}</TableCell>
+              <TableCell>{student.academics.cgpa}</TableCell>
             </TableRow>
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={7} align="center">
+            <TableCell colSpan={4} align="center">
               No students found
             </TableCell>
           </TableRow>
@@ -60,60 +39,74 @@ const StudentTable = ({ title, students = [], selectable = false, selectedStuden
   </TableContainer>
 );
 
-const PlacementStudents = ({ appliedStudents = [], appearedStudents = [], selectedStudents = [] }) => {
+const PlacementStudents = ({ placementId }) => {
   const [tabIndex, setTabIndex] = useState(0);
-  const [updatedSelectedStudents, setUpdatedSelectedStudents] = useState(selectedStudents);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [appliedStudents, setAppliedStudents] = useState([]);
+
+  useEffect(() => {
+    const fetchAppliedStudents = async () => {
+      try {
+        console.log('Fetching applied students for placementId:', placementId);
+        const response = await placementService.getApplicants(placementId);
+        const students = response.applicantStudents || [];
+        console.log('Applied Students:', students);
+        setAppliedStudents(students);
+      } catch (error) {
+        console.error('Error fetching applied students:', error);
+      }
+    };
+
+    if (placementId) {
+      fetchAppliedStudents();
+    } else {
+      console.warn('No placementId provided');
+    }
+  }, [placementId]);
+
+  useEffect(() => {
+    const fetchSelectedStudents = async () => {
+      try {
+        console.log('Fetching selected students for placementId:', placementId);
+        const response = await placementService.getSelectedStudents(placementId);
+        const students = response.selectedStudents || [];
+        console.log('Selected Students:', students);
+        setSelectedStudents(students);
+      } catch (error) {
+        console.error('Error fetching selected students:', error);
+      }
+    };
+
+    if (placementId) {
+      fetchSelectedStudents();
+    } else {
+      console.warn('No placementId provided');
+    }
+  }, [placementId]);
 
   const handleTabChange = (event, newIndex) => {
     setTabIndex(newIndex);
   };
 
-  const handleToggleStudent = (student) => {
-    setUpdatedSelectedStudents((prev) =>
-      prev.some((s) => s.studentId === student.studentId)
-        ? prev.filter((s) => s.studentId !== student.studentId)
-        : [...prev, student]
-    );
-  };
-
-  const handleSelectAll = () => {
-    const students = appearedStudents;
-    if (updatedSelectedStudents.length === students.length) {
-      setUpdatedSelectedStudents([]);
-    } else {
-      setUpdatedSelectedStudents(students);
-    }
-  };
-
   return (
     <Box sx={{ width: "100%", margin: "auto", mt: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
-          <Tab label="Applied" />
-          <Tab label="Appeared" />
-          <Tab label="Selected" />
-        </Tabs>
-        {tabIndex === 1 && (
-          <Button variant="contained" color="primary" onClick={() => setIsUpdating(!isUpdating)}>
-            {isUpdating ? "Confirm" : "Select"}
-          </Button>
-        )}
-      </Box>
+      <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
+        <Tab label={`Applied (${appliedStudents.length})`} />
+        <Tab label={`Selected (${selectedStudents.length})`} />
+      </Tabs>
 
       {tabIndex === 0 && (
-        <StudentTable students={appliedStudents} />
-      )}
-      {tabIndex === 1 && (
-        <StudentTable
-          students={appearedStudents}
-          selectable={isUpdating}
-          selectedStudents={updatedSelectedStudents}
-          onSelect={handleToggleStudent}
-          onSelectAll={handleSelectAll}
+        <StudentTable 
+          title="Applied Students" 
+          students={appliedStudents} 
         />
       )}
-      {tabIndex === 2 && <StudentTable students={updatedSelectedStudents} />}
+      {tabIndex === 1 && (
+        <StudentTable 
+          title="Selected Students" 
+          students={selectedStudents} 
+        />
+      )}
     </Box>
   );
 };
