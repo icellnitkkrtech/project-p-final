@@ -89,7 +89,7 @@ export default class PlacementController {
         try {
             const response = await this.placementService.deleteRound(req.params.id, req.params.round_id);
             if (!response) {
-                return res.status(404).json({ message: "Placement drive not found" });
+                return res.status(404).json({ message: "Round not found" });
             }
             res.status(200).json({ message: "Round deleted successfully" });
         } catch (error) {
@@ -202,42 +202,16 @@ export default class PlacementController {
             const { id, round_id } = req.params;
             const { studentId } = req.body;
 
-            console.log("Updating selected students with params:", {
-                driveId: id,
-                roundId: round_id,
-                studentId: studentId
-            });
-
-            // First verify if the drive exists
-            const drive = await this.placementService.getPlacementById(id);
-            if (!drive) {
-                console.log("Drive not found with ID:", id);
-                return res.status(404).json({ message: "Placement drive not found" });
-            }
-
-            // Then verify if the round exists
-            const round = drive.roundDetails.rounds.find(
-                r => r._id.toString() === round_id
-            );
-            if (!round) {
-                console.log("Round not found with ID:", round_id);
-                return res.status(404).json({ message: "Round not found" });
-            }
-
-            // If both exist, proceed with the update
             const updatedDrive = await this.placementService.updateSelectedStudents(id, round_id, studentId);
 
             if (!updatedDrive) {
-                console.log("Update operation failed");
                 return res.status(404).json({ message: "Failed to update selected students" });
             }
 
-            // Get the updated round
             const updatedRound = updatedDrive.roundDetails.rounds.find(
                 r => r._id.toString() === round_id
             );
 
-            console.log("Successfully updated round with selected student");
             res.status(200).json({
                 success: true,
                 message: "Student selected successfully",
@@ -245,7 +219,6 @@ export default class PlacementController {
             });
 
         } catch (error) {
-            console.error("Error in updateSelectedStudents:", error);
             res.status(500).json({ 
                 message: "Error updating selected students",
                 error: error.message 

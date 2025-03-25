@@ -31,22 +31,22 @@ placementRoutes.delete("/:id", (req, res) => {
     placementController.deletePlacement(req, res);
 });
 //4
-//add round
+// Add round
 placementRoutes.post("/:id/add-round", (req, res) => {
     placementController.addRound(req, res);
 });
 //5
-//delete round
+// Delete round
 placementRoutes.delete("/:id/rounds/:round_id/delete-round", (req, res) => {
     placementController.deleteRound(req, res);
 });
 //6
-// get round details
+// Get round details
 placementRoutes.get("/:id/rounds/:round_id/getone", (req, res) => {
     placementController.getRound(req, res);
 });
 //7
-// update round details
+// Update round details
 placementRoutes.put("/:id/rounds/:round_id/update-round", (req, res) => {
     placementController.updateRound(req, res);
 });
@@ -71,22 +71,22 @@ placementRoutes.get("/:id/rounds/:round_id/selected-students", (req, res) => {
     placementController.getSelectedStudentsForRound(req, res);
 });
 //12
-// get appeared students for a round
+// Get appeared students for a round
 placementRoutes.get("/:id/rounds/:round_id/appeared-students", (req, res) => {
     placementController.getAppearedStudentsForRound(req, res);
 });
 //13
-// update selected students in rounds
+// Update selected students in rounds
 placementRoutes.put("/:id/rounds/:round_id/update-selected-students", (req, res) => {
     placementController.updateSelectedStudents(req, res);
 });
 //14
-// declare round results and update status
+// Declare round results and update status
 placementRoutes.put("/:id/rounds/:round_id/declare-results", (req, res) => {
     placementController.declareResults(req, res);
 });
 //15
-// get results of a round
+// Get results of a round
 placementRoutes.get("/:id/rounds/:round_id/get-results", (req, res) => {
     placementController.getResults(req, res);
 });
@@ -122,13 +122,9 @@ placementRoutes.delete("/:id/notifications/:notification_id/delete", (req, res) 
     placementController.deleteNotification(req, res);
 });
 // 22
-// getting all rounds
+// Getting all rounds
 placementRoutes.get("/:id/rounds/all", (req, res) => {
     placementController.getAllRounds(req, res);
-});
-
-placementRoutes.put('/placement/:id/rounds/:roundId/selected-students', async (req, res) => {
-    await placementController.updateSelectedStudents(req, res);
 });
 
 export default placementRoutes;
