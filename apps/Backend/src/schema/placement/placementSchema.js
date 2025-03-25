@@ -223,10 +223,12 @@ placementDriveSchema.pre('save', function(next) {
   const now = new Date();
   
   this.roundDetails.rounds.forEach(round => {
-    if (round.startTime <= now && round.endTime >= now) {
-      round.roundStatus = 'ongoing';
-    } else if (round.endTime < now) {
-      round.roundStatus = 'completed';
+    if (round.startTime && round.endTime) {
+      if (round.startTime <= now && round.endTime >= now) {
+        round.roundStatus = 'ongoing';
+      } else if (round.endTime < now) {
+        round.roundStatus = 'completed';
+      }
     }
   });
 

@@ -14,15 +14,34 @@ export default class PlacementModel {
     }
 
     async createPlacement(placementData) {
-        console.log("Placement Model: createPlacement called");
+        console.log("Placement Model: createPlacement called with data:", placementData);
         try {
+            // Initialize roundDetails if not provided
+            if (!placementData.roundDetails) {
+                placementData.roundDetails = { rounds: [] };
+            }
+    
+            // Fetch rounds from selectionProcess and add to roundDetails
+            if (placementData.selectionProcess && Array.isArray(placementData.selectionProcess)) {
+                placementData.selectionProcess.forEach((process) => {
+                    process.rounds.forEach((round, index) => {
+                        placementData.roundDetails.rounds.push({
+                            roundName: round.roundName,
+                            roundNumber: round.roundNumber || index + 1,
+                            startTime: round.startTime || new Date(Date.now() + 24 * 60 * 60 * 1000), // Set to 24 hours in the future
+                            endTime: round.endTime || new Date(Date.now() + 48 * 60 * 60 * 1000),     // Set to 48 hours in the future
+                            roundStatus: "upcoming"
+                        });
+                    });
+                });
+            }
+    
             return await this.placement.create(placementData);
         } catch (error) {
             console.error("Error in createPlacement:", error);
             throw error;
         }
     }
-
     async findPlacementById(id) {
         console.log("Placement Model: findPlacementById called");
         try {
@@ -110,39 +129,31 @@ export default class PlacementModel {
         }
     }
 
-    async updateRound(id, roundId, updates) {
-        console.log("Placement Model: updateRound called");
+    async updateRound(placementId, roundId, updateData) {
         try {
-            // Validate the round exists
-            const placement = await this.placement.findOne({
-                _id: id,
-                "roundDetails.rounds._id": roundId
-            });
-
-            if (!placement) {
-                throw new Error("Round not found");
-            }
-
-            // Update round status based on time if start/end times are being updated
-            if (updates.startTime || updates.endTime) {
-                const now = new Date();
-                const startTime = new Date(updates.startTime || placement.roundDetails.rounds[0].startTime);
-                const endTime = new Date(updates.endTime || placement.roundDetails.rounds[0].endTime);
-
-                if (startTime <= now && endTime >= now) {
-                    updates.roundStatus = 'ongoing';
-                } else if (startTime > now) {
-                    updates.roundStatus = 'upcoming';
-                } else {
-                    updates.roundStatus = 'completed';
-                }
-            }
-
-            return await this.placement.findOneAndUpdate(
-                { _id: id, "roundDetails.rounds._id": roundId },
-                { $set: { "roundDetails.rounds.$": { ...placement.roundDetails.rounds[0], ...updates } } },
+            console.log("Updating round with data:", { placementId, roundId, updateData });
+            
+            const result = await this.placement.findOneAndUpdate(
+                { 
+                    "_id": placementId,
+                    "roundDetails.rounds._id": roundId 
+                },
+                { 
+                    "$set": {
+                        "roundDetails.rounds.$": {
+                            ...updateData,
+                            _id: roundId // Preserve the original round ID
+                        }
+                    }
+                },
                 { new: true }
             );
+
+            if (!result) {
+                throw new Error('Round not found');
+            }
+
+            return result;
         } catch (error) {
             console.error("Error in updateRound:", error);
             throw error;
@@ -357,7 +368,10 @@ export default class PlacementModel {
                             "roundDetails.rounds.$.applicantStudents": { $ne: studentId }
                         },
                         {
-                            $addToSet: { "roundDetails.rounds.$.applicantStudents": studentId },
+                            $addToSet: { 
+                                "roundDetails.rounds.$.applicantStudents": studentId ,
+                                 "roundDetails.rounds.$.appearedStudents": studentId
+                            },
                             $set: { "roundDetails.rounds.$.roundStatus": "ongoing" }
                         }
                     );
