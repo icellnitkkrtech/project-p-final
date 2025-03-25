@@ -1,6 +1,7 @@
 import JNF from "../schema/company/jnfSchema.js";
 import User from "../schema/userSchema.js";
 import apiResponse from "../utils/apiResponse.js";
+import CompanyModel from './companyModel.js';
 
 //jnfmodel
 export default class JNFModel {
@@ -29,11 +30,36 @@ export default class JNFModel {
 
     async createJnf(jnfData) {
         try {
-            console.log(jnfData);
-            const newJnf = await this.jnf.create(jnfData);
-            console.log("New JNF created:", newJnf);
-            return new apiResponse(200, jnfData, "jnf created successfully");
+            console.log('Creating JNF in model with data:', {
+                submittedBy: jnfData.submittedBy,
+                companyName: jnfData.companyDetails?.name
+            });
+
+            // Set initial status and dates
+            const dataToSave = {
+                ...jnfData,
+                status: 'pending',
+                submissionDate: new Date(),
+                createdAt: new Date()
+            };
+
+            const newJnf = await this.jnf.create(dataToSave);
+            
+            // Populate submittedBy field
+            const populatedJnf = await newJnf.populate('submittedBy', 'name email');
+            
+            console.log("New JNF created:", {
+                id: populatedJnf._id,
+                company: populatedJnf.companyDetails?.name,
+                submittedBy: populatedJnf.submittedBy
+            });
+
+            return new apiResponse(200, populatedJnf, "JNF created successfully");
         } catch (error) {
+            console.error('Error in createJnf model:', error);
+            if (error.name === 'ValidationError') {
+                return new apiResponse(400, null, `Validation Error: ${error.message}`);
+            }
             return new apiResponse(500, null, error.message);
         }
     }
@@ -120,21 +146,50 @@ export default class JNFModel {
     }
     async updateStatus(jnfId, status) {
         try {
-            const jnf = await this.jnf.findByIdAndUpdate(
-                jnfId,
-                {
-                    status,
-                    reviewDate: new Date()
-                },
-                { new: true }
-            );
-
+            const jnf = await this.jnf.findById(jnfId);
             if (!jnf) {
                 return new apiResponse(404, null, "JNF not found");
             }
 
+            // Update JNF status
+            jnf.status = status;
+            jnf.reviewDate = new Date();
+            await jnf.save();
+
+            // If status is approved, create company
+            if (status === 'approved') {
+                const companyModel = new CompanyModel();
+                const companyData = {
+                    user: jnf.submittedBy,
+                    companyName: jnf.companyDetails.name,
+                    email: jnf.companyDetails.email,
+                    website: jnf.companyDetails.website || '',
+                    JNFs: [jnf._id], // Add this JNF to the company's JNFs array
+                    recruitmentStatus: 'upcoming',
+                    hiringSince: new Date()
+                };
+                const userId = jnf.submittedBy;
+                if (!userId) {
+                    throw new Error('No user associated with this JNF');
+                }
+                const companyResponse = await companyModel.createCompanyBYAdmin(companyData, userId);
+                if (!companyResponse.success) {
+                    throw new Error('Failed to create company from JNF');
+                }
+
+                // Update JNF with company reference
+                jnf.company = companyResponse.data._id;
+                await jnf.save();
+
+                return new apiResponse(200, {
+                    jnf,
+                    company: companyResponse.data
+                }, "JNF approved and company created successfully");
+            }
+
             return new apiResponse(200, jnf, "JNF status updated successfully");
         } catch (error) {
+            console.error("Error in updateStatus:", error);
             return new apiResponse(500, null, error.message);
         }
     }
