@@ -112,29 +112,22 @@ const placementService = {
     getSelectedStudentsForRound: async (id, roundId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/selected-students`);
-            const students = response.data?.data || [];
             
-            // Fetch full details for each student using studentService
-            const studentsWithDetails = await Promise.all(
-                students.map(async (student) => {
-                    try {
-                        const details = await studentService.getStudentById(student._id);
-                        return details?.data || {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    } catch (error) {
-                        console.error(`Error fetching details for student ${student._id}:`, error);
-                        return {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    }
-                })
-            );
-            return studentsWithDetails;
+            // Handle the direct array response format
+            let students = [];
+            if (Array.isArray(response.data)) {
+                students = response.data;
+            } else if (Array.isArray(response.data?.data)) {
+                students = response.data.data;
+            } else if (response.data?.data?.roundDetails?.rounds?.[0]?.selectedStudents) {
+                students = response.data.data.roundDetails.rounds[0].selectedStudents;
+            }
+            
+            return students.map(student => ({
+                _id: student._id,
+                personalInfo: student.personalInfo || {},
+                academics: student.academics || {}
+            }));
         } catch (error) {
             console.error("Error fetching selected students for round:", error);
             return [];
@@ -145,29 +138,10 @@ const placementService = {
     getAppearedStudentsForRound: async (id, roundId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/appeared-students`);
-            const students = response.data?.data || [];
             
-            // Fetch full details for each student using studentService
-            const studentsWithDetails = await Promise.all(
-                students.map(async (student) => {
-                    try {
-                        const details = await studentService.getStudentById(student._id);
-                        return details?.data || {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    } catch (error) {
-                        console.error(`Error fetching details for student ${student._id}:`, error);
-                        return {
-                            _id: student._id,
-                            personalInfo: {},
-                            academics: {}
-                        };
-                    }
-                })
-            );
-            return studentsWithDetails;
+            // The response already contains full student details, no need to fetch individually
+            return response.data || []; // Return the array of students directly
+            
         } catch (error) {
             console.error("Error fetching appeared students for round:", error);
             return [];
@@ -175,9 +149,18 @@ const placementService = {
     },
     
     //13 Update selected students in a round
-    updateSelectedStudents: async (id, roundId, data) => {
-        const response = await axios.put(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/update-selected-students`, data);
-        return response.data;
+    updateSelectedStudents: async (placementId, roundId, studentId) => {
+        try {
+            console.log("Updating selected students:", { placementId, roundId, studentId });
+            const response = await axios.put(
+                `${API_BASE_URL}/placement/${placementId}/rounds/${roundId}/update-selected-students`,  // Correct route
+                { studentId }
+            );
+            return response.data;
+        } catch (error) {
+            console.error("Error updating selected students:", error);
+            throw error;
+        }
     },
     
     //14 Declare round results

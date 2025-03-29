@@ -111,9 +111,9 @@ export default class PlacementService {
             throw new Error("Error fetching appeared students: " + error.message);
         }
     }
-    async updateSelectedStudents(id, roundId, students) {
+    async updateSelectedStudents(id, roundId, studentId) {
         try {
-            return await this.placementModel.updateSelectedStudents(id, roundId, students);
+            return await this.placementModel.updateSelectedStudents(id, roundId, studentId);
         } catch (error) {
             throw new Error("Error updating selected students: " + error.message);
         }
@@ -125,7 +125,7 @@ export default class PlacementService {
             throw new Error("Error declaring results: " + error.message);
         }
     }
-    async getResults(id, roundId){
+    async getResults(id, roundId) {
         try {
             return await this.placementModel.getResults(id, roundId);
         } catch (error) {
@@ -174,7 +174,7 @@ export default class PlacementService {
             throw new Error("Error deleting notification: " + error.message);
         }
     }
-    async getAllRounds(id){
+    async getAllRounds(id) {
         try {
             return await this.placementModel.getAllRounds(id);
         } catch (error) {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box, Typography, Card, CardContent, Button, Dialog, DialogTitle, 
+  Box, Typography, Card, CardContent, Button, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Stepper, Step, StepLabel, FormControl, InputLabel, Select, MenuItem, Grid,
-  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText
+  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress
 } from "@mui/material";
 import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event } from "@mui/icons-material";
 import RoundStudents from "./RoundStudents";
@@ -80,6 +80,7 @@ const PlacementRounds = ({ placementId }) => {
   });
   const [showResult, setShowResult] = useState(false); // Toggle for showing results
   const [openDeclareResultDialog, setOpenDeclareResultDialog] = useState(false);
+  const [appearedStudents, setAppearedStudents] = useState({});
 
   const fetchRoundDetails = async () => {
     try {
@@ -94,6 +95,7 @@ const PlacementRounds = ({ placementId }) => {
       } else {
         setSelectedRound(null);
       }
+      setAppearedStudents(response.appearedStudents || {});
     } catch (err) {
       console.log("Error",err);
       setError("Failed to load placement rounds.");
@@ -224,7 +226,7 @@ const PlacementRounds = ({ placementId }) => {
   };
   
   const handleUpdateRound = async () => {
-    if (!editRound.roundName || !editRound.roundDate || !editRound.roundDurationHours) {
+    if (!editRound.roundName   ) {
       alert("Please fill all required fields");
       return;
     }
@@ -240,6 +242,7 @@ const PlacementRounds = ({ placementId }) => {
         roundDuration: `${editRound.roundDurationHours}h ${editRound.roundDurationMinutes || 0}m`,
         roundStatus: editRound.roundStatus,
         venue: editRound.venue,
+        startTime: editRound.startTime,
       };
   
       const response = await placementService.updateRound(placementId, editRound._id, roundData);
@@ -314,6 +317,32 @@ const PlacementRounds = ({ placementId }) => {
       setSnackbar({
         open: true,
         message: "Failed to fetch results",
+        severity: "error"
+      });
+    }
+  };
+
+  const handleStudentSelection = async (roundId, student) => {
+    try {
+      await placementService.updateSelectedStudents(placementId, roundId, student._id);
+      
+      // Refresh the appeared students data
+      const updatedStudents = await placementService.getAppearedStudentsForRound(placementId, roundId);
+      setAppearedStudents(prev => ({
+        ...prev,
+        [roundId]: updatedStudents
+      }));
+
+      setSnackbar({
+        open: true,
+        message: "Student selected successfully",
+        severity: "success"
+      });
+    } catch (error) {
+      console.error("Error selecting student:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to select student",
         severity: "error"
       });
     }
@@ -419,6 +448,9 @@ const PlacementRounds = ({ placementId }) => {
                     <Button variant="outlined" color={getStatusColor(selectedRound.roundStatus)} size="small" onClick={() => setOpenDeclareResultDialog(true)} startIcon={<Event />}>
                       Declare Results
                     </Button>
+                    <Button variant="outlined" color= {getStatusColor(selectedRound.roundStatus)} size="small" onClick={handleOpenEditDialog} startIcon={<Event />}>
+                    Edit Round
+                  </Button>
                   </>
                 )}
                 {selectedRound.roundStatus === "upcoming" && (
@@ -457,34 +489,87 @@ const PlacementRounds = ({ placementId }) => {
       <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth maxWidth="sm">
         <DialogTitle>Edit Round</DialogTitle>
         <DialogContent>
-          {[
-            { label: "Round Name", name: "roundName", type: "text", value: editRound?.roundName || "" },
-            { label: "Round Date", name: "roundDate", type: "date", value: editRound?.roundDate?.split("T")[0] || "" },
-            { label: "Venue", name: "venue", type: "text", value: editRound?.venue || "" }
-          ].map(({ label, name, type, value }) => (
-            <TextField key={name} fullWidth margin="dense" label={label} name={name} type={type} value={value} onChange={handleEditRoundChange} variant="outlined" InputLabelProps={{ shrink: true }} />
-          ))}
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Round Name"
+            name="roundName"
+            value={editRound?.roundName || ""}
+            onChange={handleEditRoundChange}
+            required
+          />
+          
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Start Time"
+            name="startTime"
+            type="datetime-local"
+            value={editRound?.startTime ? new Date(editRound.startTime).toISOString().slice(0, 16) : ""}
+            onChange={handleEditRoundChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            required
+          />
 
-          <FormControl size="small" fullWidth margin="dense" variant="outlined">
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Venue"
+            name="venue"
+            value={editRound?.venue || ""}
+            onChange={handleEditRoundChange}
+          />
+
+          <FormControl fullWidth margin="dense">
             <InputLabel>Round Type</InputLabel>
-            <Select name="roundType" value={editRound?.roundType || ""} onChange={handleEditRoundChange} label="Round Type">
-              {["online", "offline"].map(type => (
-                <MenuItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</MenuItem>
-              ))}
+            <Select
+              name="roundType"
+              value={editRound?.roundType || "online"}
+              onChange={handleEditRoundChange}
+              label="Round Type"
+            >
+              <MenuItem value="online">Online</MenuItem>
+              <MenuItem value="offline">Offline</MenuItem>
             </Select>
           </FormControl>
 
-          <Grid container spacing={2}>
-            {["Hours", "Minutes"].map((unit, i) => (
-              <Grid key={unit} item xs={6}>
-                <TextField fullWidth margin="dense" type="number" label={`Duration (${unit})`} name={`roundDuration${unit}`} value={editRound?.[`roundDuration${unit}`] || ""} onChange={handleEditRoundChange} variant="outlined" inputProps={{ min: 0, ...(i ? { max: 59 } : {}) }} />
-              </Grid>
-            ))}
-          </Grid>
+          {/* New Round Status Field */}
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Round Status</InputLabel>
+            <Select
+              name="roundStatus"
+              value={editRound?.roundStatus || "upcoming"}
+              onChange={handleEditRoundChange}
+              label="Round Status"
+            >
+              <MenuItem value="upcoming">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Upcoming fontSize="small" sx={{ color: "purple" }} />
+                  Upcoming
+                </Box>
+              </MenuItem>
+              <MenuItem value="ongoing">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Autorenew fontSize="small" sx={{ color: "blue" }} />
+                  Ongoing
+                </Box>
+              </MenuItem>
+              <MenuItem value="completed">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircle fontSize="small" sx={{ color: "green" }} />
+                  Completed
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenEditDialog(false)} color="secondary">Cancel</Button>
-          <Button onClick={handleUpdateRound} color="primary" variant="contained">Save Changes</Button>
+          <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+          <Button onClick={handleUpdateRound} variant="contained" color="primary">
+            Update Round
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -601,6 +686,72 @@ const PlacementRounds = ({ placementId }) => {
           <Button onClick={() => setOpenResultDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {loading ? (
+        <CircularProgress />
+      ) : (
+        <>
+          {rounds.map((round) => (
+            <Card key={round._id} sx={{ mb: 2, p: 2 }}>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Appeared Students ({appearedStudents[round._id]?.length || 0})
+                </Typography>
+                {appearedStudents[round._id]?.length > 0 ? (
+                  <TableContainer component={Paper}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Roll Number</TableCell>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Department</TableCell>
+                          <TableCell>CGPA</TableCell>
+                          <TableCell>Action</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {appearedStudents[round._id].map((student) => (
+                          <TableRow key={student._id}>
+                            <TableCell>
+                              {student.personalInfo?.rollNumber}
+                            </TableCell>
+                            <TableCell>
+                              {student.personalInfo?.name}
+                            </TableCell>
+                            <TableCell>
+                              {student.personalInfo?.department}
+                            </TableCell>
+                            <TableCell>
+                              {student.academics?.cgpa}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="small"
+                                onClick={() => handleStudentSelection(round._id, student)}
+                                disabled={round.selectedStudents?.includes(student._id)}
+                              >
+                                {round.selectedStudents?.includes(student._id) 
+                                  ? 'Selected' 
+                                  : 'Select'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography color="textSecondary">
+                    No students have appeared yet
+                  </Typography>
+                )}
+              </Box>
+            </Card>
+          ))}
+        </>
+      )}
     </Box>
   );
 };
