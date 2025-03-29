@@ -197,10 +197,33 @@ export default class companyServices {
 
     async getJobProfiles(companyId) {
         try {
-            const response = await this.CompanyModel.getJobProfiles(companyId);
-            return new apiResponse(200, response, "Job profiles fetched successfully");
+            console.log("Service: Getting job profiles for company:", companyId);
+            const response = await this.CompanyModel.getCompanyJobProfiles(companyId);
+            
+            if (response.statusCode === 404) {
+                throw new Error("Company not found");
+            }
+
+            return new apiResponse(200, response.data, "Job profiles fetched successfully");
         } catch (error) {
-            return new apiResponse(500, null, error.message);
+            console.error("Service Error:", error);
+            throw error;
+        }
+    }
+
+    async getDriveApplications(driveId) {
+        try {
+            console.log("Service: Getting applications for drive:", driveId);
+            const response = await this.CompanyModel.getDriveApplications(driveId);
+
+            if (response.statusCode === 404) {
+                throw new Error("Placement drive not found");
+            }
+
+            return new apiResponse(200, response.data, "Applications fetched successfully");
+        } catch (error) {
+            console.error("Service Error:", error);
+            throw error;
         }
     }
 

@@ -13,6 +13,7 @@ export default class CompanyController {
         this.getJobProfiles = this.getJobProfiles.bind(this);
         this.getCompanyById = this.getCompanyById.bind(this);
         this.addJNFToCompany = this.addJNFToCompany.bind(this);
+        this.getDriveApplications = this.getDriveApplications.bind(this);
     }
 
     getAllCompanies = asyncHandler(async (req, res) => {
@@ -83,10 +84,15 @@ export default class CompanyController {
     async getJobProfiles(req, res) {
         try {
             const { id } = req.params;
-            const profiles = await this.companyServices.getJobProfiles(id);
-            return res.status(200).json(new apiResponse(200, profiles, "Job profiles fetched successfully"));
+            console.log("Controller: Getting job profiles for company:", id);
+
+            const response = await this.companyServices.getJobProfiles(id);
+            return res.status(200).json(response);
         } catch (error) {
-            return res.status(500).json(new apiResponse(500, null, error.message));
+            console.error("Controller Error:", error);
+            return res.status(error.statusCode || 500).json(
+                new apiResponse(error.statusCode || 500, null, error.message)
+            );
         }
     }
 
@@ -241,6 +247,21 @@ export default class CompanyController {
             res.status(200).json(response);
         } catch (error) {
             res.status(500).json(new apiResponse(500, null, error.message));
+        }
+    }
+
+    async getDriveApplications(req, res) {
+        try {
+            const { driveId } = req.params;
+            console.log("Controller: Getting applications for drive:", driveId);
+
+            const response = await this.companyServices.getDriveApplications(driveId);
+            return res.status(200).json(response);
+        } catch (error) {
+            console.error("Controller Error:", error);
+            return res.status(error.statusCode || 500).json(
+                new apiResponse(error.statusCode || 500, null, error.message)
+            );
         }
     }
 }

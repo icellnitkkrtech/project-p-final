@@ -211,6 +211,46 @@ const placementDriveSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Add this middleware before creating the model
+placementDriveSchema.post('save', async function(doc) {
+    try {
+        const JNF = mongoose.model('JNF');
+        const Company = mongoose.model('Company');
+
+        // Find matching JNF based on company name and job profile
+        const matchingJNF = await JNF.findOne({
+            'companyDetails.name': doc.companyDetails.name,
+            'jobProfiles.profileId': doc.jobProfile.profileId,
+            'status': 'approved',
+            'placementDrive': null  // Only update JNFs without a drive
+        });
+
+        console.log('Found matching JNF:', matchingJNF?._id);
+
+        if (matchingJNF) {
+            // Update JNF with placement drive reference
+            await JNF.findByIdAndUpdate(matchingJNF._id, {
+                placementDrive: doc._id
+            });
+
+            console.log(`Linked PlacementDrive ${doc._id} to JNF ${matchingJNF._id}`);
+
+            // Also update company recruitment status
+            const company = await Company.findOne({
+                'JNFs': matchingJNF._id
+            });
+
+            if (company) {
+                const recruitmentStatus = 'ongoing';
+                await Company.findByIdAndUpdate(company._id, { recruitmentStatus });
+                console.log(`Updated company ${company._id} recruitment status`);
+            }
+        }
+    } catch (error) {
+        console.error('Error in placement drive post-save middleware:', error);
+    }
+});
+
 // Add this middleware to update company status when drive status changes
 placementDriveSchema.post('save', async function(doc) {
   try {
@@ -237,6 +277,7 @@ placementDriveSchema.post('save', async function(doc) {
     console.error('Error updating company recruitment status:', error);
   }
 });
+
 
 const placementDrive = mongoose.model("PlacementDrive", placementDriveSchema);
 

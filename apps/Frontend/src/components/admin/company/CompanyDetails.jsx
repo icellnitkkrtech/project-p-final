@@ -107,8 +107,15 @@ const CompanyDetails = ({ company, open, onClose, isEditMode, onUpdate }) => {
           setTabData(prev => ({ ...prev, visits: visits.data }));
           break;
         case 2: // Job Profiles
-          const profiles = await companyService.getJobProfiles(company._id);
-          setTabData(prev => ({ ...prev, jobProfiles: profiles.data }));
+          const response = await companyService.getJobProfiles(company._id);
+          if (response.success) {
+            setTabData(prev => ({ 
+              ...prev, 
+              jobProfiles: response.data.jobProfiles 
+            }));
+          } else {
+            throw new Error(response.message || 'Failed to fetch job profiles');
+          }
           break;
         case 3: // Placed Students
           const students = await companyService.getPlacedStudents(company._id);
@@ -143,6 +150,39 @@ const CompanyDetails = ({ company, open, onClose, isEditMode, onUpdate }) => {
       setLoading(false);
     }
   };
+
+  const handleViewApplication = (application) => {
+    // Implement view application details logic
+    console.log('View application:', application);
+  };
+
+  const handleViewDocuments = (application) => {
+    // Implement view documents logic
+    console.log('View documents:', application.documents);
+  };
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+        if (!company?._id) return;
+        
+        setLoading(true);
+        try {
+            const response = await companyService.getDriveApplications(company._id);
+            if (response.success) {
+                setApplications(response.data.applications);
+            }
+        } catch (error) {
+            console.error('Error fetching applications:', error);
+            setError('Failed to fetch applications');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (currentTab === 4) {
+        fetchApplications();
+    }
+}, [currentTab, company?._id]);
 
   const CompanyOverview = () => (
     <Grid container spacing={3}>
@@ -370,56 +410,97 @@ const CompanyDetails = ({ company, open, onClose, isEditMode, onUpdate }) => {
 
   const JobProfiles = () => (
     <Card elevation={1}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h6">Job Profiles</Typography>
-          <Button startIcon={<Work />} variant="outlined" size="small">
-            Add Profile
-          </Button>
-        </Box>
-        {tabData.jobProfiles.length > 0 ? (
-          <Grid container spacing={2}>
-            {tabData.jobProfiles.map((profile, index) => (
-              <Grid item xs={12} md={6} key={index}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      {profile.title}
+        <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h6">Job Profiles</Typography>
+                <Button startIcon={<Work />} variant="outlined" size="small">
+                    Add Profile
+                </Button>
+            </Box>
+            {tabData.jobProfiles?.length > 0 ? (
+                <Grid container spacing={2}>
+                    {tabData.jobProfiles.map((jnf) => (
+                        // Map through each job profile in the JNF
+                        jnf.jobProfiles.map((profile, index) => (
+                            <Grid item xs={12} md={6} key={`${jnf.id}-${index}`}>
+                                <Card variant="outlined">
+                                    <CardContent>
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {profile.designation}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                            {profile.course?.toUpperCase()}
+                                        </Typography>
+                                        <Divider sx={{ my: 1 }} />
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={6}>
+                                                <Typography variant="caption" color="text.secondary">Package (LPA)</Typography>
+                                                <Typography variant="body2">₹{profile.ctc?.toLocaleString('en-IN')}</Typography>
+                                            </Grid>
+                                            <Grid item xs={6}>
+                                                <Typography variant="caption" color="text.secondary">Job Type</Typography>
+                                                <Typography variant="body2">{profile.jobType?.toUpperCase()}</Typography>
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <Typography variant="caption" color="text.secondary">Location</Typography>
+                                                <Typography variant="body2">{profile.placeOfPosting}</Typography>
+                                            </Grid>
+                                            {profile.stipend && (
+                                                <Grid item xs={6}>
+                                                    <Typography variant="caption" color="text.secondary">Stipend</Typography>
+                                                    <Typography variant="body2">₹{profile.stipend}</Typography>
+                                                </Grid>
+                                            )}
+                                            <Grid item xs={12}>
+                                                <Box mt={1}>
+                                                    <Chip 
+                                                        label={`CGPA: ${jnf.eligibilityCriteria.minCgpa}`}
+                                                        size="small"
+                                                        sx={{ mr: 1 }}
+                                                    />
+                                                    <Chip 
+                                                        label={`Backlogs: ${jnf.eligibilityCriteria.backlogAllowed}`}
+                                                        size="small"
+                                                    />
+                                                </Box>
+                                            </Grid>
+                                        </Grid>
+                                        <Box mt={2}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Selection Process
+                                            </Typography>
+                                            <Box display="flex" gap={1} flexWrap="wrap" mt={0.5}>
+                                                {jnf.selectionProcess?.[0]?.rounds.map((round, idx) => (
+                                                    <Chip 
+                                                        key={idx}
+                                                        label={round.type.replace(/([A-Z])/g, ' $1').trim()}
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                ))}
+                                            </Box>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))
+                    ))}
+                </Grid>
+            ) : (
+                <Box 
+                    display="flex" 
+                    justifyContent="center" 
+                    alignItems="center" 
+                    minHeight="200px"
+                >
+                    <Typography color="text.secondary">
+                        No job profiles available
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {profile.department}
-                    </Typography>
-                    <Divider sx={{ my: 1 }} />
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Package</Typography>
-                        <Typography variant="body2">₹{profile.package?.toLocaleString('en-IN')}</Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Positions</Typography>
-                        <Typography variant="body2">{profile.positions}</Typography>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        ) : (
-          <Box 
-            display="flex" 
-            justifyContent="center" 
-            alignItems="center" 
-            minHeight="200px"
-          >
-            <Typography color="text.secondary">
-              No job profiles available
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
+                </Box>
+            )}
+        </CardContent>
     </Card>
-  );
+);
 
   const PlacedStudents = () => (
     <Card elevation={1}>
@@ -572,84 +653,125 @@ const CompanyDetails = ({ company, open, onClose, isEditMode, onUpdate }) => {
 
   const ApplicationsTab = () => (
     <Card elevation={1}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h6">Applications</Typography>
-          <Box>
-            <Button 
-              startIcon={<FileDownload />} 
-              variant="outlined" 
-              size="small"
-              sx={{ mr: 1 }}
-            >
-              Export
-            </Button>
-            <Button 
-              startIcon={<FilterList />} 
-              variant="outlined" 
-              size="small"
-            >
-              Filter
-            </Button>
-          </Box>
-        </Box>
+        <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h6">Applications</Typography>
+                <Box>
+                    <Button 
+                        startIcon={<FileDownload />} 
+                        variant="outlined" 
+                        size="small"
+                        sx={{ mr: 1 }}
+                    >
+                        Export
+                    </Button>
+                    <Button 
+                        startIcon={<FilterList />} 
+                        variant="outlined" 
+                        size="small"
+                    >
+                        Filter
+                    </Button>
+                </Box>
+            </Box>
 
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Student</TableCell>
-              <TableCell>Applied For</TableCell>
-              <TableCell>Applied Date</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Current Round</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {applications.map((application) => (
-              <TableRow key={application._id}>
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Avatar src={application.student.photo}>
-                      {application.student.name.charAt(0)}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body2">
-                        {application.student.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {application.student.rollNo}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>{application.position}</TableCell>
-                <TableCell>
-                  {new Date(application.appliedAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <Chip 
-                    label={application.status}
-                    color={getApplicationStatusColor(application.status)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{application.currentRound}</TableCell>
-                <TableCell>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleViewApplication(application)}
-                  >
-                    <Visibility />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Student Name</TableCell>
+                        <TableCell>Roll No</TableCell>
+                        <TableCell>Applied For</TableCell>
+                        <TableCell>Applied Date</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Current Round</TableCell>
+                        <TableCell>Actions</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {applications.map((application) => (
+                        <TableRow key={application.studentId} hover>
+                            <TableCell>
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <Avatar src={application.photo}>
+                                        {application.name?.charAt(0)}
+                                    </Avatar>
+                                    <Typography variant="body2">
+                                        {application.name}
+                                    </Typography>
+                                </Box>
+                            </TableCell>
+                            <TableCell>{application.rollNo}</TableCell>
+                            <TableCell>{application.position}</TableCell>
+                            <TableCell>
+                                {new Date(application.appliedDate).toLocaleDateString('en-IN', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                })}
+                            </TableCell>
+                            <TableCell>
+                                <Chip 
+                                    label={application.offerDetails?.status || 'Pending'}
+                                    color={getApplicationStatusColor(application.offerDetails?.status)}
+                                    size="small"
+                                />
+                            </TableCell>
+                            <TableCell>
+                                {application.currentRound ? (
+                                    <Box>
+                                        <Typography variant="body2">
+                                            {application.currentRound.name}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {application.currentRound.status}
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    'Not Started'
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                <Box display="flex" gap={1}>
+                                    <Tooltip title="View Application">
+                                        <IconButton 
+                                            size="small"
+                                            onClick={() => handleViewApplication(application)}
+                                        >
+                                            <Visibility fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                    {application.documents?.length > 0 && (
+                                        <Tooltip title="View Documents">
+                                            <IconButton 
+                                                size="small"
+                                                onClick={() => handleViewDocuments(application)}
+                                            >
+                                                <Description fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
+                                </Box>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+
+            {applications.length === 0 && (
+                <Box 
+                    display="flex" 
+                    justifyContent="center" 
+                    alignItems="center" 
+                    minHeight="200px"
+                >
+                    <Typography color="text.secondary">
+                        No applications found
+                    </Typography>
+                </Box>
+            )}
+        </CardContent>
     </Card>
-  );
+);
 
   return (
     <Dialog 
@@ -731,23 +853,17 @@ const getStatusColor = (status) => {
 
 const getApplicationStatusColor = (status) => {
   switch (status?.toLowerCase()) {
-    case 'applied':
-      return 'info';
-    case 'shortlisted':
+    case 'accepted':
       return 'success';
-    case 'selected':
-      return 'primary';
-    case 'joined':
-      return 'success';
-    case 'offer_accepted':
-      return 'info';
     case 'pending':
       return 'warning';
-    case 'declined':
+    case 'rejected':
       return 'error';
-    default:
+    case 'withdrawn':
       return 'default';
+    default:
+      return 'info';
   }
 };
 
-export default CompanyDetails; 
+export default CompanyDetails;

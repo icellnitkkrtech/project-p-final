@@ -1,5 +1,5 @@
 import placementDrive from "../schema/placement/placementSchema.js";
-
+import JNF from "../schema/company/jnfSchema.js";
 export default class PlacementModel {
     placement = placementDrive;
 
@@ -14,9 +14,20 @@ export default class PlacementModel {
     }
 
     async createPlacement(placementData) {
+
         console.log("Placement Model: createPlacement called");
         try {
-            return await this.placement.create(placementData);
+            const jnf = await JNF.findById(placementData.selectedJNF);
+        if (!jnf) {
+            throw new Error('JNF not found');
+        }
+        const drive = await this.placement.create(placementData);
+        await JNF.findByIdAndUpdate(placementData.selectedJNF, {
+            placementDrive: drive._id
+          
+        });
+        console.log(`Created placement drive ${drive._id} and linked to JNF ${placementData.selectedJNF}`);
+            return drive;
         } catch (error) {
             console.error("Error in createPlacement:", error);
             throw error;

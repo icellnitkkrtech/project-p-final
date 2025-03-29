@@ -4,6 +4,7 @@ import User from "../schema/userSchema.js";
 import apiResponse from "../utils/apiResponse.js";
 import PlacementDrive from "../schema/placement/placementSchema.js";
 import StudentPlacement from "../schema/placement/studentPlacementSchema.js";
+import {Application } from "../schema/general/applicationSchema.js";
 
 export default class companyModel {
     company = Company;
@@ -298,6 +299,311 @@ export default class companyModel {
 
             return new apiResponse(200, placement, "Placement updated successfully");
         } catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
+// these job profiles are comming from jnf schema  instead of this  we can  also fetch jb profiles from drive 
+
+    async getCompanyJobProfiles(companyId) {
+        console.log("Company Model: getCompanyJobProfiles called for company:", companyId);
+        try {
+            // Find company and populate JNFs
+            const company = await this.company.findById(companyId)
+                .populate({
+                    path: 'JNFs',
+                    select: '-__v',
+                    // Only get approved JNFs
+                    match: { status: 'approved' }
+                });
+
+            if (!company) {
+                console.log("Company not found with ID:", companyId);
+                return new apiResponse(404, null, "Company not found");
+            }
+
+            console.log("Found company:", company.companyName);
+            console.log("Number of JNFs:", company.JNFs?.length);
+
+            // Transform JNFs into job profiles
+            const jobProfiles = company.JNFs.map(jnf => {
+                console.log("Processing JNF:", jnf._id);
+                return {
+                    id: jnf._id,
+                    companyDetails: {
+                        name: jnf.companyDetails?.name || company.companyName,
+                        email: jnf.companyDetails?.email || company.email,
+                        website: jnf.companyDetails?.website || company.website,
+                        companyType: jnf.companyDetails?.companyType,
+                        domain: jnf.companyDetails?.domain,
+                        description: jnf.companyDetails?.description
+                    },
+                    jobProfiles: jnf.jobProfiles?.map(profile => ({
+                        profileId: profile.profileId,
+                        designation: profile.designation,
+                        course: profile.course,
+                        jobDescription: {
+                            description: profile.jobDescription?.description,
+                            hasFile: profile.jobDescription?.attachFile,
+                            filePath: profile.jobDescription?.file
+                        },
+                        ctc: profile.ctc,
+                        takeHome: profile.takeHome,
+                        perks: profile.perks,
+                        trainingPeriod: profile.trainingPeriod,
+                        placeOfPosting: profile.placeOfPosting,
+                        jobType: profile.jobType,
+                        stipend: profile.stipend,
+                        internDuration: profile.internDuration
+                    })),
+                    eligibilityCriteria: {
+                        minCgpa: jnf.eligibilityCriteria?.minCgpa,
+                        backlogAllowed: jnf.eligibilityCriteria?.backlogAllowed
+                    },
+                    selectionProcess: jnf.selectionProcessForProfiles?.map(process => ({
+                        profileId: process.profileId,
+                        rounds: process.rounds,
+                        expectedRecruits: process.expectedRecruits,
+                        tentativeDate: process.tentativeDate
+                    })),
+                    bondDetails: {
+                        hasBond: jnf.bondDetails?.hasBond,
+                        details: jnf.bondDetails?.details
+                    },
+                    status: jnf.status,
+                    submissionDate: jnf.submissionDate
+                };
+            });
+
+            console.log(`Found ${jobProfiles.length} job profiles for company ${company.companyName}`);
+
+            return new apiResponse(200, {
+                company: {
+                    id: company._id,
+                    name: company.companyName,
+                    email: company.email,
+                    website: company.website,
+                    status: company.status,
+                    recruitmentStatus: company.recruitmentStatus,
+                    totalJNFs: company.JNFs.length,
+                    activeJobProfiles: jobProfiles.length,
+                    statistics: {
+                        offersCount: company.offersCount || 0,
+                        avgPackage: company.avgPackage || 0,
+                        totalHired: company.totalHired || 0
+                    }
+                },
+                jobProfiles: jobProfiles
+            }, "Job profiles fetched successfully");
+
+        } catch (error) {
+            console.error("Model Error in getCompanyJobProfiles:", error);
+            return new apiResponse(500, null, `Error fetching job profiles: ${error.message}`);
+        }
+    } //for fetching job profiles from plcement drive  here is the code below 
+    // async getCompanyJobProfiles(companyId) {
+    //     console.log("Company Model: getCompanyJobProfiles called for company:", companyId);
+    //     try {
+    //         // Find company and populate JNFs with placement drives
+    //         const company = await this.company.findById(companyId)
+    //             .populate({
+    //                 path: 'JNFs',
+    //                 populate: {
+    //                     path: 'placementDrive',
+    //                     select: 'placementDrive_title jobProfile applicationDetails status companyDetails'
+    //                 }
+    //             });
+    
+    //         if (!company) {
+    //             console.log("Company not found with ID:", companyId);
+    //             return new apiResponse(404, null, "Company not found");
+    //         }
+    
+    //         console.log("Found company:", company.companyName);
+    //         console.log("Number of JNFs:", company.JNFs?.length);
+            
+    //         // Debug JNFs data
+    //         company.JNFs?.forEach((jnf, index) => {
+    //             console.log(`JNF ${index + 1}:`, {
+    //                 id: jnf._id,
+    //                 hasPlacementDrive: !!jnf.placementDrive,
+    //                 driveDetails: jnf.placementDrive ? {
+    //                     title: jnf.placementDrive.placementDrive_title,
+    //                     status: jnf.placementDrive.status
+    //                 } : 'No drive attached'
+    //             });
+    //         });
+    
+    //         // Filter and transform JNFs with placement drives
+    //         const jobProfiles = company.JNFs
+    //             .filter(jnf => {
+    //                 const hasPlacementDrive = !!jnf.placementDrive;
+    //                 console.log(`JNF ${jnf._id} has placement drive: ${hasPlacementDrive}`);
+    //                 return hasPlacementDrive;
+    //             })
+    //             .map(jnf => {
+    //                 const drive = jnf.placementDrive;
+    //                 return {
+    //                     id: drive._id,
+    //                     jnfId: jnf._id,
+    //                     title: drive.placementDrive_title,
+    //                     jobProfile: {
+    //                         designation: drive.jobProfile?.designation,
+    //                         ctc: drive.jobProfile?.ctc,
+    //                         jobType: drive.jobProfile?.jobType,
+    //                         description: drive.jobProfile?.jobDescription?.description || '',
+    //                         stipend: drive.jobProfile?.stipend,
+    //                         internDuration: drive.jobProfile?.internDuration,
+    //                         placeOfPosting: drive.jobProfile?.placeOfPosting
+    //                     },
+    //                     applicationDetails: {
+    //                         deadline: drive.applicationDetails?.applicationDeadline,
+    //                         applicationLink: drive.applicationDetails?.applicationLink
+    //                     },
+    //                     status: drive.status,
+    //                     companyDetails: {
+    //                         name: company.companyName,
+    //                         email: company.email,
+    //                         website: company.website,
+    //                         recruitmentStatus: company.recruitmentStatus
+    //                     }
+    //                 };
+    //             });
+    
+    //         console.log(`Found ${jobProfiles.length} job profiles for company ${company.companyName}`);
+    
+    //         return new apiResponse(200, {
+    //             company: {
+    //                 id: company._id,
+    //                 name: company.companyName,
+    //                 email: company.email,
+    //                 website: company.website,
+    //                 recruitmentStatus: company.recruitmentStatus,
+    //                 totalJNFs: company.JNFs.length,
+    //                 activeJobProfiles: jobProfiles.length
+    //             },
+    //             jobProfiles: jobProfiles
+    //         }, "Job profiles fetched successfully");
+    
+    //     } catch (error) {
+    //         console.error("Model Error in getCompanyJobProfiles:", error);
+    //         return new apiResponse(500, null, `Error fetching job profiles: ${error.message}`);
+    //     }
+    // }
+
+    async getDriveApplications(companyId) {
+        
+        try {
+           // First, find company and populate JNFs with placement drives
+        const company = await this.company.findById(companyId)
+        .populate({
+            path: 'JNFs',
+            match: { status: 'approved' },
+            populate: {
+                path: 'placementDrive',
+                select: 'placementDrive_title jobProfile applicationDetails status companyDetails applicantStudents'
+            }
+        });
+
+    if (!company) {
+        return new apiResponse(404, null, "Company not found");
+    }
+ console.log(company.JNFs);
+    // Get the first JNF with an active placement drive
+    const activeJNF = company.JNFs.find(jnf => jnf.placementDrive );
+
+    console.log("Active JNF:", activeJNF);
+    
+    if (!activeJNF?.placementDrive) {
+        return new apiResponse(200, {
+            driveDetails: null,
+            applications: []
+        }, "No active placement drive found");
+    }
+
+    const driveId = activeJNF.placementDrive._id;
+    console.log("Company Model: getDriveApplications called for drive:", driveId);
+            // Find drive with populated applicant students
+            const drive = await PlacementDrive.findById(driveId)
+                .populate({
+                    path: 'applicantStudents',
+                    select: 'personalInfo academics user photo',
+                    populate: {
+                        path: 'user',
+                        select: 'email'
+                    }
+                });
+
+            if (!drive) {
+                return new apiResponse(404, null, "Placement drive not found");
+            }
+
+            // Get applications for this drive
+            const applications = await Application.find({ 
+                placementDrive: driveId 
+            }).populate('student', 'personalInfo academics');
+
+            // Map applications with student details
+            const applicationDetails = drive.applicantStudents.map(student => {
+                const studentApplication = applications.find(
+                    app => app.student._id.toString() === student._id.toString()
+                );
+
+                // Get current round info
+                const currentRound = studentApplication?.roundStatus?.length > 0 
+                    ? studentApplication.roundStatus[studentApplication.roundStatus.length - 1]
+                    : null;
+
+                return {
+                    studentId: student._id,
+                    name: student.personalInfo?.name,
+                    email: student.user?.email,
+                    rollNo: student.personalInfo?.rollNumber,
+                    branch: student.personalInfo?.department,
+                    semester: student.academics?.currentSemester,
+                    cgpa: student.academics?.cgpa,
+                    photo: student.photo,
+                    position: drive.jobProfile?.designation,
+                    appliedDate: studentApplication?.appliedAt,
+                    status: studentApplication?.status || 'applied',
+                    currentRound: currentRound ? {
+                        number: currentRound.roundNumber,
+                        name: currentRound.roundName,
+                        status: currentRound.status,
+                        date: currentRound.date
+                    } : null,
+                    timeline: studentApplication?.timeline || [],
+                    offerDetails: studentApplication?.offerDetails,
+                    documents: studentApplication?.documents,
+                    isSelected: drive.selectedStudents.includes(student._id)
+                };
+            });
+
+            return new apiResponse(200, {
+                driveDetails: {
+                    id: drive._id,
+                    title: drive.placementDrive_title,
+                    company: drive.companyDetails,
+                    jobProfile: {
+                        designation: drive.jobProfile.designation,
+                        ctc: drive.jobProfile.ctc,
+                        type: drive.jobProfile.jobType
+                    },
+                    status: drive.status,
+                    deadline: drive.applicationDetails.applicationDeadline,
+                    rounds: drive.selectionProcess[0]?.rounds || [],
+                    eligibility: drive.eligibilityCriteria
+                },
+                statistics: {
+                    totalApplications: applicationDetails.length,
+                    selectedCount: drive.selectedStudents.length,
+                    inProcessCount: applicationDetails.filter(app => app.status === 'in-process').length,
+                    rejectedCount: applicationDetails.filter(app => app.status === 'rejected').length
+                },
+                applications: applicationDetails
+            }, "Applications fetched successfully");
+
+        } catch (error) {
+            console.error("Model Error in getDriveApplications:", error);
             return new apiResponse(500, null, error.message);
         }
     }
