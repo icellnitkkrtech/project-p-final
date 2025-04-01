@@ -28,7 +28,7 @@ const StudentRegistration = ({ onRegistrationSuccess }) => {
       name: '',
       rollNumber: '',
       department: '',
-      Gender: '', // Capital G to match schema
+      gender: '', // Capital G to match schema
       category: '',
       batch: ''
     },
@@ -135,7 +135,7 @@ const StudentRegistration = ({ onRegistrationSuccess }) => {
           name: studentData.personalInfo.name,
           rollNumber: Number(studentData.personalInfo.rollNumber),
           department: studentData.personalInfo.department,
-          Gender: studentData.personalInfo.Gender,
+          gender: studentData.personalInfo.gender,
           category: studentData.personalInfo.category,
           batch: Number(studentData.personalInfo.batch)
         },
@@ -183,7 +183,7 @@ const StudentRegistration = ({ onRegistrationSuccess }) => {
             name: '',
             rollNumber: '',
             department: '',
-            Gender: '',
+            gender: '',
             category: '',
             batch: ''
           },
@@ -247,11 +247,11 @@ const StudentRegistration = ({ onRegistrationSuccess }) => {
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Gender</InputLabel>
+                <InputLabel>gender</InputLabel>
                 <Select
-                  value={studentData.personalInfo.Gender}
-                  onChange={(e) => handleChange('personalInfo', 'Gender', e.target.value)}
-                  label="Gender"
+                  value={studentData.personalInfo.gender}
+                  onChange={(e) => handleChange('personalInfo', 'gender', e.target.value)}
+                  label="gender"
                 >
                   <MenuItem value="Male">Male</MenuItem>
                   <MenuItem value="Female">Female</MenuItem>

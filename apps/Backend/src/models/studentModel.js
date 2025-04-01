@@ -17,7 +17,7 @@ export default class StudentModel {
       if (
         !profileData.personalInfo?.name ||
         !profileData.personalInfo?.rollNumber ||
-        !profileData.personalInfo?.Gender ||
+        !profileData.personalInfo?.gender ||
         !profileData.personalInfo?.department ||
         !profileData.personalInfo?.batch
       ) {
