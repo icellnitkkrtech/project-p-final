@@ -1,5 +1,6 @@
 import axios from '../../config/axios';
 import { API_BASE_URL } from '../../config/constants';
+import { saveAs } from 'file-saver';
 
 // Mock data for testing until backend integration
 const mockPlacementData = {
@@ -239,27 +240,23 @@ const reportService = {
     }
   },
 
-  // Get filtered reports based on type
+  // Get filtered reports based on type and filters
   getFilteredReports: async (type, filters) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      console.log('Applying filters:', filters);
-      
-      // Return appropriate mock data based on type
-      switch (type) {
-        case 'placement':
-          return mockPlacementData;
-        case 'company':
-          return mockCompanyData;
-        case 'student':
-          return mockStudentData;
-        default:
-          return {};
-      }
+      const response = await axios.get(`/reports/${type}`, {
+        params: {
+          ...filters,
+          startDate: filters.startDate?.format('YYYY-MM-DD'),
+          endDate: filters.endDate?.format('YYYY-MM-DD')
+        }
+      });
+      return response.data;
     } catch (error) {
       console.error(`Error fetching ${type} reports:`, error);
+      // Return mock data for development
+      if (error.response && error.response.status === 404) {
+        return getMockData(type);
+      }
       throw error;
     }
   },
@@ -267,26 +264,27 @@ const reportService = {
   // Save custom report template
   saveReportTemplate: async (template) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Get existing templates from local storage
-      const existingTemplates = JSON.parse(localStorage.getItem(TEMPLATES_STORAGE_KEY) || '[]');
-      
-      // Create new template with ID
-      const newTemplate = {
+      const response = await axios.post(`/api/v1/reports/templates`, {
         ...template,
-        id: Date.now(),
-        createdAt: new Date().toISOString()
-      };
-      
-      // Save to local storage
-      const updatedTemplates = [...existingTemplates, newTemplate];
-      localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(updatedTemplates));
-      
-      return newTemplate;
+        filters: {
+          ...template.filters,
+          startDate: template.filters.startDate?.format('YYYY-MM-DD'),
+          endDate: template.filters.endDate?.format('YYYY-MM-DD')
+        }
+      });
+      return response.data;
     } catch (error) {
-      console.error('Error saving template:', error);
+      console.error('Error saving report template:', error);
+      // For development
+      if (error.response && error.response.status === 404) {
+        const mockTemplate = {
+          id: Date.now().toString(),
+          ...template,
+          createdAt: new Date().toISOString()
+        };
+        alert('Mock template saved successfully');
+        return mockTemplate;
+      }
       throw error;
     }
   },
@@ -294,39 +292,168 @@ const reportService = {
   // Get saved report templates
   getReportTemplates: async () => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Get templates from local storage or use mock data
-      const storedTemplates = localStorage.getItem(TEMPLATES_STORAGE_KEY);
-      return storedTemplates ? JSON.parse(storedTemplates) : mockTemplates;
+      const response = await axios.get(`/reports/templates`);
+      return response.data;
     } catch (error) {
-      console.error('Error fetching templates:', error);
-      return mockTemplates;
+      console.error('Error fetching report templates:', error);
+      // Return mock templates for development
+      if (error.response && error.response.status === 404) {
+        return getMockTemplates();
+      }
+      throw error;
     }
   },
 
   // Delete report template
   deleteReportTemplate: async (templateId) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Get existing templates
-      const existingTemplates = JSON.parse(localStorage.getItem(TEMPLATES_STORAGE_KEY) || '[]');
-      
-      // Filter out the deleted template
-      const updatedTemplates = existingTemplates.filter(t => t.id !== templateId);
-      
-      // Save back to local storage
-      localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(updatedTemplates));
-      
+      await axios.delete(`/reports/templates/${templateId}`);
       return true;
     } catch (error) {
-      console.error('Error deleting template:', error);
+      console.error('Error deleting report template:', error);
+      // For development
+      if (error.response && error.response.status === 404) {
+        alert(`Mock template with ID ${templateId} deleted successfully`);
+        return true;
+      }
       throw error;
     }
   }
 };
+
+// Mock data functions for development
+function getMockData(type) {
+  switch (type) {
+    case 'placement':
+      return {
+        summary: {
+          totalStudents: 450,
+          placedStudents: 380,
+          placementPercentage: 84.4,
+          averageCTC: 12.5,
+          highestCTC: 45.0,
+          companiesVisited: 65
+        },
+        monthlyData: [
+          { month: 'Jan', placements: 45 },
+          { month: 'Feb', placements: 52 },
+          { month: 'Mar', placements: 38 },
+          { month: 'Apr', placements: 30 },
+          { month: 'May', placements: 25 },
+          { month: 'Jun', placements: 40 },
+          { month: 'Jul', placements: 55 },
+          { month: 'Aug', placements: 60 },
+          { month: 'Sep', placements: 35 },
+          { month: 'Oct', placements: 30 },
+          { month: 'Nov', placements: 45 },
+          { month: 'Dec', placements: 25 }
+        ],
+        branchData: [
+          { branch: 'Computer Science', placed: 95, total: 100 },
+          { branch: 'Information Technology', placed: 88, total: 100 },
+          { branch: 'Electronics', placed: 75, total: 90 },
+          { branch: 'Electrical', placed: 70, total: 85 },
+          { branch: 'Mechanical', placed: 52, total: 75 }
+        ]
+      };
+    case 'company':
+      return {
+        summary: {
+          totalCompanies: 65,
+          newCompanies: 15,
+          activeCompanies: 50,
+          topIndustry: 'IT & Software',
+          averagePackage: 12.5
+        },
+        industryData: [
+          { industry: 'IT & Software', count: 25 },
+          { industry: 'Finance', count: 12 },
+          { industry: 'Manufacturing', count: 8 },
+          { industry: 'Consulting', count: 10 },
+          { industry: 'E-commerce', count: 5 },
+          { industry: 'Others', count: 5 }
+        ],
+        companyList: [
+          { name: 'Google', industry: 'IT & Software', offers: 12, avgCTC: 25.5 },
+          { name: 'Microsoft', industry: 'IT & Software', offers: 15, avgCTC: 22.0 },
+          { name: 'Amazon', industry: 'E-commerce', offers: 20, avgCTC: 18.5 },
+          { name: 'Goldman Sachs', industry: 'Finance', offers: 8, avgCTC: 20.0 },
+          { name: 'Deloitte', industry: 'Consulting', offers: 25, avgCTC: 12.0 }
+        ]
+      };
+    case 'student':
+      return {
+        summary: {
+          totalStudents: 450,
+          placedStudents: 380,
+          unplacedStudents: 70,
+          highestCGPA: 9.8,
+          averageCGPA: 8.2
+        },
+        departmentData: [
+          { department: 'Computer Science', count: 100 },
+          { department: 'Information Technology', count: 100 },
+          { department: 'Electronics', count: 90 },
+          { department: 'Electrical', count: 85 },
+          { department: 'Mechanical', count: 75 }
+        ],
+        placementData: [
+          { status: 'Placed', count: 380 },
+          { status: 'Unplaced', count: 70 }
+        ],
+        studentList: [
+          { name: 'John Doe', department: 'Computer Science', cgpa: 9.2, status: 'Placed', company: 'Google' },
+          { name: 'Jane Smith', department: 'Information Technology', cgpa: 9.5, status: 'Placed', company: 'Microsoft' },
+          { name: 'Bob Johnson', department: 'Electronics', cgpa: 8.8, status: 'Placed', company: 'Amazon' },
+          { name: 'Alice Brown', department: 'Computer Science', cgpa: 9.0, status: 'Placed', company: 'Facebook' },
+          { name: 'Charlie Wilson', department: 'Mechanical', cgpa: 8.5, status: 'Unplaced', company: null }
+        ]
+      };
+    default:
+      return {};
+  }
+}
+
+function getMockTemplates() {
+  return [
+    {
+      id: '1',
+      name: 'Placement Summary 2024',
+      type: 'placement',
+      metrics: ['placementPercentage', 'averageCTC', 'highestCTC'],
+      filters: {
+        year: '2024',
+        branch: 'all',
+        startDate: '2023-06-01',
+        endDate: '2024-05-31'
+      },
+      createdAt: '2024-01-15T10:30:00Z'
+    },
+    {
+      id: '2',
+      name: 'CS Department Report',
+      type: 'student',
+      metrics: ['placedCount', 'unplacedCount', 'averageCGPA'],
+      filters: {
+        department: 'Computer Science',
+        batch: '2024',
+        placementStatus: 'all'
+      },
+      createdAt: '2024-02-20T14:15:00Z'
+    },
+    {
+      id: '3',
+      name: 'Top Companies Analysis',
+      type: 'company',
+      metrics: ['companyCount', 'industryDistribution', 'averagePackage'],
+      filters: {
+        industry: 'all',
+        year: '2024',
+        status: 'active'
+      },
+      createdAt: '2024-03-10T09:45:00Z'
+    }
+  ];
+}
 
 export default reportService; 

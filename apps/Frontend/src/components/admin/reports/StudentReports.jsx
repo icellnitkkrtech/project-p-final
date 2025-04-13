@@ -1,60 +1,76 @@
 import { useState, useEffect } from 'react';
-import dayjs from 'dayjs';
 import {
-  Grid,
-  Paper,
-  Typography,
   Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
   TextField,
   MenuItem,
   Button,
+  Divider,
   CircularProgress,
-  Card,
-  CardContent,
+  Alert,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
-import { Download, FilterList } from '@mui/icons-material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
 import {
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  PieChart,
-  Pie,
-  Cell,
+  ResponsiveContainer
 } from 'recharts';
 import reportService from '../../../services/admin/reportService';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+// Get current year and 2 years back for dropdown
+const currentYear = new Date().getFullYear();
+const years = [
+  (currentYear - 2).toString(),
+  (currentYear - 1).toString(),
+  currentYear.toString()
+];
 
 const StudentReports = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     department: 'all',
-    batch: new Date().getFullYear().toString(),
+    batch: currentYear.toString(),
     category: 'all',
     placementStatus: 'all',
-    startDate: dayjs(),
+    startDate: dayjs().subtract(1, 'year'),
     endDate: dayjs(),
   });
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await reportService.getFilteredReports('student', filters);
       setData(response);
     } catch (error) {
       console.error('Error fetching student data:', error);
+      setError('Failed to fetch data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -83,174 +99,308 @@ const StudentReports = () => {
     fetchData();
   };
 
-  const handleDownload = async () => {
+  const handleDownload = async (format) => {
     try {
       setLoading(true);
-      await reportService.downloadReport('student', filters);
+      await reportService.downloadReport('student', filters, format);
     } catch (error) {
       console.error('Error downloading report:', error);
+      setError(`Failed to download ${format.toUpperCase()} report. Please try again.`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
-    <Grid container spacing={3}>
-      {/* Filters Section */}
-      <Grid item xs={12}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Filters
-          </Typography>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                name="department"
-                label="Department"
-                value={filters.department}
-                onChange={handleFilterChange}
-              >
-                <MenuItem value="all">All Departments</MenuItem>
-                <MenuItem value="CSE">Computer Science</MenuItem>
-                <MenuItem value="IT">Information Technology</MenuItem>
-                <MenuItem value="ECE">Electronics</MenuItem>
-                <MenuItem value="ME">Mechanical</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                name="batch"
-                label="Batch"
-                value={filters.batch}
-                onChange={handleFilterChange}
-              >
-                {[2022, 2023, 2024].map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                name="category"
-                label="Category"
-                value={filters.category}
-                onChange={handleFilterChange}
-              >
-                <MenuItem value="all">All Categories</MenuItem>
-                <MenuItem value="General">General</MenuItem>
-                <MenuItem value="OBC">OBC</MenuItem>
-                <MenuItem value="SC">SC</MenuItem>
-                <MenuItem value="ST">ST</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                name="placementStatus"
-                label="Placement Status"
-                value={filters.placementStatus}
-                onChange={handleFilterChange}
-              >
-                <MenuItem value="all">All Students</MenuItem>
-                <MenuItem value="placed">Placed</MenuItem>
-                <MenuItem value="not_placed">Not Placed</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} container justifyContent="flex-end" spacing={1}>
-              <Grid item>
-                <Button
-                  variant="outlined"
-                  startIcon={<FilterList />}
-                  onClick={handleApplyFilters}
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Student Report Filters
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Department"
+                  name="department"
+                  value={filters.department}
+                  onChange={handleFilterChange}
+                  margin="normal"
                 >
-                  Apply Filters
-                </Button>
+                  <MenuItem value="all">All Departments</MenuItem>
+                  <MenuItem value="Computer Engineering">Computer Engineering</MenuItem>
+                  <MenuItem value="Information Technology">Information Technology</MenuItem>
+                  <MenuItem value="Electronics & Communication">Electronics & Communication</MenuItem>
+                  <MenuItem value="Electrical Engineering">Electrical Engineering</MenuItem>
+                  <MenuItem value="Mechanical Engineering">Mechanical Engineering</MenuItem>
+                </TextField>
               </Grid>
-              <Grid item>
-                <Button
-                  variant="contained"
-                  startIcon={<Download />}
-                  onClick={handleDownload}
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Batch"
+                  name="batch"
+                  value={filters.batch}
+                  onChange={handleFilterChange}
+                  margin="normal"
                 >
-                  Download Report
-                </Button>
-              </Grid>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Grid>
-
-      {/* Department-wise Statistics */}
-      {data && (
-        <>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Department-wise Statistics
-              </Typography>
-              <BarChart
-                width={500}
-                height={300}
-                data={data.departmentWise}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="department" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="placed" fill="#8884d8" name="Placed" />
-                <Bar dataKey="total" fill="#82ca9d" name="Total" />
-              </BarChart>
-            </Paper>
-          </Grid>
-
-          {/* Category-wise Statistics */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Category-wise Statistics
-              </Typography>
-              <PieChart width={500} height={300}>
-                <Pie
-                  data={data.categoryWise}
-                  dataKey="placed"
-                  nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  label
-                >
-                  {data.categoryWise.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {years.map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </Paper>
-          </Grid>
-        </>
-      )}
-    </Grid>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Category"
+                  name="category"
+                  value={filters.category}
+                  onChange={handleFilterChange}
+                  margin="normal"
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  <MenuItem value="General">General</MenuItem>
+                  <MenuItem value="OBC">OBC</MenuItem>
+                  <MenuItem value="SC">SC</MenuItem>
+                  <MenuItem value="ST">ST</MenuItem>
+                  <MenuItem value="EWS">EWS</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Placement Status"
+                  name="placementStatus"
+                  value={filters.placementStatus}
+                  onChange={handleFilterChange}
+                  margin="normal"
+                >
+                  <MenuItem value="all">All Students</MenuItem>
+                  <MenuItem value="placed">Placed</MenuItem>
+                  <MenuItem value="unplaced">Unplaced</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <DatePicker
+                  label="Start Date"
+                  value={filters.startDate}
+                  onChange={handleDateChange('startDate')}
+                  renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                  slotProps={{
+                    textField: { fullWidth: true, margin: "normal" }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <DatePicker
+                  label="End Date"
+                  value={filters.endDate}
+                  onChange={handleDateChange('endDate')}
+                  renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                  slotProps={{
+                    textField: { fullWidth: true, margin: "normal" }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={12} md={6}>
+                <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleApplyFilters}
+                    disabled={loading}
+                  >
+                    {loading ? 'Loading...' : 'Apply Filters'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleDownload('pdf')}
+                    disabled={loading || !data}
+                  >
+                    Download PDF
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleDownload('excel')}
+                    disabled={loading || !data}
+                  >
+                    Download Excel
+                  </Button>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        ) : data ? (
+          <>
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Student Summary
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Total Students
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.totalStudents}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Placed Students
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.placedStudents}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Average CGPA
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.averageCGPA}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Department Distribution
+                    </Typography>
+                    <Box height={300}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={data.departmentData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="count"
+                            nameKey="department"
+                            label={({ department, count }) => `${department}: ${count}`}
+                          >
+                            {data.departmentData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Placement Status
+                    </Typography>
+                    <Box height={300}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={data.placementData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="count"
+                            nameKey="status"
+                            label={({ status, count }) => `${status}: ${count}`}
+                          >
+                            {data.placementData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            <Card sx={{ mt: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Student List
+                </Typography>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Department</TableCell>
+                        <TableCell>CGPA</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Company</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {data.studentList && data.studentList.map((student, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{student.name}</TableCell>
+                          <TableCell>{student.department}</TableCell>
+                          <TableCell>{student.cgpa}</TableCell>
+                          <TableCell>{student.status}</TableCell>
+                          <TableCell>{student.company || 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            No data available. Please adjust your filters and try again.
+          </Alert>
+        )}
+      </Box>
+    </LocalizationProvider>
   );
 };
 

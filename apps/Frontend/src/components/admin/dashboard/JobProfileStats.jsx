@@ -1,26 +1,86 @@
-import { Card, CardContent, Typography, Box, Tabs, Tab } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, Typography, Box, Tabs, Tab, CircularProgress, Alert } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useState } from 'react';
+import axios from '../../../config/axios';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const JobProfileStats = () => {
+const JobProfileStats = ({ filters = {} }) => {
   const [view, setView] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [sectorData, setSectorData] = useState([]);
+  const [profileData, setProfileData] = useState([]);
 
-  const sectorData = [
-    { name: 'IT/Software', value: 45 },
-    { name: 'Finance', value: 20 },
-    { name: 'Core Engineering', value: 15 },
-    { name: 'Consulting', value: 12 },
-    { name: 'Analytics', value: 8 }
+  useEffect(() => {
+    const fetchJobProfileData = async () => {
+      setLoading(true);
+      try {
+        // Convert filters object to query string
+        const queryParams = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== 'all') {
+            queryParams.append(key, value);
+          }
+        });
+        
+        const queryString = queryParams.toString();
+        const endpoint = `/dashboard/job-profiles${queryString ? `?${queryString}` : ''}`;
+        
+        const response = await axios.get(endpoint);
+        const data = response.data;
+
+        if (data) {
+          // Set sector distribution data
+          if (data.sectors && Array.isArray(data.sectors)) {
+            setSectorData(data.sectors);
+          }
+          
+          // Set profile analysis data
+          if (data.profiles && Array.isArray(data.profiles)) {
+            setProfileData(data.profiles);
+          }
+        }
+        
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching job profile data:", error);
+        setError("Failed to load job profile analysis data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobProfileData();
+  }, [filters]); // Re-fetch when filters change
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+          <CircularProgress />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert severity="error">{error}</Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Use default data if no data is available
+  const displaySectorData = sectorData.length > 0 ? sectorData : [
+    { name: 'No Data Available', value: 100 }
   ];
 
-  const profileData = [
-    { profile: 'Software Developer', count: 150, avgCTC: 12 },
-    { profile: 'Data Analyst', count: 80, avgCTC: 10 },
-    { profile: 'Business Analyst', count: 60, avgCTC: 11 },
-    { profile: 'Product Manager', count: 40, avgCTC: 14 },
-    { profile: 'Research Engineer', count: 30, avgCTC: 13 }
+  const displayProfileData = profileData.length > 0 ? profileData : [
+    { profile: 'No Data Available', count: 0, avgCTC: 0 }
   ];
 
   return (
@@ -38,22 +98,22 @@ const JobProfileStats = () => {
             {view === 0 ? (
               <PieChart>
                 <Pie
-                  data={sectorData}
+                  data={displaySectorData}
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
                   label={({ name, value }) => `${name}: ${value}%`}
                   dataKey="value"
                 >
-                  {sectorData.map((entry, index) => (
+                  {displaySectorData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
                 <Legend />
               </PieChart>
             ) : (
-              <BarChart data={profileData}>
+              <BarChart data={displayProfileData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="profile" angle={-45} textAnchor="end" height={100} />
                 <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />

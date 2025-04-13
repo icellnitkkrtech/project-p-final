@@ -44,8 +44,11 @@ const StudentSchema = new Schema(
         required: true,
         unique: true,
       },
+
       department: {
+
         type: String,
+        enum: ["Computer Engineering", "Information Technology", "Electronics & Communication Engineering", "Electrical Engineering", "Mechanical Engineering", "Production & Industrial Engineering", "Civil Engineering"],
         required: true,
       },
       batch: {
@@ -59,7 +62,7 @@ const StudentSchema = new Schema(
       category: {
         type: String,
         enum: ["GENERAL", "OBC", "SC", "ST", "EWS"],
-        required: true
+        required: false
       },
     },
 

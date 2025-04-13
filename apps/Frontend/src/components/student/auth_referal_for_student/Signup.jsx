@@ -137,18 +137,26 @@ const Signup = () => {
                   className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select Department</option>
-                  <option value="CSE">Computer Engineering</option>
-                  <option value="ECE">Electronics & Communication</option>
-                  <option value="ME">Mechanical Engineering</option>
-                  {/* Add other departments */}
+                  <option value="Computer Engineering">Computer Engineering</option>
+                  <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
+                  <option value="Mechanical Engineering">Mechanical Engineering</option>
+                  <option value="Civil Engineering">Civil Engineering</option>
+                  <option value="Electrical Engineering">Electrical Engineering</option>
+                  <option value="Production & Industrial Engineering">Production & Industrial Engineering</option>
+                  <option value="Information Technology">Information Technology</option>
+                  {/* <option value="M.Tech">M.Tech</option>
+                  <option value="MBA">MBA</option>
+                  <option value="MCA">MCA</option>
+                  <option value="M.Sc">M.Sc</option>
+                  <option value="PhD">PhD</option> */}
                 </select>
               </div>
               <div>
                 <input
                   name="personalInfo.batch"
                   type="number"
-                  required
-                  placeholder="Batch Year"
+                  required 
+                  placeholder="Batch Year (Passing year)"
                   value={formData.personalInfo.batch}
                   onChange={handleChange}
                   className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
