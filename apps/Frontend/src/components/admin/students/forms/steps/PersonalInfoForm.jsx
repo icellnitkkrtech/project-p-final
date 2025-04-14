@@ -103,9 +103,9 @@ const PersonalInfoForm = ({ formData, onChange }) => {
         <TextField
           select
           fullWidth
-          label="Gender"
-          value={formData.Gender || ''} // Note: Capital G
-          onChange={(e) => onChange('Gender', e.target.value)}
+          label="gender"
+          value={formData.gender || ''} // Note: Capital G
+          onChange={(e) => onChange('gender', e.target.value)}
           required
         >
           <MenuItem value="Male">Male</MenuItem>

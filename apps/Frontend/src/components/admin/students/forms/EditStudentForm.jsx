@@ -39,7 +39,7 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
       name: '',
       rollNumber: '',
       department: '',
-      Gender: '',  // Note capital G
+      gender: '',  // Note capital G
       category: 'GENERAL', // Add default value
       batch: '',
       isLocked: false
@@ -80,7 +80,7 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
                 name: response.data.personalInfo?.name || '',
                 rollNumber: response.data.personalInfo?.rollNumber || '',
                 department: response.data.personalInfo?.department || '',
-                Gender: response.data.personalInfo?.Gender || '',
+                gender: response.data.personalInfo?.gender || '',
                 category: response.data.personalInfo?.category || 'GENERAL', // Add default
                 batch: response.data.personalInfo?.batch || '', // Single year number
                 isLocked: response.data.personalInfo?.isLocked || false
@@ -144,7 +144,7 @@ const EditStudentForm = ({ open, onClose, studentId, onUpdate }) => {
           ...formData.personalInfo,
           rollNumber: Number(formData.personalInfo.rollNumber),
           batch: Number(formData.personalInfo.batch), // Convert to number
-          Gender: formData.personalInfo.Gender,
+          gender: formData.personalInfo.gender,
           category: formData.personalInfo.category || 'GENERAL', // Ensure category is present
         },
         academics: {

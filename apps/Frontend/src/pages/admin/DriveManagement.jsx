@@ -4,7 +4,7 @@ import { Container, Tabs, Tab, Box, CircularProgress, Typography } from "@mui/ma
 import PlacementOverview from "../../components/admin/placements/PlacementOverview";
 import PlacementStudents from "../../components/admin/placements/PlacementStudents";
 import PlacementRounds from "../../components/admin/placements/PlacementRounds";
-import PlacementNotifications from "../../components/admin/placements/PlacementNotifations";
+import PlacementNotifications from "../../components/admin/placements/PlacementNotifications";
 import placementService from "../../services/admin/placementService"; // Import your API service
 
 const DriveManagement = () => {
@@ -69,7 +69,7 @@ const DriveManagement = () => {
         {tabIndex === 0 && <PlacementOverview id={placementId} />}
         {tabIndex === 1 && <PlacementStudents placementId={placementId} />}
         {tabIndex === 2 && <PlacementRounds placementId={placementId} />}
-        {tabIndex === 3 && <PlacementNotifications students={placementData?.applicationDetails?.appliedStudents} />}
+        {tabIndex === 3 && <PlacementNotifications placementId={placementId} />}
       </Box>
     </Container>
   );

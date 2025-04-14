@@ -1,26 +1,86 @@
-import { Card, CardContent, Typography, Box } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, Typography, Box, CircularProgress, Alert } from '@mui/material';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
-import { useState } from 'react';
+import axios from '../../../config/axios';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const CareerPreferences = () => {
+const CareerPreferences = ({ filters = {} }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [careerData, setCareerData] = useState([]);
+  const [branchWisePreferences, setBranchWisePreferences] = useState([]);
 
-  const careerData = [
-    { name: 'Higher Studies', value: 35, details: { 'MS': 20, 'MBA': 10, 'PhD': 5 } },
-    { name: 'Startup', value: 25, details: { 'Tech': 15, 'Non-Tech': 10 } },
-    { name: 'Civil Services', value: 15, details: { 'IAS': 8, 'Other Services': 7 } },
-    { name: 'Research', value: 15, details: { 'Academic': 8, 'Industry': 7 } },
-    { name: 'Family Business', value: 10, details: { 'Manufacturing': 6, 'Services': 4 } }
+  useEffect(() => {
+    const fetchCareerData = async () => {
+      setLoading(true);
+      try {
+        // Convert filters object to query string
+        const queryParams = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== 'all') {
+            queryParams.append(key, value);
+          }
+        });
+        
+        const queryString = queryParams.toString();
+        const endpoint = `/dashboard/career-preferences${queryString ? `?${queryString}` : ''}`;
+        
+        const response = await axios.get(endpoint);
+        const data = response.data;
+
+        if (data) {
+          // Set career preference data
+          if (data.careerPreferences && Array.isArray(data.careerPreferences)) {
+            setCareerData(data.careerPreferences);
+          }
+          
+          // Set branch-wise preference data
+          if (data.branchWisePreferences && Array.isArray(data.branchWisePreferences)) {
+            setBranchWisePreferences(data.branchWisePreferences);
+          }
+        }
+        
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching career preference data:", error);
+        setError("Failed to load career preference data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCareerData();
+  }, [filters]); // Re-fetch when filters change
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+          <CircularProgress />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert severity="error">{error}</Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Use default data if no data is available
+  const displayCareerData = careerData.length > 0 ? careerData : [
+    { name: 'No Data Available', value: 100 }
   ];
 
-  const branchWisePreferences = [
-    { branch: 'CSE', higherStudies: 40, startup: 30, research: 20, civilServices: 10 },
-    { branch: 'ECE', higherStudies: 35, startup: 25, research: 25, civilServices: 15 },
-    { branch: 'ME', higherStudies: 30, startup: 20, research: 30, civilServices: 20 },
-    { branch: 'EEE', higherStudies: 35, startup: 15, research: 35, civilServices: 15 },
-    { branch: 'CIVIL', higherStudies: 25, startup: 15, research: 30, civilServices: 30 }
+  const displayBranchData = branchWisePreferences.length > 0 ? branchWisePreferences : [
+    { branch: 'No Data Available', higherStudies: 0, startup: 0, research: 0, civilServices: 0 }
   ];
 
   return (
@@ -34,7 +94,7 @@ const CareerPreferences = () => {
             <ResponsiveContainer>
               <PieChart>
                 <Pie
-                  data={careerData}
+                  data={displayCareerData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -43,7 +103,7 @@ const CareerPreferences = () => {
                   dataKey="value"
                   onMouseEnter={(_, index) => setActiveIndex(index)}
                 >
-                  {careerData.map((entry, index) => (
+                  {displayCareerData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={COLORS[index % COLORS.length]}
@@ -52,14 +112,14 @@ const CareerPreferences = () => {
                     />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value, name, props) => [`${value}%`, props.payload.name]} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
           </Box>
           <Box sx={{ width: '50%', height: '100%' }}>
             <ResponsiveContainer>
-              <RadarChart data={branchWisePreferences}>
+              <RadarChart data={displayBranchData}>
                 <PolarGrid />
                 <PolarAngleAxis dataKey="branch" />
                 <PolarRadiusAxis />
@@ -75,6 +135,20 @@ const CareerPreferences = () => {
                   dataKey="startup"
                   stroke={COLORS[1]}
                   fill={COLORS[1]}
+                  fillOpacity={0.6}
+                />
+                <Radar
+                  name="Research"
+                  dataKey="research"
+                  stroke={COLORS[2]}
+                  fill={COLORS[2]}
+                  fillOpacity={0.6}
+                />
+                <Radar
+                  name="Civil Services"
+                  dataKey="civilServices"
+                  stroke={COLORS[3]}
+                  fill={COLORS[3]}
                   fillOpacity={0.6}
                 />
                 <Tooltip />

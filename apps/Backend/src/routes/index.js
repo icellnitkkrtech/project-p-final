@@ -10,6 +10,8 @@ import dashboardRouter from './dashboardRoutes.js';
 import placementRoutes from './placementRoutes.js';
 import jnfRouter from './jnfRoutes.js';
 import auditRouter from './auditRoutes.js';
+import reportRouter from './reportRoutes.js';
+import placementSessionRoutes from './placementSessionRoutes.js';
 // import auditRoutes from './auditRoutes.js';
 const router = Router();
 
@@ -28,4 +30,6 @@ router.use("/dashboard", dashboardRouter);
 router.use("/jnf", jnfRouter);
 router.use("/placement", placementRoutes);
 router.use("/audit", auditRouter);
+router.use("/reports", reportRouter);
+router.use("/placement-sessions", placementSessionRoutes);
 export default router;

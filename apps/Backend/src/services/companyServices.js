@@ -72,7 +72,14 @@ export default class companyServices {
             return new apiResponse(500, null, error.message);
         }
     }
-
+    async getCompanyByUserId(userId) {
+        try {
+            const company = await Company.findOne({ user: userId });
+            return new apiResponse(200, company, "Company found successfully");
+        } catch (error) {
+            return new apiResponse(500, null, error.message);
+        }
+    }
     async getCompanyById(id) {
         try {
             const company = await Company.findById(id)

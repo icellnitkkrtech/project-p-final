@@ -1,4 +1,5 @@
 import placementDrive from "../schema/placement/placementSchema.js";
+import mongoose from "mongoose";
 import JNF from "../schema/company/jnfSchema.js";
 export default class PlacementModel {
     placement = placementDrive;
@@ -271,6 +272,7 @@ export default class PlacementModel {
                 round => round._id.toString() === roundId
             );
 
+            // Add student to next round's applicants if there is a next round
             if (currentRoundIndex < result.roundDetails.rounds.length - 1) {
                 const nextRoundId = result.roundDetails.rounds[currentRoundIndex + 1]._id;
                 await this.placement.findOneAndUpdate(
@@ -282,6 +284,69 @@ export default class PlacementModel {
                     }
                 );
             }
+
+            // Create or update StudentPlacement record
+            const StudentPlacement = mongoose.model('StudentPlacement');
+            
+            // Get placement drive details
+            const placementDrive = await this.placement.findById(id);
+            
+            // Check if a record already exists
+            let studentPlacement = await StudentPlacement.findOne({
+                student: studentId,
+                placementDrive: id
+            });
+            
+            if (!studentPlacement) {
+                // Create new record if it doesn't exist
+                studentPlacement = new StudentPlacement({
+                    student: studentId,
+                    company: placementDrive.companyDetails.companyId || null,
+                    placementDrive: id,
+                    selectedProfile: placementDrive.jobProfile._id || null,
+                    status: 'pending',
+                    selectionProgress: []
+                });
+            }
+            
+            // Add or update the round progress
+            const round = result.roundDetails.rounds[currentRoundIndex];
+            
+            // Check if this round already exists in the progress
+            const existingRoundIndex = studentPlacement.selectionProgress.findIndex(
+                progress => progress.roundNumber === round.roundNumber
+            );
+            
+            if (existingRoundIndex >= 0) {
+                // Update existing round progress
+                studentPlacement.selectionProgress[existingRoundIndex].status = 'cleared';
+                studentPlacement.selectionProgress[existingRoundIndex].date = new Date();
+            } else {
+                // Add new round progress
+                studentPlacement.selectionProgress.push({
+                    roundNumber: round.roundNumber,
+                    roundName: round.roundName,
+                    status: 'cleared',
+                    date: new Date()
+                });
+            }
+            
+            // If this is the final round, update the status to offer_accepted
+            if (currentRoundIndex === result.roundDetails.rounds.length - 1) {
+                studentPlacement.status = 'offer_accepted';
+                
+                // Add offer details if available
+                if (placementDrive.jobProfile && placementDrive.jobProfile.ctcOffered) {
+                    studentPlacement.offerDetails = {
+                        offerDate: new Date(),
+                        finalPackage: placementDrive.jobProfile.ctcOffered,
+                        location: placementDrive.jobProfile.location || ''
+                    };
+                }
+            }
+            
+            // Save the student placement record
+            await studentPlacement.save();
 
             return result;
         } catch (error) {

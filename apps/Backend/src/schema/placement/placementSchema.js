@@ -211,6 +211,11 @@ const placementDriveSchema = new mongoose.Schema(
       enum: ['upcoming', 'ongoing', 'completed'],
       default: 'upcoming'
     },
+    placementSession: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PlacementSession",
+      required: [true, 'Placement session is required']
+    },
 
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },

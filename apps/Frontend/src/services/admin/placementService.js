@@ -6,6 +6,21 @@ const placementService = {
     //1 Create a placement drive
     createPlacementDrive: async (data) => {
         const response = await axios.post(`${API_BASE_URL}/placement/create-placement-drive`, data);
+        
+        // Create automatic notification for new drive
+        if (response.data && response.data._id) {
+            const placementId = response.data._id;
+            const subject = `New Placement Drive: ${data.placementDrive_title}`;
+            const content = `
+                <h3>New Placement Opportunity!</h3>
+                <p>A new placement drive has been created for ${data.companyDetails.name}.</p>
+                <p><strong>Position:</strong> ${data.jobProfile.designation}</p>
+                <p><strong>Application Deadline:</strong> ${new Date(data.applicationDetails.applicationDeadline).toLocaleDateString()}</p>
+                <p>Please check the placement portal for more details and to apply.</p>
+            `;
+            await createAutomaticNotification(placementId, subject, content, "drive_created");
+        }
+        
         return response.data;
     },
     
@@ -59,6 +74,21 @@ const placementService = {
     //7 Update round details
     updateRound: async (id, roundId, data) => {
         const response = await axios.put(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/update-round`, data);
+        
+        // Create automatic notification for round update
+        if (response.status === 200) {
+            const subject = `Round Update: ${data.roundName}`;
+            const content = `
+                <h3>Round Details Updated</h3>
+                <p>The details for round "${data.roundName}" have been updated.</p>
+                <p><strong>Start Time:</strong> ${new Date(data.startTime).toLocaleString()}</p>
+                <p><strong>Venue:</strong> ${data.venue || "To be announced"}</p>
+                <p><strong>Status:</strong> ${data.roundStatus}</p>
+                <p>Please check the placement portal for more details.</p>
+            `;
+            await createAutomaticNotification(id, subject, content, "round_update");
+        }
+        
         return response;
     },
     
@@ -166,6 +196,19 @@ const placementService = {
     //14 Declare round results
     declareResults: async (id, roundId, data) => {
         const response = await axios.put(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/declare-results`, data);
+        
+        // Create automatic notification for results declaration
+        if (response.data) {
+            const roundName = response.data.roundDetails?.rounds?.find(r => r._id === roundId)?.roundName || "Round";
+            const subject = `Results Declared: ${roundName}`;
+            const content = `
+                <h3>Round Results Announced</h3>
+                <p>The results for "${roundName}" have been declared.</p>
+                <p>Please check the placement portal to see if you have been selected for the next round.</p>
+            `;
+            await createAutomaticNotification(id, subject, content, "result");
+        }
+        
         return response.data;
     },
     
@@ -178,6 +221,30 @@ const placementService = {
     //16 Declare placement drive results
     declareDriveResults: async (id, data) => {
         const response = await axios.post(`${API_BASE_URL}/placement/${id}/declare-drive-results`, data);
+        
+        // Create automatic notification for final results
+        if (response.data) {
+            const subject = `Final Results Announced`;
+            const content = `
+                <h3>Placement Drive Results</h3>
+                <p>The final results for the placement drive have been announced.</p>
+                <p>Selected candidates will receive an offer letter. Please check the placement portal for details.</p>
+            `;
+            await createAutomaticNotification(id, subject, content, "final_result");
+            
+            // Send offer letters to selected students
+            if (data.selectedStudents && data.selectedStudents.length > 0) {
+                const offerLetterSubject = `Congratulations! Job Offer`;
+                const offerLetterContent = `
+                    <h2>Congratulations!</h2>
+                    <p>We are pleased to inform you that you have been selected for the position.</p>
+                    <p>Please log in to the placement portal to accept or reject this offer.</p>
+                    <p>Note: You have 48 hours to respond to this offer.</p>
+                `;
+                await createAutomaticNotification(id, offerLetterSubject, offerLetterContent, "offer_letter");
+            }
+        }
+        
         return response.data;
     },
     
@@ -216,6 +283,21 @@ const placementService = {
         const response = await axios.get(`${API_BASE_URL}/student/applications/detail/${applicationId}`);
         return response.data;
       },
+};
+
+// Helper function to create automatic notifications
+const createAutomaticNotification = async (placementId, subject, content, type) => {
+    try {
+        const notificationData = {
+            subject,
+            content,
+            type
+        };
+        
+        await axios.post(`${API_BASE_URL}/placement/${placementId}/notifications/add-new`, notificationData);
+    } catch (error) {
+        console.error("Error creating automatic notification:", error);
+    }
 };
 
 export default placementService;

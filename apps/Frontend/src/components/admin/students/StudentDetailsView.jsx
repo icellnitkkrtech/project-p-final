@@ -86,7 +86,7 @@ const StudentDetailsView = ({ studentId, onClose }) => {
               </Typography>
             </Box>
             <Box>
-              <Typography variant="subtitle2">Gender</Typography>
+              <Typography variant="subtitle2">gender</Typography>
               <Typography variant="body1" fontWeight={500}>
                 {student?.personalInfo?.gender}
               </Typography>

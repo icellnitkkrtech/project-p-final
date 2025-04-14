@@ -1,4 +1,5 @@
-import { Card, CardContent, Typography, Box, Tabs, Tab } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, Typography, Box, Tabs, Tab, CircularProgress, Alert } from '@mui/material';
 import {
   BarChart,
   Bar,
@@ -8,12 +9,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  LabelList,
-  PieChart,
-  Pie,
-  Cell
+  LabelList
 } from 'recharts';
-import { useState } from 'react';
+import axios from '../../../config/axios';
 
 const COLORS = {
   topPaying: ['#00C49F', '#00A087', '#008975', '#006B66', '#004D4D'],
@@ -21,31 +19,92 @@ const COLORS = {
   lowPaying: ['#FF8042', '#FF6B3F', '#FF533C', '#FF3939', '#FF2020']
 };
 
-const TopCompanies = () => {
+const TopCompanies = ({ filters = {} }) => {
   const [view, setView] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [topPayingCompanies, setTopPayingCompanies] = useState([]);
+  const [topHiringCompanies, setTopHiringCompanies] = useState([]);
+  const [leastPayingCompanies, setLeastPayingCompanies] = useState([]);
 
-  const topPayingCompanies = [
-    { name: 'Google', ctc: 25, hired: 10 },
-    { name: 'Microsoft', ctc: 22, hired: 15 },
-    { name: 'Amazon', ctc: 20, hired: 20 },
-    { name: 'Goldman Sachs', ctc: 18, hired: 12 },
-    { name: 'JPMorgan', ctc: 16, hired: 18 }
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      setLoading(true);
+      try {
+        // Convert filters object to query string
+        const queryParams = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== 'all') {
+            queryParams.append(key, value);
+          }
+        });
+        
+        const queryString = queryParams.toString();
+        const endpoint = `/dashboard/top-companies${queryString ? `?${queryString}` : ''}`;
+        
+        const response = await axios.get(endpoint);
+        const data = response.data;
+
+        if (data) {
+          // Set top paying companies data
+          if (data.topPaying && Array.isArray(data.topPaying)) {
+            setTopPayingCompanies(data.topPaying);
+          }
+          
+          // Set top hiring companies data
+          if (data.topHiring && Array.isArray(data.topHiring)) {
+            setTopHiringCompanies(data.topHiring);
+          }
+          
+          // Set least paying companies data
+          if (data.leastPaying && Array.isArray(data.leastPaying)) {
+            setLeastPayingCompanies(data.leastPaying);
+          }
+        }
+        
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching company analysis data:", error);
+        setError("Failed to load company analysis data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanyData();
+  }, [filters]); // Re-fetch when filters change
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+          <CircularProgress />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert severity="error">{error}</Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Use default data if no data is available
+  const displayTopPaying = topPayingCompanies.length > 0 ? topPayingCompanies : [
+    { name: 'No Data Available', ctc: 0, hired: 0 }
   ];
 
-  const topHiringCompanies = [
-    { name: 'TCS', hired: 50, avgCTC: 5 },
-    { name: 'Infosys', hired: 45, avgCTC: 4.5 },
-    { name: 'Wipro', hired: 40, avgCTC: 4.8 },
-    { name: 'Accenture', hired: 35, avgCTC: 5.2 },
-    { name: 'Cognizant', hired: 30, avgCTC: 4.6 }
+  const displayTopHiring = topHiringCompanies.length > 0 ? topHiringCompanies : [
+    { name: 'No Data Available', hired: 0, avgCTC: 0 }
   ];
 
-  const leastPayingCompanies = [
-    { name: 'Company A', ctc: 4.0, hired: 25 },
-    { name: 'Company B', ctc: 4.2, hired: 20 },
-    { name: 'Company C', ctc: 4.5, hired: 15 },
-    { name: 'Company D', ctc: 4.8, hired: 10 },
-    { name: 'Company E', ctc: 5.0, hired: 8 }
+  const displayLeastPaying = leastPayingCompanies.length > 0 ? leastPayingCompanies : [
+    { name: 'No Data Available', ctc: 0, hired: 0 }
   ];
 
   return (
@@ -68,7 +127,7 @@ const TopCompanies = () => {
         <Box height={300}>
           <ResponsiveContainer width="100%" height="100%">
             {view === 0 ? (
-              <BarChart data={topPayingCompanies}>
+              <BarChart data={displayTopPaying}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis yAxisId="left" orientation="left" stroke={COLORS.topPaying[0]} />
@@ -95,7 +154,7 @@ const TopCompanies = () => {
                 </Bar>
               </BarChart>
             ) : view === 1 ? (
-              <BarChart data={topHiringCompanies}>
+              <BarChart data={displayTopHiring}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis yAxisId="left" orientation="left" stroke={COLORS.topHiring[0]} />
@@ -122,7 +181,7 @@ const TopCompanies = () => {
                 </Bar>
               </BarChart>
             ) : (
-              <BarChart data={leastPayingCompanies}>
+              <BarChart data={displayLeastPaying}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis yAxisId="left" orientation="left" stroke={COLORS.lowPaying[0]} />

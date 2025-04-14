@@ -1,5 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  TextField,
+  Button,
+  FormControl,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
 import axios from "../../../config/axios";
 
 const CompanySignup = () => {
@@ -19,6 +26,7 @@ const CompanySignup = () => {
       ...prev,
       [name]: value,
     }));
+    setError(""); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
@@ -33,8 +41,10 @@ const CompanySignup = () => {
         website: formData.website,
         password: formData.password,
       });
+
       if (response.data.statusCode === 201) {
-        navigate(`/company/${response.data.data.company._id}`);
+        // Registration successful, navigate to login
+        navigate("/auth/recruiter/login");
       }
     } catch (err) {
       console.error("Registration error:", err);
@@ -51,79 +61,97 @@ const CompanySignup = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Company Registration
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Create your company account
+          </p>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          <Alert severity="error" onClose={() => setError("")}>
             {error}
-          </div>
+          </Alert>
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Company Information</h3>
-            <div className="space-y-4">
-              <input
+            <FormControl fullWidth>
+              <TextField
                 name="companyName"
-                type="text"
-                required
-                placeholder="Company Name"
+                label="Company Name"
+                variant="outlined"
                 value={formData.companyName}
                 onChange={handleChange}
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-              <input
-                name="email"
-                type="email"
                 required
-                placeholder="Email address"
+                disabled={loading}
+              />
+            </FormControl>
+
+            <FormControl fullWidth>
+              <TextField
+                name="email"
+                label="Email Address"
+                variant="outlined"
+                type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-              <input
-                name="website"
-                type="text"
                 required
-                placeholder="Website URL"
+                disabled={loading}
+              />
+            </FormControl>
+
+            <FormControl fullWidth>
+              <TextField
+                name="website"
+                label="Website URL"
+                variant="outlined"
                 value={formData.website}
                 onChange={handleChange}
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-              <input
-                name="password"
-                type="password"
                 required
-                placeholder="Password"
+                disabled={loading}
+              />
+            </FormControl>
+
+            <FormControl fullWidth>
+              <TextField
+                name="password"
+                label="Password"
+                variant="outlined"
+                type="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                required
+                disabled={loading}
               />
-            </div>
+            </FormControl>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-              loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-          >
-            {loading ? "Registering..." : "Register"}
-          </button>
-        </form>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
-            <a
-              href="/auth/company/login"
-              className="font-medium text-blue-600 hover:text-blue-500"
+          <div className="space-y-3">
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              size="large"
+              disabled={loading}
+              startIcon={loading && <CircularProgress size={20} color="inherit" />}
             >
-              Sign in
-            </a>
-          </p>
-        </div>
+              {loading ? "Registering..." : "Register"}
+            </Button>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Already have an account?{" "}
+                <Button
+                  color="primary"
+                  onClick={() => navigate("/auth/recruiter/login")}
+                  disabled={loading}
+                >
+                  Sign in
+                </Button>
+              </p>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

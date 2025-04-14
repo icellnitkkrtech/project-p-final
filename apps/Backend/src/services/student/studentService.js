@@ -16,7 +16,7 @@ export default class StudentService {
         !studentData.email ||
         !studentData.password ||
         !studentData.personalInfo?.rollNumber ||
-        !studentData.personalInfo?.Gender ||
+        !studentData.personalInfo?.gender ||
         !studentData.personalInfo?.name ||
         !studentData.personalInfo?.department ||
         !studentData.personalInfo?.batch ||
@@ -178,7 +178,7 @@ export default class StudentService {
       }
 
       // Generate email and password
-      const email = `${studentData.personalInfo.rollNumber.toLowerCase()}@nitkkr.ac.in`;
+      const email = `${studentData.personalInfo.rollNumber.toString().toLowerCase()}@nitkkr.ac.in`;
       const password = studentData.personalInfo.rollNumber.toString();
 
       // Create user data

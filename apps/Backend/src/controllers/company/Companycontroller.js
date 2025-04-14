@@ -36,6 +36,15 @@ export default class CompanyController {
         }
     });
 
+    getCompanyByUserId = asyncHandler(async (req, res) => {
+        try {
+            const company = await this.companyServices.getCompanyByUserId(req.params.userId);
+            return res.status(200).json(company);
+        } catch (error) {
+            return res.status(500).json(new apiResponse(500, null, error.message));
+        }
+    });
+
     getCompanyById = asyncHandler(async (req, res) => {
         try {
             console.log("Getting company details for ID:", req.params.id);
