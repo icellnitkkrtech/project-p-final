@@ -87,16 +87,13 @@ const ResponsiveToolbar = styled(Toolbar)(({ theme }) => ({
     padding: theme.spacing(1),
     gap: theme.spacing(1),
     '& .MuiTypography-root': {
-      fontSize: '0.8rem',
+      fontSize: '1rem',
     },
     '& .MuiButton-root': {
       padding: theme.spacing(0.5, 1),
-      fontSize: '0.7rem',
+      fontSize: '0.75rem',
       '& .MuiButton-startIcon': {
         marginRight: theme.spacing(0.5),
-        '& .MuiSvgIcon-root': {
-          fontSize: '0.9rem',
-        },
       },
     },
   },
@@ -114,12 +111,6 @@ const ResponsiveButtonGroup = styled(Box)(({ theme }) => ({
       maxWidth: 'calc(50% - 8px)',
       fontSize: '0.7rem',
       padding: theme.spacing(0.5, 1),
-      '& .MuiButton-startIcon': {
-        marginRight: theme.spacing(0.5),
-        '& .MuiSvgIcon-root': {
-          fontSize: '0.9rem',
-        },
-      },
     },
   },
 }));
@@ -132,47 +123,17 @@ const TitleContainer = styled(Box)(({ theme }) => ({
   [theme.breakpoints.down('sm')]: {
     width: '100%',
     '& .MuiTypography-root': {
-      fontSize: '0.8rem',
+      fontSize: '0.9rem',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
+      marginRight: theme.spacing(0.5),
     },
     '& .MuiChip-root': {
       flexShrink: 0,
-      height: '24px',
-      '& .MuiChip-label': {
-        fontSize: '0.65rem',
-        padding: '0 8px',
-      },
+      marginLeft: theme.spacing(0.5),
     },
   },
-}));
-
-const ResponsiveCard = styled(Card)(({ theme }) => ({
-  width: '100%',
-  marginBottom: theme.spacing(2),
-  [theme.breakpoints.up('sm')]: {
-    maxWidth: '600px',
-  },
-  [theme.breakpoints.up('md')]: {
-    maxWidth: '800px',
-  },
-  [theme.breakpoints.up('lg')]: {
-    maxWidth: '1000px',
-  },
-}));
-
-const ContentChip = styled(Chip)(({ theme }) => ({
-  margin: theme.spacing(0.5),
-  height: { xs: '24px', sm: '32px' },
-  '& .MuiChip-label': {
-    fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
-    padding: { xs: '0 8px', sm: '0 12px' },
-  },
-  backgroundColor: theme.palette.mode === 'dark' 
-    ? 'rgba(255, 255, 255, 0.1)' 
-    : 'rgba(0, 0, 0, 0.05)',
-  border: `1px solid ${theme.palette.divider}`,
 }));
 
 const PlacementOverview = ({ id }) => {
@@ -277,14 +238,14 @@ const PlacementOverview = ({ id }) => {
         <Icon sx={{ 
           color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
           mr: 1,
-          fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' }
+          fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
         }} />
         <Typography
           variant="body1"
           sx={{
             mr: 1,
             fontWeight: 'medium',
-            fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' },
+            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
           }}
         >
@@ -293,7 +254,7 @@ const PlacementOverview = ({ id }) => {
         <Typography 
           variant="body1" 
           sx={{
-            fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' },
+            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
           }}
         >
@@ -306,7 +267,7 @@ const PlacementOverview = ({ id }) => {
   const InfoChip = ({ icon: Icon, label, value, color = "primary", href }) => (
     value !== undefined && value !== null && (
       <Chip
-        icon={<Icon sx={{ fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' } }} />}
+        icon={<Icon sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }} />}
         label={href ? (
           <Link 
             href={href} 
@@ -315,7 +276,7 @@ const PlacementOverview = ({ id }) => {
             sx={{ 
               color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
               textDecoration: 'none',
-              fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
+              fontSize: { xs: '0.625rem', sm: '0.75rem', md: '0.875rem' },
               '&:hover': {
                 textDecoration: 'underline'
               }
@@ -327,15 +288,15 @@ const PlacementOverview = ({ id }) => {
         variant="outlined"
         sx={{ 
           m: 0.5,
-          height: { xs: '24px', sm: '32px' },
-          '& .MuiChip-label': {
-            fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
-            px: 1
-          },
           borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
           color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
           '& .MuiChip-icon': {
             color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+          },
+          '& .MuiChip-label': {
+            px: 1,
+            whiteSpace: 'nowrap',
+            fontSize: { xs: '0.625rem', sm: '0.75rem', md: '0.875rem' }
           }
         }}
       />
@@ -347,13 +308,13 @@ const PlacementOverview = ({ id }) => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         {isBulletList ? (
           <span style={{ 
-            fontSize: { xs: '0.75rem', sm: '1.25em', md: '1.5em' },
+            fontSize: { xs: '1rem', sm: '1.25em', md: '1.5em' },
             lineHeight: 1, 
             color: theme.palette.primary.main 
           }}>•</span>
         ) : (
           <Icon sx={{ 
-            fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' },
+            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' },
             color: theme.palette.primary.main 
           }} />
         )}
@@ -361,7 +322,7 @@ const PlacementOverview = ({ id }) => {
           variant="subtitle2"
           color="primary"
           sx={{
-            fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' }
+            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
           }}
         >
           {title}
@@ -370,7 +331,7 @@ const PlacementOverview = ({ id }) => {
       <Typography 
         variant="body2" 
         sx={{
-          fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' },
+          fontSize: { xs: '0.625rem', sm: '0.75rem', md: '0.875rem' },
           color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
         }}
       >
@@ -589,10 +550,8 @@ const PlacementOverview = ({ id }) => {
               variant="h6" 
               sx={{ 
                 fontWeight: 600,
-                fontSize: { xs: '0.8rem', sm: '1.25rem' },
+                fontSize: { xs: '0.9rem', sm: '1.25rem' },
                 color: theme.palette.primary.main,
-                minWidth: 0,
-                p: 0.5,
               }}
             >
               {placementDrive_title}
@@ -608,18 +567,13 @@ const PlacementOverview = ({ id }) => {
                 color: 'white',
                 fontWeight: 'bold',
                 fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                height: { xs: '24px', sm: '32px' },
-                '& .MuiChip-label': {
-                  px: 1,
-                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                }
               }}
             />
           </TitleContainer>
           <ResponsiveButtonGroup>
             <Button
               variant="outlined"
-              startIcon={<Group sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />}
+              startIcon={<Group />}
               size={isMobile ? "small" : "medium"}
               onClick={handleOpenStudentDialog}
               sx={{
@@ -627,7 +581,6 @@ const PlacementOverview = ({ id }) => {
                 whiteSpace: 'nowrap',
                 color: theme.palette.primary.main,
                 borderColor: theme.palette.primary.main,
-                fontSize: { xs: '0.7rem', sm: '0.875rem' },
                 '&:hover': {
                   backgroundColor: theme.palette.primary.main + '10',
                   borderColor: theme.palette.primary.main,
@@ -643,11 +596,10 @@ const PlacementOverview = ({ id }) => {
                   color="primary"
                   size={isMobile ? "small" : "medium"}
                   onClick={() => setOpenDeclareResultDialog(true)}
-                  startIcon={<EventIcon sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />}
+                  startIcon={<EventIcon />}
                   sx={{ 
                     fontWeight: 500,
                     minWidth: { xs: 'auto', sm: '140px' },
-                    fontSize: { xs: '0.7rem', sm: '0.875rem' },
                   }}
                 >
                   Declare Results
@@ -657,7 +609,7 @@ const PlacementOverview = ({ id }) => {
             {placementData.status === 'closed' && (
               <Button
                 variant="outlined"
-                startIcon={<Assessment sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />}
+                startIcon={<Assessment />}
                 size={isMobile ? "small" : "medium"}
                 onClick={handleOpenStudentDialog}
                 sx={{
@@ -665,7 +617,6 @@ const PlacementOverview = ({ id }) => {
                   whiteSpace: 'nowrap',
                   color: theme.palette.primary.main,
                   borderColor: theme.palette.primary.main,
-                  fontSize: { xs: '0.7rem', sm: '0.875rem' },
                   '&:hover': {
                     backgroundColor: theme.palette.primary.main + '10',
                     borderColor: theme.palette.primary.main,
@@ -768,88 +719,178 @@ const PlacementOverview = ({ id }) => {
             {hasJobProfile && (
               <AnimatedPaper color={getSectionColor(1)}>
                 <SectionHeader icon={JobIcon} title="Job Profile" />
-                <ResponsiveCard>
-                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {jobProfile?.designation && (
-                        <ContentChip
-                          icon={<RoleIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`Role: ${jobProfile.designation}`}
-                        />
-                      )}
-                      {jobProfile?.placeOfPosting && (
-                        <ContentChip
-                          icon={<LocationOn sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`Location: ${jobProfile.placeOfPosting}`}
-                        />
-                      )}
+                <Grid container spacing={3}>
+                  {jobProfile?.designation && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <RoleIcon sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            Role
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                          }}
+                        >
+                          {jobProfile.designation}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                  {jobProfile?.placeOfPosting && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <LocationOn sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            Location
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                          }}
+                        >
+                          {jobProfile.placeOfPosting}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                  {jobProfile?.jobDescription?.description && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <DescriptionIcon sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            Job Description
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                            lineHeight: 1.6
+                          }}
+                        >
+                          {jobProfile.jobDescription.description}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                  {jobProfile?.perks && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <PerksIcon sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            Health & Benefits
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                            lineHeight: 1.6
+                          }}
+                        >
+                          {jobProfile.perks}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
                       {jobProfile?.course && (
-                        <ContentChip
-                          icon={<CourseIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`Course: ${jobProfile.course.toUpperCase()}`}
-                        />
+                        <InfoChip icon={CourseIcon} label="Course" value={jobProfile.course.toUpperCase()} />
                       )}
                       {jobProfile?.ctc && (
-                        <ContentChip
-                          icon={<AttachMoney sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`CTC: ₹${jobProfile.ctc/100000} LPA`}
-                        />
+                        <InfoChip icon={AttachMoney} label="CTC" value={`₹${jobProfile.ctc/100000} LPA`} />
                       )}
                       {jobProfile?.takeHome && (
-                        <ContentChip
-                          icon={<AttachMoney sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`Take Home: ₹${jobProfile.takeHome/100000} LPA`}
-                        />
+                        <InfoChip icon={AttachMoney} label="Take Home" value={`₹${jobProfile.takeHome/100000} LPA`} />
                       )}
                       {jobProfile?.trainingPeriod && (
-                        <ContentChip
-                          icon={<AccessTime sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`Training: ${jobProfile.trainingPeriod}`}
-                        />
+                        <InfoChip icon={AccessTime} label="Training" value={jobProfile.trainingPeriod} />
                       )}
                     </Box>
-                    {jobProfile?.jobDescription?.description && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" color="primary" sx={{ mb: 1, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
-                          Job Description
-                        </Typography>
-                        <ContentChip
-                          label={jobProfile.jobDescription.description}
-                          sx={{ 
-                            width: '100%',
-                            justifyContent: 'flex-start',
-                            height: 'auto',
-                            minHeight: { xs: '24px', sm: '32px' },
-                            '& .MuiChip-label': {
-                              whiteSpace: 'normal',
-                              textAlign: 'left',
-                            }
-                          }}
-                        />
-                      </Box>
-                    )}
-                    {jobProfile?.perks && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" color="primary" sx={{ mb: 1, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
-                          Perks & Benefits
-                        </Typography>
-                        <ContentChip
-                          label={jobProfile.perks}
-                          sx={{ 
-                            width: '100%',
-                            justifyContent: 'flex-start',
-                            height: 'auto',
-                            minHeight: { xs: '24px', sm: '32px' },
-                            '& .MuiChip-label': {
-                              whiteSpace: 'normal',
-                              textAlign: 'left',
-                            }
-                          }}
-                        />
-                      </Box>
-                    )}
-                  </CardContent>
-                </ResponsiveCard>
+                  </Grid>
+                </Grid>
               </AnimatedPaper>
             )}
 
@@ -857,7 +898,7 @@ const PlacementOverview = ({ id }) => {
             {hasEligibleBranches && (
               <AnimatedPaper color={getSectionColor(2)}>
                 <SectionHeader icon={BranchIcon} title="Eligible Branches" />
-                <Stack spacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Stack spacing={3}>
                   {eligibleBranchesForProfiles?.map((profile, index) => (
                     <React.Fragment key={index}>
                       {Object.entries(profile.branches).map(([course, branches]) => {
@@ -867,7 +908,7 @@ const PlacementOverview = ({ id }) => {
                             key={course}
                             elevation={0}
                             sx={{
-                              p: { xs: 1, sm: 2 },
+                              p: 2,
                               border: `1px solid ${theme.palette.divider}`,
                               borderRadius: 2,
                               bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
@@ -876,32 +917,27 @@ const PlacementOverview = ({ id }) => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                               <CourseIcon sx={{ 
                                 color: theme.palette.primary.main,
-                                fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' }
+                                fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
                               }} />
                               <Typography
                                 variant="subtitle2"
                                 color="primary"
                                 sx={{
-                                  fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' }
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
                                 }}
                               >
                                 {course.toUpperCase()}
                               </Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                               {branches.map((branch, idx) => (
                                 branch.eligible && (
                                   <Chip
                                     key={`${course}-${idx}`}
-                                    icon={<CheckIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' } }} />}
+                                    icon={<CheckIcon />}
                                     label={branch.name || `${branch.department} - ${branch.specialization}`}
                                     variant="outlined"
                                     sx={{ 
-                                      height: { xs: '24px', sm: '32px' },
-                                      '& .MuiChip-label': {
-                                        fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
-                                        px: 1
-                                      },
                                       borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
                                       color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                                       '& .MuiChip-icon': {
@@ -925,24 +961,84 @@ const PlacementOverview = ({ id }) => {
             {hasEligibilityCriteria && (
               <AnimatedPaper color={getSectionColor(3)}>
                 <SectionHeader icon={EducationIcon} title="Eligibility Criteria" />
-                <ResponsiveCard>
-                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {eligibilityCriteria?.minCgpa !== undefined && (
-                        <ContentChip
-                          icon={<EducationIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`Minimum CGPA: ${eligibilityCriteria.minCgpa}`}
-                        />
-                      )}
-                      {eligibilityCriteria?.backlogAllowed !== undefined && (
-                        <ContentChip
-                          icon={<Error sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={eligibilityCriteria.backlogAllowed === 0 ? "No Backlogs Allowed" : `Backlogs Allowed: ${eligibilityCriteria.backlogAllowed}`}
-                        />
-                      )}
-                    </Box>
-                  </CardContent>
-                </ResponsiveCard>
+                <Grid container spacing={3}>
+                  {eligibilityCriteria?.minCgpa !== undefined && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <EducationIcon sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            CGPA Requirement
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                          }}
+                        >
+                          {eligibilityCriteria.minCgpa}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                  {eligibilityCriteria?.backlogAllowed !== undefined && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Error sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            Backlog Policy
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                          }}
+                        >
+                          {eligibilityCriteria.backlogAllowed === 0 ? "No Backlogs Allowed" : `Backlogs Allowed: ${eligibilityCriteria.backlogAllowed}`}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                </Grid>
               </AnimatedPaper>
             )}
 
@@ -950,52 +1046,96 @@ const PlacementOverview = ({ id }) => {
             {hasSelectionProcess && (
               <AnimatedPaper color={getSectionColor(4)}>
                 <SectionHeader icon={ProcessIcon} title="Selection Process" />
-                <ResponsiveCard>
-                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
-                    {selectionProcess?.map((process, processIndex) => (
-                      <Box key={processIndex} sx={{ mb: 2 }}>
+                <Grid container spacing={3}>
+                  {selectionProcess?.map((process, processIndex) => {
+                    const hasProcessData = process.rounds?.length > 0 || 
+                      process.tentativeDate || 
+                      process.expectedRecruits;
+
+                    return hasProcessData && (
+                      <React.Fragment key={processIndex}>
                         {process.rounds?.map((round, index) => (
-                          <Box key={index} sx={{ mb: 2 }}>
-                            <ContentChip
-                              icon={<ProcessIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                              label={`Round ${round.roundNumber}: ${formatRoundName(round.roundName)}`}
-                              sx={{ mb: 1 }}
-                            />
-                            {round.details && (
-                              <ContentChip
-                                label={round.details}
+                          <Grid item xs={12} md={6} key={index}>
+                            <Paper 
+                              elevation={0}
+                              sx={{
+                                p: 2,
+                                height: '100%',
+                                border: `1px solid ${theme.palette.divider}`,
+                                borderRadius: 2,
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Typography 
+                                  variant="subtitle2" 
+                                  color="primary"
+                                  sx={{ 
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                                  }}
+                                >
+                                  <span style={{ 
+                                    fontSize: '1.5em', 
+                                    lineHeight: 1, 
+                                    color: theme.palette.primary.main 
+                                  }}>•</span>
+                                  Round {round.roundNumber}: {formatRoundName(round.roundName)}
+                                </Typography>
+                              </Box>
+                              {round.details && (
+                                <Typography 
+                                  sx={{ 
+                                    pl: 4,
+                                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                                    lineHeight: 1.6
+                                  }}
+                                >
+                                  {round.details}
+                                </Typography>
+                              )}
+                            </Paper>
+                          </Grid>
+                        ))}
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+                            {process.tentativeDate && (
+                              <Chip
+                                icon={<EventIcon />}
+                                label={`Tentative Date: ${formatDate(process.tentativeDate)}`}
+                                variant="outlined"
                                 sx={{ 
-                                  width: '100%',
-                                  justifyContent: 'flex-start',
-                                  height: 'auto',
-                                  minHeight: { xs: '24px', sm: '32px' },
-                                  '& .MuiChip-label': {
-                                    whiteSpace: 'normal',
-                                    textAlign: 'left',
+                                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                                  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                                  '& .MuiChip-icon': {
+                                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                                  }
+                                }}
+                              />
+                            )}
+                            {process.expectedRecruits && (
+                              <Chip
+                                icon={<BranchIcon />}
+                                label={`Expected Recruits: ${process.expectedRecruits}`}
+                                variant="outlined"
+                                sx={{ 
+                                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                                  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                                  '& .MuiChip-icon': {
+                                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
                                   }
                                 }}
                               />
                             )}
                           </Box>
-                        ))}
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                          {process.tentativeDate && (
-                            <ContentChip
-                              icon={<EventIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                              label={`Tentative Date: ${formatDate(process.tentativeDate)}`}
-                            />
-                          )}
-                          {process.expectedRecruits && (
-                            <ContentChip
-                              icon={<BranchIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                              label={`Expected Recruits: ${process.expectedRecruits}`}
-                            />
-                          )}
-                        </Box>
-                      </Box>
-                    ))}
-                  </CardContent>
-                </ResponsiveCard>
+                        </Grid>
+                      </React.Fragment>
+                    );
+                  })}
+                </Grid>
               </AnimatedPaper>
             )}
 
@@ -1013,39 +1153,91 @@ const PlacementOverview = ({ id }) => {
             {hasApplicationDetails && (
               <AnimatedPaper color={getSectionColor(6)}>
                 <SectionHeader icon={LinkIcon} title="Application Details" />
-                <ResponsiveCard>
-                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {applicationDetails?.applicationDeadline && (
-                        <ContentChip
-                          icon={<CalendarToday sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={`Deadline: ${formatDate(applicationDetails.applicationDeadline)}`}
-                        />
-                      )}
-                      {applicationDetails?.applicationLink && (
-                        <ContentChip
-                          icon={<ApplicationIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
-                          label={
-                            <Link 
-                              href={applicationDetails.applicationLink}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              sx={{ 
-                                color: 'inherit',
-                                textDecoration: 'none',
-                                '&:hover': {
-                                  textDecoration: 'underline'
-                                }
-                              }}
-                            >
-                              Application Link
-                            </Link>
-                          }
-                        />
-                      )}
-                    </Box>
-                  </CardContent>
-                </ResponsiveCard>
+                <Grid container spacing={3}>
+                  {applicationDetails?.applicationDeadline && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <CalendarToday sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            Application Deadline
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                          }}
+                        >
+                          {formatDate(applicationDetails.applicationDeadline)}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                  {applicationDetails?.applicationLink && (
+                    <Grid item xs={12} md={6}>
+                      <Paper 
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 2,
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <ApplicationIcon sx={{ 
+                            color: theme.palette.primary.main,
+                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                          }} />
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                            }}
+                          >
+                            Application Link
+                          </Typography>
+                        </Box>
+                        <Link 
+                          href={applicationDetails.applicationLink}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          sx={{ 
+                            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            textDecoration: 'none',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                            '&:hover': {
+                              textDecoration: 'underline'
+                            }
+                          }}
+                        >
+                          {applicationDetails.applicationLink}
+                        </Link>
+                      </Paper>
+                    </Grid>
+                  )}
+                </Grid>
               </AnimatedPaper>
             )}
           </Stack>
