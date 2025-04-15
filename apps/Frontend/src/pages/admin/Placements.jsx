@@ -1,158 +1,8 @@
-// import { useState } from 'react';
-// import { Container, Button, Box, Typography} from '@mui/material';
-// import AddIcon from '@mui/icons-material/Add';
-// import AddPlacementDialog from '../../components/admin/placements/AddPlacementDialog';
-// import PlacementTable from '../../components/admin/placements/PlacementTable';
-// import PlacementFilters from '../../components/admin/placements/PlacementFilters';
-// import PlacementAnalytics from '../../components/admin/placements/PlacementAnalytics';
-// import {useJNFData} from '../../hooks/admin/useJNFData';
-// import { useEffect } from 'react';
-// import { useTheme } from '@mui/material';
-// import placementService from '../../services/admin/placementService';
-
-
-// const Placements = () => {
-//   const [openDialog, setOpenDialog] = useState(false);
-//   const theme = useTheme();
-//   const [placements, setPlacements] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-  
-//   useEffect(() => {
-//     const fetchPlacements = async () => {
-//       setLoading(true);
-//       setError(null);
-//       try {
-//         const data = await placementService.getAllPlacements();
-//         setPlacements(data);
-//       } catch (err) {
-//         setError(err.message || "Something went wrong!");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-  
-//     fetchPlacements();
-//   }, []);
-  
-//   console.log(placements);  
-
-//   const branchOptions = [
-//     'Computer Science',
-//     'Information Technology',
-//     'Electronics & Communication',
-//     'Electrical Engineering',
-//     'Mechanical Engineering',
-//     'Civil Engineering',
-//   ];
-
-//   const selectionRounds = [
-//     'Aptitude Test',
-//     'Group Discussion',
-//     'Technical Interview',
-//     'HR Interview',
-//     'Coding Round',
-//     'Machine Test',
-//     'Case Study',
-//     'Presentation',
-//     'Essay Writing',
-//   ];
-
-//   const courses = [
-//     'B.Tech',
-//     'M.Tech',
-//     'MBA',
-//     'MCA',
-//     'Ph.D',    
-//   ]
-
-//   const handleFilterChange = (key, value) => {
-//     setFilters((prev) => ({ ...prev, [key]: value }));
-//   };
-  
-//   const [filters, setFilters] = useState({
-//     search: '',
-//     status: 'All',
-//     type: 'All',
-//   });
-
-//   const handleSearchChange = (value) => {
-//     handleFilterChange('search', value);
-//   };
-
-//   return (
-//     <Container>
-//       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-//         <Typography variant="h4"
-//         sx={{color:theme.palette.text.primary}}>Placements</Typography>
-//         <Button
-//           variant="contained"
-//           startIcon={<AddIcon />}
-//           onClick= {() => setOpenDialog(true)}
-//         >
-//           Add Placement Drive
-//         </Button>
-//       </Box>
-//       <AddPlacementDialog
-//         open={openDialog} 
-//         handleClose={() => setOpenDialog(false)}
-//       />
-//       <PlacementAnalytics 
-//         placements={placements}
-//       />
-//       <PlacementFilters
-//         filters={filters}
-//         onFilterChange={handleFilterChange}
-//         onSearchChange={handleSearchChange}
-//       />
-//       <PlacementTable
-//         placements={placements}
-//        />
-//     </Container>
-//   );
-// };
-
-// export default Placements;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { useState } from 'react';
 import { Container, Button, Box, Typography} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AddPlacementDialog from '../../components/admin/placements/AddPlacementDialog';
 import PlacementTable from '../../components/admin/placements/PlacementTable';
-import PlacementFilters from '../../components/admin/placements/PlacementFilters';
 import PlacementAnalytics from '../../components/admin/placements/PlacementAnalytics';
 import {useJNFData} from '../../hooks/admin/useJNFData';
 import { useEffect } from 'react';
@@ -166,36 +16,6 @@ const Placements = () => {
   const [open, setOpen] = useState(false);
 
   const theme = useTheme();
-
-// //  Mock data for development
-//   const mockData = [
-//     {
-//       id: 1,
-//       companyName: 'Tech Corp',
-//       role: 'Software Engineer',
-//       package: '12.5',
-//       appliedCount: 50,
-//       selectedCount: 5,
-//       status: 'In Progress',
-//       startDate: '2024-02-15',
-//     },
-//     {
-//       id: 2,
-//       companyName: 'Data Systems',
-//       role: 'Data Analyst',
-//       package: '8.5',
-//       appliedCount: 30,
-//       selectedCount: 3,
-//       status: 'Completed',
-//       startDate: '2024-02-10',
-//     },
-//   ];
-
-//   const mockPagination = {
-//       page: 0,
-//       rowsPerPage: 10,
-//       total: mockData.length,
-//   };
 
   const [newPlacement, setNewPlacement] = useState({
     title: '',
@@ -280,12 +100,6 @@ const Placements = () => {
 
   const handleAddPlacement = async () => {
     try {
-      // Ensure mandatory fields are filled
-      // if (!newPlacement.companyName || !newPlacement.role || !newPlacement.ctcTotal) {
-      //   console.error("Missing required fields");
-      //   return;
-      // }
-  
       const placementDriveData = {
         placementDrive_title: `${newPlacement.companyName} Placement Drive`,
   
@@ -496,29 +310,10 @@ const Placements = () => {
           Add Placement Drive
         </Button>
       </Box>
-      {/* <AddPlacementDialog 
-        open={openDialog} 
-        handleClose={() => setOpenDialog(false)}
-        setPlacements={setPlacements}
-        acceptedJNFs={acceptedJNFs}
-        locationOptions={locationOptions}
-        branchOptions={branchOptions}
-        handleJNFSelect={handleJNFSelect}
-        newPlacement={newPlacement}
-        handleChange={handleChange}
-        handleAddPlacement={handleAddPlacement}
-        selectionRounds={selectionRounds}
-        courses={courses}
-      /> */}
       <AddPlacementDialog open={open} handleClose={handleClose} />
 
       <PlacementAnalytics 
         placements={placements}
-      />
-      <PlacementFilters
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onSearchChange={handleSearchChange}
       />
       <PlacementTable/>
     </Container>

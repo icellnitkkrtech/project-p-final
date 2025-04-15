@@ -2,14 +2,15 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Card, CardContent, Button, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Stepper, Step, StepLabel, FormControl, InputLabel, Select, MenuItem, Grid,
-  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress
+  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress, useTheme, AppBar, Toolbar, useMediaQuery
 } from "@mui/material";
-import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event } from "@mui/icons-material";
+import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event, Close } from "@mui/icons-material";
 import RoundStudents from "./RoundStudents";
 import { styled } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
 import { AccessTime, LocationOn, Schedule, Upcoming, Autorenew, CheckCircle } from "@mui/icons-material";
 import placementService from "../../../services/admin/placementService";
+import { motion, AnimatePresence } from "framer-motion";
 
 const RoundButton = styled(IconButton)(({ theme }) => ({
   width:35,
@@ -25,35 +26,165 @@ const RoundButton = styled(IconButton)(({ theme }) => ({
   },
 }));
 
-const getStatusColor = (status) => {
+const getStatusChipColor = (status) => {
   switch (status) {
     case "ongoing":
-      return "primary"; // Blue
+      return "info";
     case "completed":
-      return "success"; // Green
+      return "success";
     case "upcoming":
-      return "secondary"; // Yellow
+      return "default";
     default:
-      return "secondary"; // Gray
+      return "default";
   }
 };
 
-const getStatusIcon = (status) => {
-  switch (status) {
-    case "ongoing":
-      return <Autorenew fontSize="small" sx={{ color: "blue" }} />;
-    case "upcoming":
-      return <Upcoming fontSize="small" sx={{ color: "purple" }} />;
-    case "completed":
-      return <CheckCircle fontSize="small" sx={{ color: "green" }} />;
-    default:
-      return <Upcoming fontSize="small" sx={{ color: "gray" }} />;
-  }
+const StyledStepLabel = styled(StepLabel)(({ theme }) => ({
+  '& .MuiStepLabel-label': {
+    marginTop: theme.spacing(1),
+    fontWeight: 500,
+    fontSize: '0.75rem',
+    lineHeight: 1.2,
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    textAlign: 'center',
+    '&.Mui-active': {
+      fontWeight: 700,
+      color: theme.palette.primary.main,
+    },
+    '&.Mui-completed': {
+      fontWeight: 600,
+      color: theme.palette.success.main,
+    },
+  },
+}));
+
+const ResponsiveStepper = styled(Stepper)(({ theme }) => ({
+  display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "center",
+  rowGap: theme.spacing(2),
+  width: "100%",
+  my: theme.spacing(4),
+  px: theme.spacing(2),
+  '& .MuiStepConnector-line': {
+    borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+  },
+  [theme.breakpoints.down('sm')]: {
+    '& .MuiStep-root': {
+      flex: '1 1 calc(25% - 10px)',
+      maxWidth: '25%',
+      minWidth: '80px',
+    },
+  },
+  [theme.breakpoints.up('sm')]: {
+    '& .MuiStep-root': {
+      flex: '1 1 calc(12.5% - 10px)',
+      maxWidth: '12.5%',
+      minWidth: '100px',
+    },
+  },
+}));
+
+const MotionCard = motion(Card);
+
+const ResponsiveRoundCard = styled(MotionCard)(({ theme, status }) => ({
+  width: '100%',
+  margin: theme.spacing(2, 'auto'),
+  padding: theme.spacing(3),
+  borderRadius: theme.spacing(2),
+  background: theme.palette.background.paper,
+  boxShadow: theme.shadows[2],
+  borderLeft: `4px solid ${status === 'ongoing' 
+    ? (theme.palette.mode === 'dark' ? '#1976D2' : '#1976D2')
+    : status === 'completed'
+      ? (theme.palette.mode === 'dark' ? '#81C784' : '#4CAF50')
+      : status === 'upcoming'
+        ? (theme.palette.mode === 'dark' ? '#616161' : '#424242')
+        : (theme.palette.mode === 'dark' ? '#9E9E9E' : '#757575')}`,
+  backgroundImage: `linear-gradient(to right, ${theme.palette.background.paper}, ${
+    status === 'ongoing' 
+      ? (theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.05)' : 'rgba(25, 118, 210, 0.05)')
+      : status === 'completed'
+        ? (theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.05)' : 'rgba(76, 175, 80, 0.05)')
+        : status === 'upcoming'
+          ? (theme.palette.mode === 'dark' ? 'rgba(97, 97, 97, 0.05)' : 'rgba(66, 66, 66, 0.05)')
+          : (theme.palette.mode === 'dark' ? 'rgba(158, 158, 158, 0.05)' : 'rgba(117, 117, 117, 0.05)')
+  })`,
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[4],
+  },
+  [theme.breakpoints.up('sm')]: {
+    maxWidth: '600px',
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(2),
+    margin: theme.spacing(1, 'auto'),
+  },
+}));
+
+const DetailItem = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  padding: theme.spacing(1),
+  borderRadius: theme.spacing(1),
+  backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[50],
+  '& .MuiTypography-root': {
+    color: theme.palette.text.secondary,
+  },
+  '& .MuiSvgIcon-root': {
+    fontSize: '1.2rem',
+  },
+}));
+
+const ResponsiveToolbar = styled(Toolbar)(({ theme }) => ({
+  minHeight: '64px',
+  padding: theme.spacing(1, 2),
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  width: '100%',
+  [theme.breakpoints.down('sm')]: {
+    minHeight: '56px',
+    padding: theme.spacing(1),
+    '& .MuiTypography-root': {
+      fontSize: '1rem',
+    },
+    '& .MuiButton-root': {
+      padding: theme.spacing(0.5, 1),
+      fontSize: '0.75rem',
+      '& .MuiButton-startIcon': {
+        marginRight: theme.spacing(0.5),
+      },
+    },
+  },
+}));
+
+const cardVariants = {
+  enter: (direction) => ({
+    x: direction > 0 ? 1000 : -1000,
+    opacity: 0
+  }),
+  center: {
+    zIndex: 1,
+    x: 0,
+    opacity: 1
+  },
+  exit: (direction) => ({
+    zIndex: 0,
+    x: direction < 0 ? 1000 : -1000,
+    opacity: 0
+  })
 };
 
-
-const PlacementRounds = ({ placementId }) => {
-
+const PlacementRounds = ({ placementId, placementTitle }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const [roundDetails, setRoundDetails] = useState(null); // Stores details of all rounds
   const [loading, setLoading] = useState(true); // Loading state while fetching data
   const [error, setError] = useState(false); // Error state for API failures
@@ -81,6 +212,33 @@ const PlacementRounds = ({ placementId }) => {
   const [showResult, setShowResult] = useState(false); // Toggle for showing results
   const [openDeclareResultDialog, setOpenDeclareResultDialog] = useState(false);
   const [appearedStudents, setAppearedStudents] = useState({});
+  const [[page, direction], setPage] = useState([0, 0]);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ongoing":
+        return theme.palette.mode === 'dark' ? '#64B5F6' : '#2196F3';
+      case "completed":
+        return theme.palette.mode === 'dark' ? '#81C784' : '#4CAF50';
+      case "upcoming":
+        return theme.palette.mode === 'dark' ? '#616161' : '#424242';
+      default:
+        return theme.palette.mode === 'dark' ? '#9E9E9E' : '#757575';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "ongoing":
+        return <Autorenew fontSize="small" sx={{ color: getStatusColor("ongoing") }} />;
+      case "upcoming":
+        return <Upcoming fontSize="small" sx={{ color: getStatusColor("upcoming") }} />;
+      case "completed":
+        return <CheckCircle fontSize="small" sx={{ color: getStatusColor("completed") }} />;
+      default:
+        return <Circle fontSize="small" sx={{ color: getStatusColor("default") }} />;
+    }
+  };
 
   const fetchRoundDetails = async () => {
     try {
@@ -151,6 +309,8 @@ const PlacementRounds = ({ placementId }) => {
   }, [placementId, selectedRound]);
 
   const handleRoundClick = (index) => {
+    const currentIndex = rounds.findIndex(r => r._id === selectedRound?._id);
+    setPage([index, index > currentIndex ? 1 : -1]);
     setSelectedRound(rounds[index]);
   };
 
@@ -349,7 +509,7 @@ const PlacementRounds = ({ placementId }) => {
   };
 
   return (
-    <Box sx={{ width: "100%", p: 2 }}>
+    <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, position: 'relative', height: 'auto', overflow: 'hidden' }}>
 
       {/* Toast Notification */}
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleSnackbarClose}>
@@ -358,131 +518,300 @@ const PlacementRounds = ({ placementId }) => {
         </Alert>
       </Snackbar>
 
-      <Stepper
-  activeStep={selectedRound ? rounds.findIndex(r => r._id === selectedRound._id) : 0}
-  alternativeLabel
-  sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", rowGap: 2, width: "100%", my: 3 }}
->
-  {rounds.map((round, i) => (
-    <Step key={i} onClick={() => handleRoundClick(i)} completed={round.roundStatus === "completed"}
-      sx={{ cursor: "pointer", flex: "1 1 calc(10% - 10px)", maxWidth: "12%", minWidth: "100px" }}>
-      <StepLabel StepIconComponent={() => (
-        <Box sx={{
-          width: 35, height: 35, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-          backgroundColor: selectedRound && selectedRound._id === round._id 
-          ? "gray" 
-          : round.roundStatus === "completed" 
-            ? "#4caf50"   // Green (Success)
-            : round.roundStatus === "ongoing"
-              ? "#1976d2"  // Blue (Primary)
-              : round.roundStatus === "upcoming"
-                ? "#9c27b0"  // Purple (Secondary)
-              : "#fff",
-              fontSize: 16,
-        }}>
-          {i + 1}
-        </Box>
-      )}>
-        <Typography variant="body1">{round.roundName}</Typography>
-        <Typography variant="caption" sx={{ fontWeight: "bold" }} color={getStatusColor(round.roundStatus)}>
-          {round.roundStatus.toUpperCase()}
-        </Typography>
-      </StepLabel>
-    </Step>
-  ))}
+      {/* Toolbar with Add New Round Button */}
+      <AppBar 
+        position="static" 
+        color="default" 
+        elevation={0}
+        sx={{ 
+          mb: 3,
+          borderRadius: 1,
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <ResponsiveToolbar>
+          <Typography 
+            variant="h6" 
+            color="text.primary"
+            sx={{
+              fontSize: { xs: '1rem', sm: '1.25rem' },
+              fontWeight: 600,
+            }}
+          >
+            {placementTitle}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              endIcon={<AddIcon />}
+              onClick={handleOpenNewRoundDialog}
+              size={isMobile ? "small" : "medium"}
+              sx={{
+                minWidth: { xs: 'auto', sm: '140px' },
+                whiteSpace: 'nowrap',
+              }}
+            >
+              New Round
+            </Button>
+          </Box>
+        </ResponsiveToolbar>
+      </AppBar>
 
-  {/* Add New Round Step */}
-  <Step sx={{ flex: "1 1 calc(10% - 10px)", maxWidth: "12%", minWidth: "100px" }}>
-    <StepLabel StepIconComponent={() => (
-      <RoundButton onClick={handleOpenNewRoundDialog} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-        {hover ? <AddIcon /> : rounds.length + 1}
-      </RoundButton>
-    )}/>
-    <Typography variant="body1">New Round</Typography>
-  </Step>
-</Stepper>
-
-      {/* Display Selected Round */}
-      {selectedRound && (
-            <Card sx={{ maxWidth: 500, mx: "auto", p: 2, boxShadow: 3, borderRadius: 2,
-              boxShadow: (theme) => `0px 1px 1px ${theme.palette[getStatusColor(selectedRound.roundStatus)].main}`,
-              border: (theme) => `2px solid ${theme.palette[getStatusColor(selectedRound.roundStatus)].main}`,
-            }} >
-            <CardContent>
-              <Typography variant="h6" color= {getStatusColor(selectedRound.roundStatus)} sx={{ display: "flex", alignItems: "center", gap: 1, fontWeight: "bold" }}>
-                <TrackChanges fontSize="small" color= {getStatusColor(selectedRound.roundStatus)} />
-                {selectedRound.roundName}
-              </Typography>
-              {/* Round Details */}
-              <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={2} mt={0.5}>
-              {[["Type","roundType", Assignment], ["Date","roundDate", Event], ["Duration", "roundDuration", AccessTime], ["Venue", "venue", LocationOn]].map(([label,value, Icon]) => (
-                <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Icon fontSize="small" color={getStatusColor(selectedRound.roundStatus)} />
-                  <Typography variant="body2">
-                    <strong>{label}:</strong> {selectedRound[`${value}`]}
-                  </Typography>
+      {/* Stepper Section */}
+      <Box sx={{ position: 'relative', mb: 4 }}>
+        <ResponsiveStepper
+          activeStep={selectedRound ? rounds.findIndex(r => r._id === selectedRound._id) : 0}
+          alternativeLabel
+        >
+          {rounds.map((round, i) => (
+            <Step 
+              key={i} 
+              onClick={() => handleRoundClick(i)} 
+              completed={round.roundStatus === "completed"}
+              sx={{ 
+                cursor: "pointer",
+                '& .MuiStepLabel-root': {
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                },
+              }}
+            >
+              <StyledStepLabel StepIconComponent={() => (
+                <Box sx={{
+                  width: isMobile ? 28 : 36,
+                  height: isMobile ? 28 : 36,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: selectedRound && selectedRound._id === round._id 
+                    ? getStatusColor(round.roundStatus)
+                    : theme.palette.background.paper,
+                  border: `1px solid ${getStatusColor(round.roundStatus)}`,
+                  color: selectedRound && selectedRound._id === round._id 
+                    ? theme.palette.background.paper 
+                    : getStatusColor(round.roundStatus),
+                  fontWeight: 600,
+                  fontSize: isMobile ? 12 : 14,
+                  transition: 'all 0.3s ease',
+                  boxShadow: theme.shadows[1],
+                }}>
+                  {i + 1}
                 </Box>
-              ))}
-            </Box>
-              {/* Status Chip */}
-              <Box sx={{ mt: 2, display: "flex", alignItems: "center", rowGap:2, columnGap: 1 }}>
-              {getStatusIcon(selectedRound.roundStatus)}
-              <Typography variant="body2">
-                  <strong>Status:</strong>
+              )}>
+                <Typography 
+                  variant="caption"
+                  sx={{ 
+                    fontWeight: selectedRound && selectedRound._id === round._id ? 600 : 500,
+                    color: selectedRound && selectedRound._id === round._id 
+                      ? getStatusColor(round.roundStatus)
+                      : theme.palette.text.primary,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%',
+                    textAlign: 'center',
+                    fontSize: isMobile ? '0.65rem' : '0.75rem',
+                  }}
+                >
+                  {round.roundName}
                 </Typography>
                 <Chip
-                  label={selectedRound.roundStatus.charAt(0).toUpperCase() + selectedRound.roundStatus.slice(1)}
-                  color={getStatusColor(selectedRound.roundStatus)}
+                  label={round.roundStatus.toUpperCase()}
                   size="small"
-                  sx={{ fontWeight: "bold" }}
+                  color={getStatusChipColor(round.roundStatus)}
+                  sx={{ 
+                    mt: 0.5,
+                    fontWeight: 500,
+                    fontSize: isMobile ? '0.6rem' : '0.7rem',
+                    height: isMobile ? 20 : 24,
+                    '& .MuiChip-label': {
+                      px: isMobile ? 0.5 : 1,
+                    },
+                  }}
                 />
-              </Box>
-      
-              {/* Action Buttons */}
-              <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                {selectedRound.roundStatus === "ongoing" && (
-                  <>
-                    <Button variant="contained" color= {getStatusColor(selectedRound.roundStatus)} size="small" onClick={handleOpenStudentDialog} startIcon={<List />}>
-                      Manage
+              </StyledStepLabel>
+            </Step>
+          ))}
+        </ResponsiveStepper>
+      </Box>
+
+      {/* Display Selected Round */}
+      <Box sx={{ position: 'relative', minHeight: '400px', mb: 4 }}>
+        <AnimatePresence initial={false} custom={direction}>
+          {selectedRound && (
+            <ResponsiveRoundCard
+              key={selectedRound._id}
+              status={selectedRound.roundStatus}
+              custom={direction}
+              variants={cardVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 200, damping: 25 },
+                opacity: { duration: 0.3 }
+              }}
+              sx={{
+                position: 'absolute',
+                width: '100%',
+                left: 0,
+                right: 0
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
+                <Typography 
+                  variant={isMobile ? "h6" : "h5"}
+                  sx={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 1.5,
+                    mb: 3,
+                    color: getStatusColor(selectedRound.roundStatus),
+                    fontWeight: 600,
+                  }}
+                >
+                  <TrackChanges fontSize={isMobile ? "small" : "medium"} />
+                  {selectedRound.roundName}
+                </Typography>
+
+                <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: 3 }}>
+                  {[
+                    ["Type", "roundType", Assignment],
+                    ["Date", "roundDate", Event],
+                    ["Time", "roundDuration", AccessTime],
+                    ["Venue", "venue", LocationOn]
+                  ].map(([label, value, Icon]) => (
+                    <Grid item xs={12} sm={6} key={label}>
+                      <DetailItem>
+                        <Icon sx={{ color: getStatusColor(selectedRound.roundStatus) }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">
+                            {label}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {selectedRound[value] || 'Not specified'}
+                          </Typography>
+                        </Box>
+                      </DetailItem>
+                    </Grid>
+                  ))}
+                </Grid>
+
+                <Box sx={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: 1.5,
+                  mb: 3,
+                  p: 1.5,
+                  borderRadius: 1,
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? `${getStatusColor(selectedRound.roundStatus)}20`
+                    : `${getStatusColor(selectedRound.roundStatus)}10`,
+                }}>
+                  {getStatusIcon(selectedRound.roundStatus)}
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    Status:
+                  </Typography>
+                  <Chip
+                    label={selectedRound.roundStatus.charAt(0).toUpperCase() + selectedRound.roundStatus.slice(1)}
+                    color={getStatusChipColor(selectedRound.roundStatus)}
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+
+                <Box sx={{ 
+                  display: "flex", 
+                  gap: 1.5, 
+                  flexWrap: "wrap",
+                  justifyContent: "flex-start",
+                }}>
+                  {selectedRound.roundStatus === "ongoing" && (
+                    <>
+                      <Button 
+                        variant="contained" 
+                        color="primary"
+                        size="medium"
+                        onClick={handleOpenStudentDialog}
+                        startIcon={<List />}
+                        sx={{ fontWeight: 500 }}
+                      >
+                        Manage Students
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        size="medium"
+                        onClick={() => setOpenDeclareResultDialog(true)}
+                        startIcon={<Event />}
+                        sx={{ fontWeight: 500 }}
+                      >
+                        Declare Results
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        size="medium"
+                        onClick={handleOpenEditDialog}
+                        startIcon={<Event />}
+                        sx={{ fontWeight: 500 }}
+                      >
+                        Edit Round
+                      </Button>
+                    </>
+                  )}
+                  {selectedRound.roundStatus === "upcoming" && (
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="medium"
+                      onClick={handleOpenEditDialog}
+                      startIcon={<Event />}
+                      sx={{ fontWeight: 500 }}
+                    >
+                      Edit Round
                     </Button>
-                    <Button variant="outlined" color={getStatusColor(selectedRound.roundStatus)} size="small" onClick={() => setOpenDeclareResultDialog(true)} startIcon={<Event />}>
-                      Declare Results
+                  )}
+                  {selectedRound.roundStatus === "completed" && (
+                    <Button 
+                      variant="outlined"
+                      color="success"
+                      size="medium"
+                      onClick={handleViewResults}
+                      startIcon={<AccessTime />}
+                      sx={{ fontWeight: 500 }}
+                    >
+                      View Results
                     </Button>
-                    <Button variant="outlined" color= {getStatusColor(selectedRound.roundStatus)} size="small" onClick={handleOpenEditDialog} startIcon={<Event />}>
-                    Edit Round
-                  </Button>
-                  </>
-                )}
-                {selectedRound.roundStatus === "upcoming" && (
-                  <Button variant="outlined" color= {getStatusColor(selectedRound.roundStatus)} size="small" onClick={handleOpenEditDialog} startIcon={<Event />}>
-                    Edit Round
-                  </Button>
-                )}
-                {selectedRound.roundStatus === "completed" && (
-                  <Button 
-                    variant="outlined" 
-                    color={getStatusColor(selectedRound.roundStatus)} 
-                    size="small" 
-                    onClick={handleViewResults}
-                    startIcon={<AccessTime />}
-                  >
-                    View Results
-                  </Button>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
-      )}
+                  )}
+                </Box>
+              </CardContent>
+            </ResponsiveRoundCard>
+          )}
+        </AnimatePresence>
+      </Box>
 
       {selectedRound && (
         <Dialog open={openStudentDialog} onClose={() => setOpenStudentDialog(false)} fullWidth maxWidth="md">
-          <DialogTitle>Manage Participants - {selectedRound?.roundName}</DialogTitle>
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="h6">Manage Students</Typography>
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setOpenStudentDialog(false)}
+                aria-label="close"
+              >
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <RoundStudents roundId = {selectedRound._id} placementId= {placementId}/>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenStudentDialog(false)}>Close</Button>
-          </DialogActions>
         </Dialog>
       )}
 
@@ -686,72 +1015,6 @@ const PlacementRounds = ({ placementId }) => {
           <Button onClick={() => setOpenResultDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
-      {loading ? (
-        <CircularProgress />
-      ) : (
-        <>
-          {rounds.map((round) => (
-            <Card key={round._id} sx={{ mb: 2, p: 2 }}>
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Appeared Students ({appearedStudents[round._id]?.length || 0})
-                </Typography>
-                {appearedStudents[round._id]?.length > 0 ? (
-                  <TableContainer component={Paper}>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Roll Number</TableCell>
-                          <TableCell>Name</TableCell>
-                          <TableCell>Department</TableCell>
-                          <TableCell>CGPA</TableCell>
-                          <TableCell>Action</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {appearedStudents[round._id].map((student) => (
-                          <TableRow key={student._id}>
-                            <TableCell>
-                              {student.personalInfo?.rollNumber}
-                            </TableCell>
-                            <TableCell>
-                              {student.personalInfo?.name}
-                            </TableCell>
-                            <TableCell>
-                              {student.personalInfo?.department}
-                            </TableCell>
-                            <TableCell>
-                              {student.academics?.cgpa}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                size="small"
-                                onClick={() => handleStudentSelection(round._id, student)}
-                                disabled={round.selectedStudents?.includes(student._id)}
-                              >
-                                {round.selectedStudents?.includes(student._id) 
-                                  ? 'Selected' 
-                                  : 'Select'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Typography color="textSecondary">
-                    No students have appeared yet
-                  </Typography>
-                )}
-              </Box>
-            </Card>
-          ))}
-        </>
-      )}
     </Box>
   );
 };

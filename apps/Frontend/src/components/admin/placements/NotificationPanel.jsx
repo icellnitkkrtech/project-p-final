@@ -1,20 +1,52 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  TextField, Button, Typography, Card, CardContent, MenuItem, Select,
-  FormControl, InputLabel, List, Dialog, DialogTitle, DialogContent,
-  DialogActions, IconButton, Divider, CardActionArea, Collapse, Box,
-  Snackbar, Alert, Grid, Paper
-} from "@mui/material";
-import { Send, Add, Delete, ExpandMore, ExpandLess, Notifications } from "@mui/icons-material";
+  Box,
+  IconButton,
+  Paper,
+  Typography,
+  Button,
+  TextField,
+  Divider,
+  Chip,
+  Tooltip,
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  Card,
+  CardContent,
+  CardActionArea,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Snackbar,
+  Alert,
+  Badge
+} from '@mui/material';
+import {
+  Notifications as NotificationsIcon,
+  Close as CloseIcon,
+  Minimize as MinimizeIcon,
+  Maximize as MaximizeIcon,
+  Send as SendIcon,
+  Person as PersonIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon
+} from '@mui/icons-material';
 import { Editor } from '@tinymce/tinymce-react';
 import placementService from "../../../services/admin/placementService";
 
-const PlacementNotifications = ({ placementId }) => {
-  const [subject, setSubject] = useState("");
-  const [content, setContent] = useState("");
+const NotificationPanel = ({ placementId, onClose }) => {
+  const [isMinimized, setIsMinimized] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [subject, setSubject] = useState("");
+  const [content, setContent] = useState("");
+  const [notificationType, setNotificationType] = useState("general");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [loading, setLoading] = useState(false);
   const editorRef = useRef(null);
@@ -56,7 +88,7 @@ const PlacementNotifications = ({ placementId }) => {
       const notificationData = {
         subject: subject,
         content: editorRef.current.getContent(),
-        type: "general" // You can add more types as needed
+        type: notificationType
       };
 
       await placementService.addNotification(placementId, notificationData);
@@ -67,10 +99,7 @@ const PlacementNotifications = ({ placementId }) => {
         severity: "success"
       });
       
-      // Refresh notifications list
       await fetchNotifications();
-      
-      // Reset form
       setOpenDialog(false);
       setSubject("");
       setContent("");
@@ -105,66 +134,138 @@ const PlacementNotifications = ({ placementId }) => {
     }
   };
 
-  const handleViewNotification = async (notificationId) => {
-    try {
-      const response = await placementService.getNotification(placementId, notificationId);
-      setSelectedNotification(response.data);
-    } catch (error) {
-      console.error("Error fetching notification details:", error);
-      setSnackbar({
-        open: true,
-        message: "Error fetching notification details",
-        severity: "error"
-      });
+  const getNotificationColor = (type) => {
+    switch (type) {
+      case 'application':
+        return 'primary';
+      case 'schedule':
+        return 'warning';
+      case 'result':
+        return 'success';
+      case 'general':
+        return 'default';
+      default:
+        return 'default';
     }
   };
 
   return (
-    <Box sx={{ maxWidth: 800, margin: "auto", padding: 2 }}>
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              <Notifications sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Placement Notifications
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Add />}
-              onClick={() => setOpenDialog(true)}
-            >
-              New Notification
-            </Button>
+    <Paper
+      elevation={3}
+      sx={{
+        position: 'fixed',
+        right: 0,
+        top: 90,
+        height: '85vh',
+        width: isMinimized ? '50px' : '400px',
+        transition: 'width 0.3s ease',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
+    >
+      {!isMinimized ? (
+        <>
+          <Box
+            sx={{
+              p: 2,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: '1px solid',
+              borderColor: 'divider'
+            }}
+          >
+            <Typography variant="h6">Notifications</Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="New Notification">
+                <IconButton onClick={() => setOpenDialog(true)}>
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
+                <IconButton onClick={() => setIsMinimized(!isMinimized)}>
+                  {isMinimized ? <MaximizeIcon /> : <MinimizeIcon />}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Close">
+                <IconButton onClick={onClose}>
+                  <CloseIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
 
-          {loading ? (
-            <Typography>Loading notifications...</Typography>
-          ) : notifications.length === 0 ? (
-            <Typography>No notifications found</Typography>
-          ) : (
-            <List>
-              {notifications.map((notification) => (
-                <Paper key={notification._id} elevation={2} sx={{ mb: 2, overflow: 'hidden' }}>
-                  <CardActionArea onClick={() => handleViewNotification(notification._id)}>
+          <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <Typography>Loading notifications...</Typography>
+              </Box>
+            ) : notifications.length === 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3 }}>
+                <PersonIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                <Typography color="text.secondary">No notifications available</Typography>
+              </Box>
+            ) : (
+              <List>
+                {notifications.map((notification) => (
+                  <Card 
+                    key={notification._id} 
+                    sx={{ 
+                      mb: 2,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'action.hover'
+                      }
+                    }}
+                    onClick={() => setSelectedNotification(notification)}
+                  >
                     <CardContent>
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {notification.subject}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Sent: {new Date(notification.createdAt).toLocaleString()}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Type: {notification.type || "General"}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Avatar sx={{ width: 32, height: 32, mr: 1 }}>
+                          <PersonIcon />
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {notification.subject}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(notification.createdAt).toLocaleString()}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={notification.type}
+                          size="small"
+                          color={getNotificationColor(notification.type)}
+                        />
+                      </Box>
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        {notification.content.substring(0, 100)}...
                       </Typography>
                     </CardContent>
-                  </CardActionArea>
-                </Paper>
-              ))}
-            </List>
-          )}
-        </CardContent>
-      </Card>
+                  </Card>
+                ))}
+              </List>
+            )}
+          </Box>
+        </>
+      ) : (
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <Tooltip title="Maximize">
+            <IconButton onClick={() => setIsMinimized(false)}>
+              <MaximizeIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
 
       {/* New Notification Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
@@ -206,13 +307,14 @@ const PlacementNotifications = ({ placementId }) => {
           <FormControl fullWidth margin="normal">
             <InputLabel>Notification Type</InputLabel>
             <Select
-              value="general"
+              value={notificationType}
               label="Notification Type"
+              onChange={(e) => setNotificationType(e.target.value)}
             >
               <MenuItem value="general">General</MenuItem>
-              <MenuItem value="round_update">Round Update</MenuItem>
+              <MenuItem value="application">Application</MenuItem>
+              <MenuItem value="schedule">Schedule</MenuItem>
               <MenuItem value="result">Result</MenuItem>
-              <MenuItem value="offer_letter">Offer Letter</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>
@@ -222,7 +324,7 @@ const PlacementNotifications = ({ placementId }) => {
             onClick={handleSendNotification} 
             variant="contained" 
             color="primary"
-            startIcon={<Send />}
+            startIcon={<SendIcon />}
           >
             Send Notification
           </Button>
@@ -244,7 +346,7 @@ const PlacementNotifications = ({ placementId }) => {
                 color="error" 
                 onClick={() => handleDeleteNotification(selectedNotification._id)}
               >
-                <Delete />
+                <DeleteIcon />
               </IconButton>
             </Box>
           </DialogTitle>
@@ -276,8 +378,8 @@ const PlacementNotifications = ({ placementId }) => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Paper>
   );
 };
 
-export default PlacementNotifications;
+export default NotificationPanel; 
