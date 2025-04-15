@@ -28,9 +28,9 @@ const RoundButton = styled(IconButton)(({ theme }) => ({
 
 const getStatusChipColor = (status) => {
   switch (status) {
-    case "ongoing":
-      return "info";
     case "completed":
+      return "info";
+    case "ongoing":
       return "success";
     case "upcoming":
       return "default";
@@ -97,17 +97,17 @@ const ResponsiveRoundCard = styled(MotionCard)(({ theme, status }) => ({
   borderRadius: theme.spacing(2),
   background: theme.palette.background.paper,
   boxShadow: theme.shadows[2],
-  borderLeft: `4px solid ${status === 'ongoing' 
+  borderLeft: `4px solid ${status === 'completed' 
     ? (theme.palette.mode === 'dark' ? '#1976D2' : '#1976D2')
-    : status === 'completed'
+    : status === 'ongoing'
       ? (theme.palette.mode === 'dark' ? '#81C784' : '#4CAF50')
       : status === 'upcoming'
         ? (theme.palette.mode === 'dark' ? '#616161' : '#424242')
         : (theme.palette.mode === 'dark' ? '#9E9E9E' : '#757575')}`,
   backgroundImage: `linear-gradient(to right, ${theme.palette.background.paper}, ${
-    status === 'ongoing' 
+    status === 'completed' 
       ? (theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.05)' : 'rgba(25, 118, 210, 0.05)')
-      : status === 'completed'
+      : status === 'ongoing'
         ? (theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.05)' : 'rgba(76, 175, 80, 0.05)')
         : status === 'upcoming'
           ? (theme.palette.mode === 'dark' ? 'rgba(97, 97, 97, 0.05)' : 'rgba(66, 66, 66, 0.05)')
@@ -216,9 +216,9 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "ongoing":
-        return theme.palette.mode === 'dark' ? '#64B5F6' : '#2196F3';
       case "completed":
+        return theme.palette.mode === 'dark' ? '#64B5F6' : '#2196F3';
+      case "ongoing":
         return theme.palette.mode === 'dark' ? '#81C784' : '#4CAF50';
       case "upcoming":
         return theme.palette.mode === 'dark' ? '#616161' : '#424242';
@@ -731,19 +731,12 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                 }}>
                   {selectedRound.roundStatus === "ongoing" && (
                     <>
-                      <Button 
-                        variant="contained" 
-                        color="primary"
-                        size="medium"
-                        onClick={handleOpenStudentDialog}
-                        startIcon={<List />}
-                        sx={{ fontWeight: 500 }}
-                      >
-                        Manage Students
-                      </Button>
+                    <Button variant="contained" color= "success" size="small" onClick={handleOpenStudentDialog} startIcon={<List />}>
+                      Manage
+                    </Button>
                       <Button
                         variant="outlined"
-                        color="primary"
+                        color="success"
                         size="medium"
                         onClick={() => setOpenDeclareResultDialog(true)}
                         startIcon={<Event />}
@@ -753,7 +746,7 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                       </Button>
                       <Button
                         variant="outlined"
-                        color="primary"
+                        color="success"
                         size="medium"
                         onClick={handleOpenEditDialog}
                         startIcon={<Event />}
@@ -766,7 +759,7 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                   {selectedRound.roundStatus === "upcoming" && (
                     <Button
                       variant="outlined"
-                      color="primary"
+                      color="default"
                       size="medium"
                       onClick={handleOpenEditDialog}
                       startIcon={<Event />}
@@ -776,9 +769,9 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                     </Button>
                   )}
                   {selectedRound.roundStatus === "completed" && (
-                    <Button 
+                    <Button
                       variant="outlined"
-                      color="success"
+                      color="primary"
                       size="medium"
                       onClick={handleViewResults}
                       startIcon={<AccessTime />}

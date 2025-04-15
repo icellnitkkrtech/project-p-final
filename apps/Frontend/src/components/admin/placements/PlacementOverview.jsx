@@ -49,7 +49,7 @@ import {
   Web as WebsiteIcon,
   Email as EmailIcon,
   CardGiftcard as PerksIcon,
-  Event as EventIcon,
+  EventNote as EventIcon,
   CheckCircle as CheckIcon,
   Badge as RoleIcon,
   Apartment as CompanyNameIcon,
@@ -65,9 +65,115 @@ import {
   Assessment,
   Group,
   Notifications,
+  List,
+  Circle,
+  Autorenew,
+  Upcoming,
 } from "@mui/icons-material";
 import placementService from "../../../services/admin/placementService";
 import PlacementStudents from "./PlacementStudents";
+import { styled } from "@mui/material/styles";
+
+const ResponsiveToolbar = styled(Toolbar)(({ theme }) => ({
+  minHeight: '64px',
+  padding: theme.spacing(1, 2),
+  display: 'flex',
+  alignItems: 'center',
+  width: '100%',
+  [theme.breakpoints.down('sm')]: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    minHeight: 'auto',
+    padding: theme.spacing(1),
+    gap: theme.spacing(1),
+    '& .MuiTypography-root': {
+      fontSize: '0.8rem',
+    },
+    '& .MuiButton-root': {
+      padding: theme.spacing(0.5, 1),
+      fontSize: '0.7rem',
+      '& .MuiButton-startIcon': {
+        marginRight: theme.spacing(0.5),
+        '& .MuiSvgIcon-root': {
+          fontSize: '0.9rem',
+        },
+      },
+    },
+  },
+}));
+
+const ResponsiveButtonGroup = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: theme.spacing(1),
+  [theme.breakpoints.down('sm')]: {
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    '& .MuiButton-root': {
+      flex: '1 1 calc(50% - 8px)',
+      minWidth: 'auto',
+      maxWidth: 'calc(50% - 8px)',
+      fontSize: '0.7rem',
+      padding: theme.spacing(0.5, 1),
+      '& .MuiButton-startIcon': {
+        marginRight: theme.spacing(0.5),
+        '& .MuiSvgIcon-root': {
+          fontSize: '0.9rem',
+        },
+      },
+    },
+  },
+}));
+
+const TitleContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(0.5),
+  flex: 1,
+  [theme.breakpoints.down('sm')]: {
+    width: '100%',
+    '& .MuiTypography-root': {
+      fontSize: '0.8rem',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    },
+    '& .MuiChip-root': {
+      flexShrink: 0,
+      height: '24px',
+      '& .MuiChip-label': {
+        fontSize: '0.65rem',
+        padding: '0 8px',
+      },
+    },
+  },
+}));
+
+const ResponsiveCard = styled(Card)(({ theme }) => ({
+  width: '100%',
+  marginBottom: theme.spacing(2),
+  [theme.breakpoints.up('sm')]: {
+    maxWidth: '600px',
+  },
+  [theme.breakpoints.up('md')]: {
+    maxWidth: '800px',
+  },
+  [theme.breakpoints.up('lg')]: {
+    maxWidth: '1000px',
+  },
+}));
+
+const ContentChip = styled(Chip)(({ theme }) => ({
+  margin: theme.spacing(0.5),
+  height: { xs: '24px', sm: '32px' },
+  '& .MuiChip-label': {
+    fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
+    padding: { xs: '0 8px', sm: '0 12px' },
+  },
+  backgroundColor: theme.palette.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.1)' 
+    : 'rgba(0, 0, 0, 0.05)',
+  border: `1px solid ${theme.palette.divider}`,
+}));
 
 const PlacementOverview = ({ id }) => {
   const [placementData, setPlacementData] = useState(null);
@@ -76,6 +182,8 @@ const PlacementOverview = ({ id }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
+  const [openDeclareResultDialog, setOpenDeclareResultDialog] = useState(false);
+  const [selectedRound, setSelectedRound] = useState(null);
 
   useEffect(() => {
     const fetchPlacement = async () => {
@@ -105,6 +213,14 @@ const PlacementOverview = ({ id }) => {
     };
     fetchNotifications();
   }, [id]);
+
+  const handleRoundClick = (round) => {
+    setSelectedRound(round);
+  };
+
+  const handleOpenEditDialog = () => {
+    // Implementation of handleOpenEditDialog
+  };
 
   const handleOpenStudentDialog = () => {
     setStudentDialogOpen(true);
@@ -139,12 +255,12 @@ const PlacementOverview = ({ id }) => {
   const SectionHeader = ({ icon: Icon, title, color = "primary" }) => (
     <Box display="flex" alignItems="center" gap={1} mb={2}>
       <Icon sx={{ 
-        color: theme.palette[color].main,
+        color: theme.palette.primary.main,
         fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }
       }} />
       <Typography 
         variant="h6" 
-        color={color} 
+        color="primary" 
         fontWeight="bold"
         sx={{
           fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
@@ -159,25 +275,26 @@ const PlacementOverview = ({ id }) => {
     value !== undefined && value !== null && (
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Icon sx={{ 
-          color: theme.palette[color].main,
+          color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
           mr: 1,
-          fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+          fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' }
         }} />
         <Typography
           variant="body1"
           sx={{
             mr: 1,
             fontWeight: 'medium',
-            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+            fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' },
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
           }}
         >
           {label}:
         </Typography>
         <Typography 
           variant="body1" 
-          color="text.secondary"
           sx={{
-            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+            fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' },
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
           }}
         >
           {value}
@@ -189,16 +306,16 @@ const PlacementOverview = ({ id }) => {
   const InfoChip = ({ icon: Icon, label, value, color = "primary", href }) => (
     value !== undefined && value !== null && (
       <Chip
-        icon={<Icon sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }} />}
+        icon={<Icon sx={{ fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' } }} />}
         label={href ? (
           <Link 
             href={href} 
             target="_blank"
             rel="noopener noreferrer"
             sx={{ 
-              color: 'inherit',
+              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
               textDecoration: 'none',
-              fontSize: { xs: '0.625rem', sm: '0.75rem', md: '0.875rem' },
+              fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
               '&:hover': {
                 textDecoration: 'underline'
               }
@@ -210,41 +327,41 @@ const PlacementOverview = ({ id }) => {
         variant="outlined"
         sx={{ 
           m: 0.5,
-          // borderColor: theme.palette[color].main,
-          color: theme.palette[color].main,
-          '& .MuiChip-icon': {
-            color: theme.palette[color].main
-          },
+          height: { xs: '24px', sm: '32px' },
           '& .MuiChip-label': {
-            px: 1,
-            whiteSpace: 'nowrap',
-            fontSize: { xs: '0.625rem', sm: '0.75rem', md: '0.875rem' }
+            fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
+            px: 1
+          },
+          borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+          color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+          '& .MuiChip-icon': {
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
           }
         }}
       />
     )
   );
 
-  const InfoSection = ({ title, content, color = "primary", icon: Icon = DescriptionIcon, isBulletList = false }) => (
+  const InfoSection = ({ title, content, icon: Icon = DescriptionIcon, isBulletList = false }) => (
     <Box sx={{ mt: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         {isBulletList ? (
           <span style={{ 
-            fontSize: { xs: '1rem', sm: '1.25em', md: '1.5em' },
+            fontSize: { xs: '0.75rem', sm: '1.25em', md: '1.5em' },
             lineHeight: 1, 
-            color: theme.palette[color].main 
+            color: theme.palette.primary.main 
           }}>•</span>
         ) : (
           <Icon sx={{ 
-            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' },
-            color: theme.palette[color].main 
+            fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' },
+            color: theme.palette.primary.main 
           }} />
         )}
         <Typography
           variant="subtitle2"
-          color={color}
+          color="primary"
           sx={{
-            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+            fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' }
           }}
         >
           {title}
@@ -252,9 +369,9 @@ const PlacementOverview = ({ id }) => {
       </Box>
       <Typography 
         variant="body2" 
-        color="text.secondary"
         sx={{
-          fontSize: { xs: '0.625rem', sm: '0.75rem', md: '0.875rem' }
+          fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' },
+          color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
         }}
       >
         {content}
@@ -270,6 +387,15 @@ const PlacementOverview = ({ id }) => {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const formatRoundName = (name) => {
+    // Split by capital letters and join with spaces
+    const words = name.replace(/([A-Z])/g, ' $1').trim();
+    // Capitalize first letter of each word and make rest lowercase
+    return words.split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
   };
 
   const hasCompanyDetails = companyDetails?.name || companyDetails?.email || 
@@ -299,91 +425,63 @@ const PlacementOverview = ({ id }) => {
   );
 
   const getSectionColor = (index) => {
-    const colors = ['primary', 'success'];
-    return colors[index % 2];
+    return 'primary'; // Always return primary (blue) color
   };
 
   const AnimatedPaper = ({ children, color, delay = 0 }) => {
-    const ref = React.useRef(null);
-    const [isVisible, setIsVisible] = React.useState(false);
-
-    React.useEffect(() => {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        },
-        {
-          root: null,
-          rootMargin: '0px',
-          threshold: 0.1
-        }
-      );
-
-      if (ref.current) {
-        observer.observe(ref.current);
-      }
-
-      return () => {
-        if (ref.current) {
-          observer.unobserve(ref.current);
-        }
-      };
-    }, []);
-
     return (
-      <motion.div
-        ref={ref}
-        initial={{ opacity: 0, y: 50 }}
-        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-        transition={{
-          duration: 0.5,
-          delay: delay / 1000,
-          ease: [0.25, 0.1, 0.25, 1]
+      <Paper
+        id={`section-${color}`}
+        elevation={0}
+        sx={{
+          p: 3,
+          borderRadius: 2,
+          position: 'relative',
+          overflow: 'hidden',
+          borderBottom: `4px solid ${theme.palette.primary.main}`,
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+          transition: 'all 0.3s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 8px 16px rgba(0, 0, 0, 0.3)' 
+              : '0 8px 16px rgba(0, 0, 0, 0.1)',
+            '&::before': {
+              opacity: 0.8
+            }
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '30%',
+            background: `linear-gradient(to bottom, ${theme.palette.primary.main}10, transparent)`,
+            zIndex: 0,
+            opacity: 0.5,
+            transition: 'opacity 0.3s ease-in-out'
+          },
+          '& > *': {
+            position: 'relative',
+            zIndex: 1,
+          }
         }}
       >
-        <Paper
-          id={`section-${color}`}
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: 2,
-            position: 'relative',
-            overflow: 'hidden',
-            borderLeft: `4px solid ${theme.palette[color].main}`,
-            bgcolor: `${theme.palette[color].main}08`,
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '30%',
-              height: '100%',
-              background: `linear-gradient(to left, ${theme.palette[color].main}10, transparent)`,
-              zIndex: 0,
-            },
-            '& > *': {
-              position: 'relative',
-              zIndex: 1,
-            }
-          }}
-        >
-          {children}
-        </Paper>
-      </motion.div>
+        {children}
+      </Paper>
     );
   };
 
-  const AnimatedLink = ({ children, color, ...props }) => (
+  const AnimatedLink = ({ children, ...props }) => (
     <Link
       {...props}
       sx={{
-        color: theme.palette[color].main,
+        color: theme.palette.primary.main,
         textDecoration: 'none',
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
-          color: theme.palette[color].dark,
+          color: theme.palette.primary.dark,
           transform: 'translateY(-2px)',
         }
       }}
@@ -392,29 +490,85 @@ const PlacementOverview = ({ id }) => {
     </Link>
   );
 
-  const RoundItem = ({ round, color }) => (
+  const RoundItem = ({ round }) => (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Typography 
           variant="subtitle2" 
-          color={color}
+          color="primary"
           sx={{ 
             display: 'flex',
             alignItems: 'center',
             gap: 1
           }}
         >
-          <span style={{ fontSize: '1.5em', lineHeight: 1 }}>•</span>
-          Round {round.roundNumber}: {round.roundName}
+          <span style={{ fontSize: '1.5em', lineHeight: 1, color: theme.palette.primary.main }}>•</span>
+          Round {round.roundNumber}: {formatRoundName(round.roundName)}
         </Typography>
       </Box>
       {round.details && (
-        <Typography variant="body2" color="text.secondary" sx={{ pl: 4 }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            pl: 4,
+            color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+          }}
+        >
           {round.details}
         </Typography>
       )}
     </Box>
   );
+
+  const getStatusColor = (status) => {
+    if (!status) return theme.palette.mode === 'dark' ? '#9E9E9E' : '#757575';
+    
+    switch (status.toLowerCase()) {
+      case "ongoing":
+        return theme.palette.mode === 'dark' ? '#81C784' : '#4CAF50';
+      case "completed":
+        return theme.palette.mode === 'dark' ? '#64B5F6' : '#2196F3';
+      case "upcoming":
+        return theme.palette.mode === 'dark' ? '#616161' : '#424242';
+      default:
+        return theme.palette.mode === 'dark' ? '#9E9E9E' : '#757575';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    if (!status) return <Circle fontSize="small" sx={{ color: getStatusColor("default") }} />;
+    
+    switch (status.toLowerCase()) {
+      case "ongoing":
+        return <Autorenew fontSize="small" sx={{ color: getStatusColor("ongoing") }} />;
+      case "upcoming":
+        return <Upcoming fontSize="small" sx={{ color: getStatusColor("upcoming") }} />;
+      case "completed":
+        return <CheckCircle fontSize="small" sx={{ color: getStatusColor("completed") }} />;
+      default:
+        return <Circle fontSize="small" sx={{ color: getStatusColor("default") }} />;
+    }
+  };
+
+  const getStatusChipColor = (status) => {
+    if (!status) return "default";
+    
+    switch (status.toLowerCase()) {
+      case "ongoing":
+        return "success";
+      case "completed":
+        return "info";
+      case "upcoming":
+        return "default";
+      default:
+        return "default";
+    }
+  };
+
+  const formatStatus = (status) => {
+    if (!status) return "";
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
 
   return (
     <Box>
@@ -429,38 +583,16 @@ const PlacementOverview = ({ id }) => {
           border: `1px solid ${theme.palette.divider}`,
         }}
       >
-        <Toolbar 
-          variant="dense"
-          sx={{
-            minHeight: '64px',
-            padding: theme.spacing(1, 2),
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            [theme.breakpoints.down('sm')]: {
-              minHeight: '56px',
-              padding: theme.spacing(1),
-              '& .MuiTypography-root': {
-                fontSize: '1rem',
-              },
-              '& .MuiButton-root': {
-                padding: theme.spacing(0.5, 1),
-                fontSize: '0.75rem',
-                '& .MuiButton-startIcon': {
-                  marginRight: theme.spacing(0.5),
-                },
-              },
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <ResponsiveToolbar>
+          <TitleContainer>
             <Typography 
               variant="h6" 
               sx={{ 
                 fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.25rem' },
-                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.87)',
+                fontSize: { xs: '0.8rem', sm: '1.25rem' },
+                color: theme.palette.primary.main,
+                minWidth: 0,
+                p: 0.5,
               }}
             >
               {placementDrive_title}
@@ -472,82 +604,79 @@ const PlacementOverview = ({ id }) => {
                      placementData.status}
               size="small"
               sx={{
-                backgroundColor: placementData.status === 'inProgress' 
-                  ? 'info.main' 
-                  : placementData.status === 'closed' 
-                    ? 'success.main'
-                    : placementData.status === 'hold'
-                      ? 'warning.main'
-                      : 'default.main',
+                backgroundColor: theme.palette.primary.main,
                 color: 'white',
                 fontWeight: 'bold',
-                fontSize: '0.75rem',
-                px: 1,
+                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                height: { xs: '24px', sm: '32px' },
                 '& .MuiChip-label': {
-                  px: 1
+                  px: 1,
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
                 }
               }}
             />
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          </TitleContainer>
+          <ResponsiveButtonGroup>
             <Button
               variant="outlined"
-              startIcon={<Group />}
+              startIcon={<Group sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />}
               size={isMobile ? "small" : "medium"}
               onClick={handleOpenStudentDialog}
               sx={{
                 minWidth: { xs: 'auto', sm: '140px' },
                 whiteSpace: 'nowrap',
-                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                color: theme.palette.primary.main,
+                borderColor: theme.palette.primary.main,
+                fontSize: { xs: '0.7rem', sm: '0.875rem' },
                 '&:hover': {
-                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                  backgroundColor: theme.palette.primary.main + '10',
+                  borderColor: theme.palette.primary.main,
                 }
               }}
             >
               Participants
             </Button>
             {placementData.status === 'inProgress' && (
-              <Button
-                variant="outlined"
-                startIcon={<Assessment />}
-                size={isMobile ? "small" : "medium"}
-                sx={{
-                  minWidth: { xs: 'auto', sm: '140px' },
-                  whiteSpace: 'nowrap',
-                  color: theme.palette.info.main,
-                  borderColor: theme.palette.info.main,
-                  '&:hover': {
-                    backgroundColor: theme.palette.info.main + '10',
-                    borderColor: theme.palette.info.main,
-                  }
-                }}
-              >
-                Declare Results
-              </Button>
+              <>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size={isMobile ? "small" : "medium"}
+                  onClick={() => setOpenDeclareResultDialog(true)}
+                  startIcon={<EventIcon sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />}
+                  sx={{ 
+                    fontWeight: 500,
+                    minWidth: { xs: 'auto', sm: '140px' },
+                    fontSize: { xs: '0.7rem', sm: '0.875rem' },
+                  }}
+                >
+                  Declare Results
+                </Button>
+              </>
             )}
             {placementData.status === 'closed' && (
               <Button
                 variant="outlined"
-                startIcon={<Assessment />}
+                startIcon={<Assessment sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />}
                 size={isMobile ? "small" : "medium"}
+                onClick={handleOpenStudentDialog}
                 sx={{
                   minWidth: { xs: 'auto', sm: '140px' },
                   whiteSpace: 'nowrap',
-                  color: theme.palette.success.main,
-                  borderColor: theme.palette.success.main,
+                  color: theme.palette.primary.main,
+                  borderColor: theme.palette.primary.main,
+                  fontSize: { xs: '0.7rem', sm: '0.875rem' },
                   '&:hover': {
-                    backgroundColor: theme.palette.success.main + '10',
-                    borderColor: theme.palette.success.main,
+                    backgroundColor: theme.palette.primary.main + '10',
+                    borderColor: theme.palette.primary.main,
                   }
                 }}
               >
-                Results
+                View Results
               </Button>
             )}
-          </Box>
-        </Toolbar>
+          </ResponsiveButtonGroup>
+        </ResponsiveToolbar>
       </AppBar>
       
       <Dialog
@@ -577,38 +706,48 @@ const PlacementOverview = ({ id }) => {
           <Stack spacing={{ xs: 1.5, sm: 2, md: 2.5 }}>
             {/* Company Details Section */}
             {hasCompanyDetails && (
-              <AnimatedPaper color={getSectionColor(0)} delay={100}>
-                <SectionHeader icon={CompanyIcon} title="Company Details" color={getSectionColor(0)} />
+              <AnimatedPaper color={getSectionColor(0)}>
                 <Stack spacing={2}>
                   {companyDetails?.name && (
-                    <InfoSection 
-                      title="Company Name" 
-                      content={companyDetails.name} 
-                      color={getSectionColor(0)}
-                      icon={CompanyNameIcon}
-                    />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: theme.palette.primary.main,
+                        fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' },
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      <CompanyIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }} />
+                      {companyDetails.name}
+                    </Typography>
                   )}
                   {companyDetails?.description && (
-                    <InfoSection 
-                      title="About Company" 
-                      content={companyDetails.description}
-                      color={getSectionColor(0)}
-                      icon={DescriptionIcon}
-                    />
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                        fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                        lineHeight: 1.6
+                      }}
+                    >
+                      {companyDetails.description}
+                    </Typography>
                   )}
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
                     {companyDetails?.domain && (
-                      <InfoChip icon={DomainIcon} label="Domain" value={companyDetails.domain} color={getSectionColor(0)} />
+                      <InfoChip icon={DomainIcon} label="Domain" value={companyDetails.domain} />
                     )}
                     {companyDetails?.companyType && (
-                      <InfoChip icon={TypeIcon} label="Type" value={companyDetails.companyType} color={getSectionColor(0)} />
+                      <InfoChip icon={TypeIcon} label="Type" value={companyDetails.companyType} />
                     )}
                     {companyDetails?.website && (
                       <InfoChip
                         icon={WebsiteIcon}
                         label="Website" 
                         value={companyDetails.website} 
-                        color={getSectionColor(0)}
                         href={companyDetails.website}
                       />
                     )}
@@ -617,7 +756,6 @@ const PlacementOverview = ({ id }) => {
                         icon={EmailIcon} 
                         label="Email" 
                         value={companyDetails.email} 
-                        color={getSectionColor(0)}
                         href={`mailto:${companyDetails.email}`}
                       />
                     )}
@@ -628,107 +766,156 @@ const PlacementOverview = ({ id }) => {
 
             {/* Job Profile Section */}
             {hasJobProfile && (
-              <AnimatedPaper color={getSectionColor(1)} delay={200}>
-                <SectionHeader icon={JobIcon} title="Job Profile" color={getSectionColor(1)} />
-                <Stack spacing={2}>
-                  {jobProfile?.designation && (
-                    <InfoSection 
-                      title="Role" 
-                      content={jobProfile.designation} 
-                      color={getSectionColor(1)}
-                      icon={RoleIcon}
-                    />
-                  )}
-                  {jobProfile?.placeOfPosting && (
-                    <InfoSection 
-                      title="Location" 
-                      content={jobProfile.placeOfPosting}
-                      color={getSectionColor(1)}
-                      icon={LocationOn}
-                    />
-                  )}
-                  {jobProfile?.jobDescription?.description && (
-                    <InfoSection 
-                      title="Job Description" 
-                      content={jobProfile.jobDescription.description} 
-                      color={getSectionColor(1)}
-                      icon={DescriptionIcon}
-                    />
-                  )}
-                  {jobProfile?.perks && (
-                    <InfoSection
-                      title="Perks & Benefits"
-                      content={jobProfile.perks}
-                      color={getSectionColor(1)}
-                      icon={PerksIcon}
-                    />
-                  )}
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                    {jobProfile?.course && (
-                      <InfoChip icon={CourseIcon} label="Course" value={jobProfile.course.toUpperCase()} color={getSectionColor(1)} />
+              <AnimatedPaper color={getSectionColor(1)}>
+                <SectionHeader icon={JobIcon} title="Job Profile" />
+                <ResponsiveCard>
+                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {jobProfile?.designation && (
+                        <ContentChip
+                          icon={<RoleIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`Role: ${jobProfile.designation}`}
+                        />
+                      )}
+                      {jobProfile?.placeOfPosting && (
+                        <ContentChip
+                          icon={<LocationOn sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`Location: ${jobProfile.placeOfPosting}`}
+                        />
+                      )}
+                      {jobProfile?.course && (
+                        <ContentChip
+                          icon={<CourseIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`Course: ${jobProfile.course.toUpperCase()}`}
+                        />
+                      )}
+                      {jobProfile?.ctc && (
+                        <ContentChip
+                          icon={<AttachMoney sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`CTC: ₹${jobProfile.ctc/100000} LPA`}
+                        />
+                      )}
+                      {jobProfile?.takeHome && (
+                        <ContentChip
+                          icon={<AttachMoney sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`Take Home: ₹${jobProfile.takeHome/100000} LPA`}
+                        />
+                      )}
+                      {jobProfile?.trainingPeriod && (
+                        <ContentChip
+                          icon={<AccessTime sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`Training: ${jobProfile.trainingPeriod}`}
+                        />
+                      )}
+                    </Box>
+                    {jobProfile?.jobDescription?.description && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" color="primary" sx={{ mb: 1, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                          Job Description
+                        </Typography>
+                        <ContentChip
+                          label={jobProfile.jobDescription.description}
+                          sx={{ 
+                            width: '100%',
+                            justifyContent: 'flex-start',
+                            height: 'auto',
+                            minHeight: { xs: '24px', sm: '32px' },
+                            '& .MuiChip-label': {
+                              whiteSpace: 'normal',
+                              textAlign: 'left',
+                            }
+                          }}
+                        />
+                      </Box>
                     )}
-                    {jobProfile?.ctc && (
-                      <InfoChip icon={AttachMoney} label="CTC" value={`₹${jobProfile.ctc/100000} LPA`} color={getSectionColor(1)} />
+                    {jobProfile?.perks && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" color="primary" sx={{ mb: 1, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                          Perks & Benefits
+                        </Typography>
+                        <ContentChip
+                          label={jobProfile.perks}
+                          sx={{ 
+                            width: '100%',
+                            justifyContent: 'flex-start',
+                            height: 'auto',
+                            minHeight: { xs: '24px', sm: '32px' },
+                            '& .MuiChip-label': {
+                              whiteSpace: 'normal',
+                              textAlign: 'left',
+                            }
+                          }}
+                        />
+                      </Box>
                     )}
-                    {jobProfile?.takeHome && (
-                      <InfoChip icon={AttachMoney} label="Take Home" value={`₹${jobProfile.takeHome/100000} LPA`} color={getSectionColor(1)} />
-                    )}
-                    {jobProfile?.trainingPeriod && (
-                      <InfoChip icon={AccessTime} label="Training" value={jobProfile.trainingPeriod} color={getSectionColor(1)} />
-                    )}
-                  </Box>
-                </Stack>
+                  </CardContent>
+                </ResponsiveCard>
               </AnimatedPaper>
             )}
 
             {/* Eligible Branches Section */}
             {hasEligibleBranches && (
-              <AnimatedPaper color={getSectionColor(2)} delay={300}>
-                <SectionHeader icon={BranchIcon} title="Eligible Branches" color={getSectionColor(2)} />
-                <Stack spacing={2}>
+              <AnimatedPaper color={getSectionColor(2)}>
+                <SectionHeader icon={BranchIcon} title="Eligible Branches" />
+                <Stack spacing={{ xs: 1, sm: 2, md: 3 }}>
                   {eligibleBranchesForProfiles?.map((profile, index) => (
-                    <Box key={index}>
+                    <React.Fragment key={index}>
                       {Object.entries(profile.branches).map(([course, branches]) => {
                         const hasEligibleBranches = branches.some(branch => branch.eligible);
                         return hasEligibleBranches && (
-                          <Box key={course} sx={{ mb: 2 }}>
-                            <Typography 
-                              variant="body1" 
-                              color={`${getSectionColor(2)}.main`}
-                              sx={{ 
-                                fontWeight: 'medium',
-                                mb: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1
-                              }}
-                            >
-                              <CourseIcon sx={{ color: theme.palette[getSectionColor(2)].main }} />
-                              {course.toUpperCase()}
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pl: 2 }}>
+                          <Paper 
+                            key={course}
+                            elevation={0}
+                            sx={{
+                              p: { xs: 1, sm: 2 },
+                              border: `1px solid ${theme.palette.divider}`,
+                              borderRadius: 2,
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <CourseIcon sx={{ 
+                                color: theme.palette.primary.main,
+                                fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' }
+                              }} />
+                              <Typography
+                                variant="subtitle2"
+                                color="primary"
+                                sx={{
+                                  fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1rem' }
+                                }}
+                              >
+                                {course.toUpperCase()}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                               {branches.map((branch, idx) => (
                                 branch.eligible && (
                                   <Chip
                                     key={`${course}-${idx}`}
-                                    icon={<CheckIcon />}
+                                    icon={<CheckIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem', md: '1.25rem' } }} />}
                                     label={branch.name || `${branch.department} - ${branch.specialization}`}
                                     variant="outlined"
                                     sx={{ 
-                                      borderColor: theme.palette[getSectionColor(2)].main,
-                                      color: theme.palette[getSectionColor(2)].main,
+                                      height: { xs: '24px', sm: '32px' },
+                                      '& .MuiChip-label': {
+                                        fontSize: { xs: '0.6rem', sm: '0.75rem', md: '0.875rem' },
+                                        px: 1
+                                      },
+                                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                                       '& .MuiChip-icon': {
-                                        color: theme.palette[getSectionColor(2)].main
+                                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
                                       }
                                     }}
                                   />
                                 )
                               ))}
                             </Box>
-                          </Box>
+                          </Paper>
                         );
                       })}
-                    </Box>
+                    </React.Fragment>
                   ))}
                 </Stack>
               </AnimatedPaper>
@@ -736,138 +923,129 @@ const PlacementOverview = ({ id }) => {
 
             {/* Eligibility Criteria Section */}
             {hasEligibilityCriteria && (
-              <AnimatedPaper color={getSectionColor(3)} delay={400}>
-                <SectionHeader icon={EducationIcon} title="Eligibility Criteria" color={getSectionColor(3)} />
-                <Stack spacing={2}>
-                  {eligibilityCriteria?.minCgpa !== undefined && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                      <Chip
-                        icon={<EducationIcon />}
-                        label={`CGPA: ${eligibilityCriteria.minCgpa}`}
-                        variant="outlined"
-                        sx={{ 
-                          borderColor: theme.palette[getSectionColor(3)].main,
-                          color: theme.palette[getSectionColor(3)].main,
-                          '& .MuiChip-icon': {
-                            color: theme.palette[getSectionColor(3)].main
-                          }
-                        }}
-                      />
+              <AnimatedPaper color={getSectionColor(3)}>
+                <SectionHeader icon={EducationIcon} title="Eligibility Criteria" />
+                <ResponsiveCard>
+                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {eligibilityCriteria?.minCgpa !== undefined && (
+                        <ContentChip
+                          icon={<EducationIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`Minimum CGPA: ${eligibilityCriteria.minCgpa}`}
+                        />
+                      )}
+                      {eligibilityCriteria?.backlogAllowed !== undefined && (
+                        <ContentChip
+                          icon={<Error sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={eligibilityCriteria.backlogAllowed === 0 ? "No Backlogs Allowed" : `Backlogs Allowed: ${eligibilityCriteria.backlogAllowed}`}
+                        />
+                      )}
                     </Box>
-                  )}
-                  {eligibilityCriteria?.backlogAllowed !== undefined && (
-                    <InfoSection 
-                      title="Backlogs" 
-                      content={eligibilityCriteria.backlogAllowed === 0 ? "No Backlogs Allowed" : `Backlogs Allowed: ${eligibilityCriteria.backlogAllowed}`} 
-                      color={getSectionColor(3)}
-                      isBulletList={true}
-                    />
-                  )}
-                </Stack>
+                  </CardContent>
+                </ResponsiveCard>
               </AnimatedPaper>
             )}
 
             {/* Selection Process Section */}
             {hasSelectionProcess && (
-              <AnimatedPaper color={getSectionColor(4)} delay={500}>
-                <SectionHeader icon={ProcessIcon} title="Selection Process" color={getSectionColor(4)} />
-                {selectionProcess?.map((process, processIndex) => {
-                  const hasProcessData = process.rounds?.length > 0 || 
-                    process.tentativeDate || 
-                    process.expectedRecruits;
-
-                  return hasProcessData && (
-                    <Box key={processIndex} sx={{ mb: 3 }}>
-                      {process.rounds?.length > 0 && (
-                        <Stack spacing={2}>
-                          {process.rounds.map((round, index) => (
-                            <RoundItem 
-                              key={index}
-                              round={round}
-                              color={getSectionColor(4)}
+              <AnimatedPaper color={getSectionColor(4)}>
+                <SectionHeader icon={ProcessIcon} title="Selection Process" />
+                <ResponsiveCard>
+                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
+                    {selectionProcess?.map((process, processIndex) => (
+                      <Box key={processIndex} sx={{ mb: 2 }}>
+                        {process.rounds?.map((round, index) => (
+                          <Box key={index} sx={{ mb: 2 }}>
+                            <ContentChip
+                              icon={<ProcessIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                              label={`Round ${round.roundNumber}: ${formatRoundName(round.roundName)}`}
+                              sx={{ mb: 1 }}
                             />
-                          ))}
-                        </Stack>
-                      )}
-                      {process.tentativeDate && (
-                        <InfoSection 
-                          icon={EventIcon}
-                          title="Tentative Date" 
-                          content={formatDate(process.tentativeDate)} 
-                          color={getSectionColor(4)}
-                        />
-                      )}
-                      {process.expectedRecruits && (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                          <Chip
-                            icon={<BranchIcon />}
-                            label={`Expected Recruits: ${process.expectedRecruits}`}
-                            variant="outlined"
-                            sx={{ 
-                              borderColor: theme.palette[getSectionColor(4)].main,
-                              color: theme.palette[getSectionColor(4)].main,
-                              '& .MuiChip-icon': {
-                                color: theme.palette[getSectionColor(4)].main
-                              }
-                            }}
-                          />
+                            {round.details && (
+                              <ContentChip
+                                label={round.details}
+                                sx={{ 
+                                  width: '100%',
+                                  justifyContent: 'flex-start',
+                                  height: 'auto',
+                                  minHeight: { xs: '24px', sm: '32px' },
+                                  '& .MuiChip-label': {
+                                    whiteSpace: 'normal',
+                                    textAlign: 'left',
+                                  }
+                                }}
+                              />
+                            )}
+                          </Box>
+                        ))}
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                          {process.tentativeDate && (
+                            <ContentChip
+                              icon={<EventIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                              label={`Tentative Date: ${formatDate(process.tentativeDate)}`}
+                            />
+                          )}
+                          {process.expectedRecruits && (
+                            <ContentChip
+                              icon={<BranchIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                              label={`Expected Recruits: ${process.expectedRecruits}`}
+                            />
+                          )}
                         </Box>
-                      )}
-                    </Box>
-                  );
-                })}
+                      </Box>
+                    ))}
+                  </CardContent>
+                </ResponsiveCard>
+              </AnimatedPaper>
+            )}
+
+            {/* Bond Details Section */}
+            {bondDetails?.hasBond && bondDetails?.details && (
+              <AnimatedPaper color={getSectionColor(5)}>
+                <SectionHeader icon={BondIcon} title="Bond Details" color={getSectionColor(5)} />
+                <Typography variant="body2" color="text.secondary">
+                  {bondDetails.details}
+                </Typography>
               </AnimatedPaper>
             )}
 
             {/* Application Details Section */}
             {hasApplicationDetails && (
-              <AnimatedPaper color={getSectionColor(5)} delay={600}>
-                <SectionHeader icon={LinkIcon} title="Application Details" color={getSectionColor(5)} />
-                <Stack spacing={2}>
-                  {applicationDetails?.applicationDeadline && (
-                    <InfoSection 
-                      title="Application Deadline" 
-                      content={formatDate(applicationDetails.applicationDeadline)} 
-                      color={getSectionColor(5)}
-                      icon={CalendarToday}
-                    />
-                  )}
-                  {applicationDetails?.applicationLink && (
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <ApplicationIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }, color: theme.palette[getSectionColor(5)].main }} />
-                        <Typography variant="subtitle2" color={getSectionColor(5)}>
-                          Application Link
-                        </Typography>
-                      </Box>
-                      <Link 
-                        href={applicationDetails.applicationLink}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        sx={{ 
-                          color: theme.palette[getSectionColor(5)].main,
-                          textDecoration: 'underline',
-                          fontSize: { xs: '0.625rem', sm: '0.75rem', md: '0.875rem' },
-                          '&:hover': {
-                            textDecoration: 'none'
+              <AnimatedPaper color={getSectionColor(6)}>
+                <SectionHeader icon={LinkIcon} title="Application Details" />
+                <ResponsiveCard>
+                  <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {applicationDetails?.applicationDeadline && (
+                        <ContentChip
+                          icon={<CalendarToday sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={`Deadline: ${formatDate(applicationDetails.applicationDeadline)}`}
+                        />
+                      )}
+                      {applicationDetails?.applicationLink && (
+                        <ContentChip
+                          icon={<ApplicationIcon sx={{ fontSize: { xs: '0.75rem', sm: '1rem' } }} />}
+                          label={
+                            <Link 
+                              href={applicationDetails.applicationLink}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              sx={{ 
+                                color: 'inherit',
+                                textDecoration: 'none',
+                                '&:hover': {
+                                  textDecoration: 'underline'
+                                }
+                              }}
+                            >
+                              Application Link
+                            </Link>
                           }
-                        }}
-                      >
-                        {applicationDetails.applicationLink}
-                      </Link>
+                        />
+                      )}
                     </Box>
-                  )}
-                </Stack>
-              </AnimatedPaper>
-            )}
-
-            {/* Bond Details Section - Moved to the end */}
-            {bondDetails?.hasBond && bondDetails?.details && (
-              <AnimatedPaper color={getSectionColor(6)} delay={700}>
-                <SectionHeader icon={BondIcon} title="Bond Details" color={getSectionColor(6)} />
-                <Typography variant="body2" color="text.secondary">
-                  {bondDetails.details}
-                </Typography>
+                  </CardContent>
+                </ResponsiveCard>
               </AnimatedPaper>
             )}
           </Stack>
