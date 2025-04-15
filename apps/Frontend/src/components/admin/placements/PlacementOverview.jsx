@@ -305,53 +305,43 @@ const PlacementOverview = ({ id }) => {
 
   const AnimatedPaper = ({ children, color, delay = 0 }) => {
     const ref = React.useRef(null);
-    const [scrollDirection, setScrollDirection] = React.useState('down');
-    const lastScrollY = React.useRef(0);
+    const [isVisible, setIsVisible] = React.useState(false);
 
     React.useEffect(() => {
-      const handleScroll = () => {
-        const currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY.current) {
-          setScrollDirection('down');
-        } else {
-          setScrollDirection('up');
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        },
+        {
+          root: null,
+          rootMargin: '0px',
+          threshold: 0.1
         }
-        lastScrollY.current = currentScrollY;
-      };
+      );
 
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    const isInView = useInView(ref, {
-      threshold: 0.1,
-      once: false
-    });
-
-    const variants = {
-      hidden: { 
-        opacity: 0,
-        y: scrollDirection === 'down' ? 100 : -100
-      },
-      visible: { 
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: 0.4,
-          delay: delay / 1000,
-          ease: [0.25, 0.1, 0.25, 1]
-        }
+      if (ref.current) {
+        observer.observe(ref.current);
       }
-    };
+
+      return () => {
+        if (ref.current) {
+          observer.unobserve(ref.current);
+        }
+      };
+    }, []);
 
     return (
       <motion.div
         ref={ref}
-        initial="hidden"
-        animate={isInView ? "visible" : "hidden"}
-        variants={variants}
-        whileInView="visible"
-        viewport={{ once: false }}
+        initial={{ opacity: 0, y: 50 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+        transition={{
+          duration: 0.5,
+          delay: delay / 1000,
+          ease: [0.25, 0.1, 0.25, 1]
+        }}
       >
         <Paper
           id={`section-${color}`}
