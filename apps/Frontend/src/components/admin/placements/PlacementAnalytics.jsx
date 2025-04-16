@@ -35,7 +35,8 @@ const PlacementAnalytics = ({ placements }) => {
     let totalPackage = 0;
     let highestPackage = 0;
     let uniqueCompanies = new Set();
-    let studentsPlaced = 0;
+    let uniqueSelectedStudents = new Set();
+    let totalSelectedStudents = 0;
 
     placements.forEach(placement => {
       // Count status
@@ -53,16 +54,19 @@ const PlacementAnalytics = ({ placements }) => {
         uniqueCompanies.add(placement.companyDetails.name);
       }
 
-      // Calculate packages
-      const ctc = parseFloat(placement.jobProfile?.ctc) || 0;
-      if (ctc > 0) {
-        totalPackage += ctc;
-        highestPackage = Math.max(highestPackage, ctc);
-      }
+      // Track selected students
+      if (placement.selectedStudents && placement.selectedStudents.length > 0) {
+        placement.selectedStudents.forEach(student => {
+          uniqueSelectedStudents.add(student._id || student.id);
+        });
+        totalSelectedStudents += placement.selectedStudents.length;
 
-      // Count students placed
-      if (placement.status === 'closed' && placement.jobProfile?.expectedRecruits) {
-        studentsPlaced += parseInt(placement.jobProfile.expectedRecruits) || 0;
+        // Calculate packages only for placements with selected students
+        const ctc = parseFloat(placement.jobProfile?.ctc) || 0;
+        if (ctc > 0) {
+          totalPackage += (ctc * placement.selectedStudents.length);
+          highestPackage = Math.max(highestPackage, ctc);
+        }
       }
     });
 
@@ -70,10 +74,11 @@ const PlacementAnalytics = ({ placements }) => {
       totalPlacements,
       activePlacements,
       closedPlacements,
-      avgPackage: totalPackage / (totalPlacements || 1),
+      avgPackage: totalSelectedStudents > 0 ? totalPackage / totalSelectedStudents : 0,
       highestPackage,
       totalCompanies: uniqueCompanies.size,
-      studentsPlaced,
+      studentsPlaced: uniqueSelectedStudents.size,
+      totalSelectedStudents
     };
   };
 
@@ -92,7 +97,7 @@ const PlacementAnalytics = ({ placements }) => {
       count: analytics.studentsPlaced,
       Icon: PeopleIcon,
       color: "#2e7d32", // Green
-      trend: `${Math.round((analytics.studentsPlaced / (analytics.totalPlacements * 10)) * 100)}% placement rate`
+      trend: `${Math.round((analytics.studentsPlaced / analytics.totalSelectedStudents) * 100)}% placement rate`
     },
     {
       title: "Avg Package",
