@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "../../axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Refresh, FilterList, Sort, Description } from "@mui/icons-material";
+import {
+  Search,
+  Refresh,
+  FilterList,
+  Sort,
+  Description,
+} from "@mui/icons-material";
 import ApplicationDetailView from "./ApplicationDetailView";
 import ApplicationSkeleton from "./ApplicationSkeleton";
 import OfferLetterView from "./OfferLetterView";
+import { Alert } from "@mui/material";
 import { useOutletContext } from "react-router-dom";
 import {
   Box,
@@ -77,9 +84,11 @@ const ApplicationsSection = () => {
   };
   const handleOfferResponseSubmitted = (updatedApplication) => {
     // Update the application in the list
-    setApplications(applications.map(app => 
-      app._id === updatedApplication._id ? updatedApplication : app
-    ));
+    setApplications(
+      applications.map((app) =>
+        app._id === updatedApplication._id ? updatedApplication : app
+      )
+    );
   };
   const filteredApplications = applications
     .filter((app) => {
@@ -352,7 +361,6 @@ const ApplicationsSection = () => {
                     </tr>
                   ))}
                 </tbody>
-                
               </table>
             </div>
 
