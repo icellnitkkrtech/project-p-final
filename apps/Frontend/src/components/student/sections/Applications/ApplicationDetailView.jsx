@@ -1,6 +1,13 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, Typography, Divider, Box, Button } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Divider,
+  Box,
+  Button,
+} from "@mui/material";
 import {
   Business,
   Work,
@@ -81,7 +88,6 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                 ✕
               </button>
             </Box>
-
             {/* Application Status */}
             <Box mb={3}>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -101,7 +107,6 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                 </Typography>
               </Box>
             </Box>
-
             {application.offerDetails && (
               <>
                 <Divider sx={{ my: 2 }} />
@@ -112,18 +117,26 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                       Offer Letter
                     </Typography>
                   </Box>
-                  
+
                   <Box p={2} bgcolor="#f5f5f5" borderRadius={1}>
                     <Typography variant="body2" gutterBottom>
-                      <strong>Offer Date:</strong> {formatDate(application.offerDetails.offerDate)}
+                      <strong>Offer Date:</strong>{" "}
+                      {formatDate(application.offerDetails.offerDate)}
                     </Typography>
-                    
+
                     {application.offerDetails.response ? (
-                      <Typography 
-                        variant="body2" 
-                        color={application.offerDetails.response === 'accept' ? 'success.main' : 'error.main'}
+                      <Typography
+                        variant="body2"
+                        color={
+                          application.offerDetails.response === "accept"
+                            ? "success.main"
+                            : "error.main"
+                        }
                       >
-                        <strong>Status:</strong> {application.offerDetails.response === 'accept' ? 'Accepted' : 'Rejected'} 
+                        <strong>Status:</strong>{" "}
+                        {application.offerDetails.response === "accept"
+                          ? "Accepted"
+                          : "Rejected"}
                         on {formatDate(application.offerDetails.responseDate)}
                       </Typography>
                     ) : (
@@ -131,8 +144,8 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                         <strong>Status:</strong> Pending Response
                       </Typography>
                     )}
-                    
-                    <Button
+
+                    {/* <Button
                       variant="contained"
                       color="primary"
                       size="small"
@@ -143,14 +156,12 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                       }}
                     >
                       View Offer Letter
-                    </Button>
+                    </Button> */}
                   </Box>
                 </Box>
               </>
             )}
-
             <Divider sx={{ my: 2 }} />
-
             {/* Company Details */}
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -176,9 +187,7 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                 {placementDrive?.companyDetails?.companyType}
               </Typography>
             </Box>
-
             <Divider sx={{ my: 2 }} />
-
             {/* Job Profile */}
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -219,9 +228,7 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                 )}
               </Box>
             </Box>
-
             <Divider sx={{ my: 2 }} />
-
             {/* Eligibility Criteria */}
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -255,35 +262,83 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                   .join(", ")}
               </Typography>
             </Box>
-
             <Divider sx={{ my: 2 }} />
 
-            {/* Selection Process */}
-            {/* Selection Process */}
+            {/* Selection Process with Status */}
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <ListAlt color="primary" />
                 <Typography variant="h6" color="primary">
-                  Selection Process
+                  Selection Process Status
                 </Typography>
               </Box>
               {placementDrive?.selectionProcess?.[0]?.rounds?.length > 0 ? (
                 <Box className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {placementDrive.selectionProcess[0].rounds.map(
-                    (round, index) => (
-                      <Box key={index} className="p-2 bg-gray-50 rounded-lg">
-                        <Typography variant="subtitle2" color="primary">
-                          Round {round.roundNumber}: {round.roundName}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          className="block mt-0.5"
+                    (round, index) => {
+                      // Find matching round status
+                      const roundStatus = application.roundStatus?.find(
+                        (status) => status.roundNumber === round.roundNumber
+                      );
+
+                      return (
+                        <Box
+                          key={index}
+                          className="p-3 bg-gray-50 rounded-lg border border-gray-200"
                         >
-                          {round.details}
-                        </Typography>
-                      </Box>
-                    )
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            gutterBottom
+                          >
+                            Round {round.roundNumber}: {round.roundName}
+                          </Typography>
+                          <Box className="flex flex-wrap gap-2 items-center mt-1">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                roundStatus?.status === "qualified"
+                                  ? "bg-green-100 text-green-800"
+                                  : roundStatus?.status === "not-qualified"
+                                    ? "bg-red-100 text-red-800"
+                                    : roundStatus?.status === "absent"
+                                      ? "bg-gray-100 text-gray-800"
+                                      : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {roundStatus?.status
+                                ? roundStatus.status.charAt(0).toUpperCase() +
+                                  roundStatus.status.slice(1)
+                                : "Pending"}
+                            </span>
+                            {roundStatus?.date && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Date:{" "}
+                                {new Date(
+                                  roundStatus.date
+                                ).toLocaleDateString()}
+                              </Typography>
+                            )}
+                          </Box>
+                          {roundStatus?.feedback && (
+                            <Typography className="mt-2 text-sm text-gray-600">
+                              <strong>Feedback:</strong> {roundStatus.feedback}
+                            </Typography>
+                          )}
+                          {round.details && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              className="block mt-1"
+                            >
+                              {round.details}
+                            </Typography>
+                          )}
+                        </Box>
+                      );
+                    }
                   )}
                 </Box>
               ) : (
@@ -292,52 +347,6 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                 </Typography>
               )}
             </Box>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* Your Progress */}
-            {/* <Box>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <Assessment color="primary" />
-                <Typography variant="h6" color="primary">
-                  Your Progress
-                </Typography>
-              </Box>
-              {roundStatus?.length > 0 ? (
-                <Box className="space-y-2">
-                  {roundStatus.map((round, index) => (
-                    <Box
-                      key={index}
-                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                    >
-                      <Box>
-                        <Typography variant="subtitle1">
-                          {round.roundName}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {new Date(round.date).toLocaleDateString()}
-                        </Typography>
-                        {round.feedback && (
-                          <Typography variant="body2" color="text.secondary">
-                            Feedback: {round.feedback}
-                          </Typography>
-                        )}
-                      </Box>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${getStatusClass(round.status)}`}
-                      >
-                        {round.status}
-                      </span>
-                    </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Typography color="text.secondary">
-                  No round status updates yet
-                </Typography>
-              )}
-            </Box> */}
-
             {/* Bond Details */}
             {placementDrive?.bondDetails && (
               <>
@@ -356,7 +365,6 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                 </Box>
               </>
             )}
-
             {/* Documents Section */}
             {documents?.length > 0 && (
               <>
@@ -400,7 +408,6 @@ const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
                 </Box>
               </>
             )}
-
             {/* Offer Details */}
             {offerDetails && (
               <>

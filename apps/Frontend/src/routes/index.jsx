@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from "react-router-dom";
 import { CircularProgress, Box } from "@mui/material";
 import { lazy } from "react";
 import MainLayout from "../components/layout/MainLayout";
@@ -15,6 +15,8 @@ import ResumeBuilder from "../components/student/sections/resume/ResumeBuilder";
 import ProfileSection from "../components/student/sections/Profile/ProfileSection";
 import JobSection from "../components/student/sections/jobs/JobSection";
 import NotificationsSection from "../components/student/sections/NotificationSection";
+import QuerySection from "../components/student/sections/QuerySection";
+
 import StudentLogin from "../components/student/auth_referal_for_student/Login";
 import StudentSignup from "../components/student/auth_referal_for_student/Signup";
 import CompanyDashboard from "../components/company/CompanyDashboard";
@@ -82,7 +84,7 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      <Route element={<PrivateRoute allowedRoles={['admin']} />}>
+      <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
         <Route path="/admin" element={<MainLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -98,7 +100,10 @@ const AppRoutes = () => {
             ))}
           <Route path="settings" element={<Settings />} />
           <Route path="/admin/placements" element={<Placements />} />
-          <Route path="/admin/placements/:placementId" element={<DriveManagement />} />
+          <Route
+            path="/admin/placements/:placementId"
+            element={<DriveManagement />}
+          />
         </Route>
       </Route>
 
@@ -110,7 +115,7 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      <Route path="/student/:id" element={<StudentDashboard />}>
+      <Route path="/student" element={<StudentDashboard />}>
         <Route index element={<ProfileSection />} />
         <Route path="profile" element={<ProfileSection />} />
         <Route path="profile/edit" element={<ProfileEdit />} />
@@ -118,6 +123,7 @@ const AppRoutes = () => {
         <Route path="resume" element={<ResumeBuilder />} />
         <Route path="jobs" element={<JobSection />} />
         <Route path="notifications" element={<NotificationsSection />} />
+        <Route path="queries" element={<QuerySection />} />
       </Route>
 
       <Route path="/" element={<LandingPage />} />

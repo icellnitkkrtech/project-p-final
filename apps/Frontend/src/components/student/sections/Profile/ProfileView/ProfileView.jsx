@@ -126,7 +126,7 @@ const ProfileView = ({ student, onEdit }) => {
             <Button
               variant="contained"
               startIcon={<Edit />}
-              onClick={() => navigate(`/student/${student._id}/profile/edit`)}
+              onClick={() => navigate(`/student/profile/edit`)}
             >
               Edit Profile
             </Button>

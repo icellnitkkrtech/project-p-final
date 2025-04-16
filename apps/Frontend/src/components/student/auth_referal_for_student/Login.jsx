@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TextField,
@@ -17,7 +17,20 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  // Add this useEffect to check authentication status
+  useEffect(() => {
+    const checkAuth = () => {
+      const studentId = localStorage.getItem("studentId");
+      const authToken = localStorage.getItem("authToken");
 
+      if (studentId && authToken) {
+        // If already authenticated, redirect to dashboard
+        navigate("/student");
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -67,7 +80,7 @@ const Login = () => {
           localStorage.setItem("studentId", studentData._id);
 
           // Navigate to student dashboard
-          navigate(`/student/${studentData._id}`);
+          navigate(`/student`);
         } else {
           setError("Student profile not found");
         }
