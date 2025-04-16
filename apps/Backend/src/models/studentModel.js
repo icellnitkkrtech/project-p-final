@@ -388,4 +388,24 @@ export default class StudentModel {
       );
     }
   }
+  // apps/Backend/src/models/studentModel.js
+// Add this method to the StudentModel class
+
+async updatePlacementStatus(studentId, isPlaced, companyName) {
+  try {
+    const student = await Student.findByIdAndUpdate(
+      studentId,
+      {
+        isPlaced: isPlaced,
+        placedAt: companyName,
+        placementDate: new Date()
+      },
+      { new: true }
+    );
+    return student;
+  } catch (error) {
+    console.error("Model error:", error);
+    throw error;
+  }
+}
 }

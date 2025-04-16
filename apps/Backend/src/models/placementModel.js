@@ -1,9 +1,12 @@
 import placementDrive from "../schema/placement/placementSchema.js";
+import student from "../schema/student/studentSchema.js";
+import {Application} from "../schema/general/applicationSchema.js";
 import mongoose from "mongoose";
 
 export default class PlacementModel {
     placement = placementDrive;
-
+    student = student;
+    application = Application;
     async getAllPlacements() {
         console.log("Placement Model: getAllPlacements called");
         try {
@@ -636,12 +639,16 @@ export default class PlacementModel {
 
     async updateOfferStatus(placementId, offerId, status) {
         try {
+            // Import models directly if they're not available through this
+            const Student = mongoose.model('Student');
+            const Application = mongoose.model('Application');
+            
             const placement = await this.placement.findById(placementId);
             if (!placement) {
                 throw new Error("Placement not found");
             }
             
-            if (!placement.offerLetters) {
+            if (!placement.offerLetters || !Array.isArray(placement.offerLetters)) {
                 throw new Error("No offer letters found");
             }
             
@@ -657,14 +664,54 @@ export default class PlacementModel {
             placement.offerLetters[offerIndex].status = status;
             placement.offerLetters[offerIndex].responseDate = new Date();
             
-            // If accepted, update student's placement status
-            if (status === 'accepted') {
-                const studentId = placement.offerLetters[offerIndex].studentId;
-                
-                // Update student's placement status in a separate collection if needed
-                // This would require additional code to update the student model
+            // Get the student ID
+            const studentId = placement.offerLetters[offerIndex].studentId;
+            if (!studentId) {
+                throw new Error("Student ID not found in offer letter");
             }
             
+            try {
+                // Find student with the student id
+                const student = await Student.findById(studentId);
+                if (!student) {
+                    console.warn(`Student with ID ${studentId} not found`);
+                } else {
+                    // Update the student's placement status
+                    if (status === 'accepted') {
+                        student.isPlaced = true;
+                        student.placementDate = new Date();
+                    } else if (status === 'rejected') {
+                        student.isPlaced = false;
+                        student.placementDate = null;
+                    }
+                    await student.save();
+                }
+                
+                // Find and update the application
+                const application = await Application.findOne({ 
+                    student: studentId, 
+                    placementDrive: placementId 
+                });
+                
+                if (!application) {
+                    console.warn(`Application for student ${studentId} and placement ${placementId} not found`);
+                } else {
+                    // Make sure offerDetails exists
+                    if (!application.offerDetails) {
+                        application.offerDetails = {};
+                    }
+                    
+                    application.offerDetails.status = status;
+                    application.status = "selected";
+                    application.offerDetails.responseDate = new Date();
+                    await application.save();
+                }
+            } catch (innerError) {
+                console.error("Error updating related records:", innerError);
+                // Continue with saving the placement even if related updates fail
+            }
+            
+            // Save the placement regardless of other updates
             await placement.save();
             return placement.offerLetters[offerIndex];
         } catch (error) {
