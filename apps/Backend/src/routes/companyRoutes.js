@@ -10,13 +10,17 @@ const companyServices = new CompanyServices(companyModel);
 const companyController = new CompanyController(companyServices);
 
 // Company CRUD operations
-companyRouter.post("/register", authVerify, (req, res) => {
+companyRouter.post("/register", (req, res) => {
   companyController.createCompany(req, res);
 });
 
 companyRouter.get("/all", authVerify, (req, res) => {
   console.log("Route: GET /all hit");
   return companyController.getAllCompanies(req, res);
+});
+
+companyRouter.get("/profile/user/:userId", (req, res) => {
+  companyController.getCompanyByUserId(req, res);
 });
 
 companyRouter.get("/getone/:id",  (req, res) => {

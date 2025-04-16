@@ -66,7 +66,7 @@ const CustomReports = () => {
     type: 'placement',
     metrics: [],
     filters: {
-      startDate: dayjs(),
+      startDate: dayjs().subtract(1, 'year'),
       endDate: dayjs(),
       departments: [],
       categories: [],
@@ -120,7 +120,7 @@ const CustomReports = () => {
         type: 'placement',
         metrics: [],
         filters: {
-          startDate: dayjs(),
+          startDate: dayjs().subtract(1, 'year'),
           endDate: dayjs(),
           departments: [],
           categories: [],
@@ -128,6 +128,7 @@ const CustomReports = () => {
       });
     } catch (error) {
       console.error('Error saving template:', error);
+      setError('Failed to save template. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -139,6 +140,7 @@ const CustomReports = () => {
       await reportService.generateReport(template);
     } catch (error) {
       console.error('Error generating report:', error);
+      setError('Failed to generate report. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -151,6 +153,7 @@ const CustomReports = () => {
       setTemplates((prev) => prev.filter((t) => t.id !== templateId));
     } catch (error) {
       console.error('Error deleting template:', error);
+      setError('Failed to delete template. Please try again.');
     } finally {
       setLoading(false);
     }

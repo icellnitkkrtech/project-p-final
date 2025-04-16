@@ -1,176 +1,881 @@
 import { Router } from 'express';
-import StudentModel from '../models/studentModel.js'; // Import the StudentModel
-import CompanyModel from '../models/companyModel.js';
+import asyncHandler from '../utils/asyncHandler.js';
+import Student from "../schema/student/studentSchema.js";
+import Company from "../schema/company/companySchema.js";
+import Placement from "../schema/placement/placementSchema.js";
 
 const dashboardRouter = Router();
-const studentModel = new StudentModel(); // Initialize the StudentModel
-const companyModel = new CompanyModel();
 
-dashboardRouter.get('/analytics', async (req, res) => {
+// Analytics endpoint with filter support
+dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
     try {
-        const companiesVisitedResponse = await companyModel.getTotalCompanies();
-        // Fetch the total number of students from the database
-        const totalStudentsResponse = await studentModel.getTotalStudents();
+        // Extract filter parameters
+        const { session, educationLevel, driveType, offerType } = req.query;
         
-        // Check if the response is successful
-        if (totalStudentsResponse.statusCode !== 200||companiesVisitedResponse.statusCode !== 200) {
-            return res.status(totalStudentsResponse.statusCode).json(totalStudentsResponse);
+        // Build filter queries based on actual schema structure
+        const studentQuery = {};
+        const companyQuery = {};
+        const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
         }
+        
+        // Apply education level filter
+        if (educationLevel && educationLevel !== 'all') {
+            // Map educationLevel to department or degree type
+            if (educationLevel === 'UG') {
+                studentQuery['personalInfo.department'] = { $in: ['Computer Engineering', 'Information Technology', 'Electronics & Communication Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Production & Industrial Engineering', 'Civil Engineering'] };
+            } else if (educationLevel === 'PG') {
+                studentQuery['personalInfo.department'] = { $in: ['M.Tech', 'MBA', 'MCA', 'M.Sc', 'PhD'] };
+            }
+        }
+        
+        // Apply drive type filter to placement drives
+        if (driveType && driveType !== 'all') {
+            if (driveType === 'placement') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (driveType === 'intern') {
+                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
+            }
+        }
+        
+        // Apply offer type filter
+        if (offerType && offerType !== 'all') {
+            if (offerType === 'fte') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (offerType === 'intern+ppo') {
+                placementQuery['jobProfile.jobType'] = 'internPpo';
+            } else if (offerType === 'intern+fte') {
+                placementQuery['jobProfile.jobType'] = 'fteIntern';
+            }
+        }
+        
+        // Get total students count
+        const totalStudents = await Student.countDocuments(studentQuery);
+        
+        // Get companies visited count
+        const companiesVisited = await Company.countDocuments(companyQuery);
+        
+        // Get placement data
+        const placements = await Placement.find(placementQuery);
+        
+        // Calculate placed students (students who have been selected)
+        let placedStudents = 0;
+        let totalPackage = 0;
+        
+        // Process placements to get placed students and package details
+        for (const placement of placements) {
+            if (placement.roundDetails && placement.roundDetails.rounds) {
+                const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
+                if (finalRound && finalRound.selectedStudents) {
+                    placedStudents += finalRound.selectedStudents.length;
+                    
+                    // Calculate total package for average
+                    if (placement.jobProfile && placement.jobProfile.ctc) {
+                        totalPackage += placement.jobProfile.ctc * finalRound.selectedStudents.length;
+                    }
+                }
+            }
+        }
+        
+        // Calculate placement rate and average package
+        const placementRate = totalStudents > 0 ? Math.round((placedStudents / totalStudents) * 100) : 0;
+        const avgPackage = placedStudents > 0 ? (totalPackage / placedStudents).toFixed(2) : 0;
+        
+        // Get previous period data for comparison
+        // This would require historical data which we don't have access to
+        // For now, we'll return 0 for growth metrics
+        const studentGrowth = 0;
+        const companyGrowth = 0;
+        const placementRateChange = 0;
+        const packageGrowth = 0;
+        
+        res.json({
+            totalStudents,
+            companiesVisited,
+            placedStudents,
+            placementRate,
+            avgPackage,
+            studentGrowth,
+            companyGrowth,
+            placementRateChange,
+            packageGrowth
+        });
+    } catch (error) {
+        console.error("Error in analytics endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch analytics data",
+            message: error.message 
+        });
+    }
+}));
 
-        // Sample data to return; replace with actual data retrieval logic
-        const analyticsData = {
-            totalStudents: totalStudentsResponse.data, // Use the actual count from the database
-            placedStudents: 80, // You can also fetch this from the database if needed
-            companiesVisited: companiesVisitedResponse.data, // Sample data; replace with actual logic
-            averagePackage: 50000 // Sample data; replace with actual logic
+// Placement progress endpoint with filter support
+dashboardRouter.get('/placement-progress', asyncHandler(async (req, res) => {
+    try {
+        // Extract filter parameters
+        const { session, educationLevel, driveType, offerType } = req.query;
+        
+        // Build filter queries based on actual schema structure
+        const studentQuery = {};
+        const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
+        // Apply education level filter
+        if (educationLevel && educationLevel !== 'all') {
+            // Map educationLevel to department or degree type
+            if (educationLevel === 'UG') {
+                studentQuery['personalInfo.department'] = { $in: ['Computer Engineering', 'Information Technology', 'Electronics & Communication Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Production & Industrial Engineering', 'Civil Engineering'] };
+            } else if (educationLevel === 'PG') {
+                studentQuery['personalInfo.department'] = { $in: ['M.Tech', 'MBA', 'MCA', 'M.Sc', 'PhD'] };
+            }
+        }
+        
+        // Apply drive type filter to placement drives
+        if (driveType && driveType !== 'all') {
+            if (driveType === 'placement') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (driveType === 'intern') {
+                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
+            }
+        }
+        
+        // Apply offer type filter
+        if (offerType && offerType !== 'all') {
+            if (offerType === 'fte') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (offerType === 'intern+ppo') {
+                placementQuery['jobProfile.jobType'] = 'internPpo';
+            } else if (offerType === 'intern+fte') {
+                placementQuery['jobProfile.jobType'] = 'fteIntern';
+            }
+        }
+        
+        // Get total students count
+        const totalStudents = await Student.countDocuments(studentQuery);
+        
+        // Get placement data
+        const placements = await Placement.find(placementQuery);
+        
+        // Calculate placed students (students who have been selected)
+        let placedStudents = 0;
+        
+        // Process placements to get placed students
+        for (const placement of placements) {
+            if (placement.roundDetails && placement.roundDetails.rounds) {
+                const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
+                if (finalRound && finalRound.selectedStudents) {
+                    placedStudents += finalRound.selectedStudents.length;
+                }
+            }
+        }
+        
+        // Calculate placement percentage
+        const placementPercentage = totalStudents > 0 ? (placedStudents / totalStudents) * 100 : 0;
+        
+        // Group placements by month
+        const monthlyData = [];
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        // Initialize monthly data with zeros
+        months.forEach(month => {
+            monthlyData.push({
+                month,
+                placed: 0,
+                target: Math.round(totalStudents * 0.08) // Example target: 8% of total students per month
+            });
+        });
+        
+        // Fill in actual placement data by month
+        placements.forEach(placement => {
+            if (placement.roundDetails && placement.roundDetails.rounds) {
+                const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
+                if (finalRound && finalRound.resultDeclaredAt) {
+                    const month = new Date(finalRound.resultDeclaredAt).getMonth();
+                    if (finalRound.selectedStudents) {
+                        monthlyData[month].placed += finalRound.selectedStudents.length;
+                    }
+                }
+            }
+        });
+        
+        res.json({
+            overall: {
+                total: totalStudents,
+                placed: placedStudents,
+                percentage: placementPercentage
+            },
+            monthly: monthlyData
+        });
+    } catch (error) {
+        console.error("Error in placement-progress endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch placement progress data",
+            message: error.message 
+        });
+    }
+}));
+
+// Company stats endpoint
+dashboardRouter.get('/company-stats', asyncHandler(async (req, res) => {
+    try {
+        // Extract filter parameters
+        const { session, educationLevel, driveType, offerType } = req.query;
+        
+        // Build filter queries based on actual schema structure
+        const companyQuery = {};
+        const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
+        // Apply drive type filter to placement drives
+        if (driveType && driveType !== 'all') {
+            if (driveType === 'placement') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (driveType === 'intern') {
+                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
+            }
+        }
+        
+        // Apply offer type filter
+        if (offerType && offerType !== 'all') {
+            if (offerType === 'fte') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (offerType === 'intern+ppo') {
+                placementQuery['jobProfile.jobType'] = 'internPpo';
+            } else if (offerType === 'intern+fte') {
+                placementQuery['jobProfile.jobType'] = 'fteIntern';
+            }
+        }
+        
+        // Get all companies
+        const companies = await Company.find(companyQuery);
+        
+        // Get all placement drives that match the filters
+        const placements = await Placement.find(placementQuery);
+        
+        // Calculate total companies
+        const total = companies.length;
+        
+        // Group companies by status
+        const byStatus = [
+            { status: 'Ongoing', count: companies.filter(c => c.recruitmentStatus === 'ongoing').length },
+            { status: 'Upcoming', count: companies.filter(c => c.recruitmentStatus === 'upcoming').length },
+            { status: 'Completed', count: companies.filter(c => c.recruitmentStatus === 'completed').length }
+        ];
+        
+        // Group companies by type
+        const companyTypes = {};
+        placements.forEach(placement => {
+            if (placement.companyDetails && placement.companyDetails.companyType) {
+                const type = placement.companyDetails.companyType;
+                companyTypes[type] = (companyTypes[type] || 0) + 1;
+            }
+        });
+        
+        const byType = Object.entries(companyTypes).map(([type, count]) => ({
+            type,
+            count
+        }));
+        
+        // Group companies by package range
+        const packageRanges = {
+            '> 20 LPA': 0,
+            '15-20 LPA': 0,
+            '10-15 LPA': 0,
+            '5-10 LPA': 0,
+            '< 5 LPA': 0
         };
         
-        res.json(analyticsData);
+        placements.forEach(placement => {
+            if (placement.jobProfile && placement.jobProfile.ctc) {
+                const ctc = placement.jobProfile.ctc;
+                
+                if (ctc > 20) {
+                    packageRanges['> 20 LPA']++;
+                } else if (ctc >= 15) {
+                    packageRanges['15-20 LPA']++;
+                } else if (ctc >= 10) {
+                    packageRanges['10-15 LPA']++;
+                } else if (ctc >= 5) {
+                    packageRanges['5-10 LPA']++;
+                } else {
+                    packageRanges['< 5 LPA']++;
+                }
+            }
+        });
+        
+        const byPackage = Object.entries(packageRanges).map(([range, count]) => ({
+            range,
+            count
+        }));
+        
+        res.json({
+            total,
+            byStatus,
+            byType,
+            byPackage
+        });
     } catch (error) {
-        console.error("Error fetching analytics data:", error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error("Error in company-stats endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch company stats data",
+            message: error.message 
+        });
     }
-});
+}));
 
-// New route for placement progress
-dashboardRouter.get('/placement-progress', (req, res) => {
-    // Sample data for placement progress; replace with actual data retrieval logic
-    const placementProgressData = {
-        monthlyData: [
-            { month: "January", placed: 20, target: 30 },
-            { month: "February", placed: 25, target: 30 },
-            { month: "March", placed: 30, target: 40 },
-            // Add more months as needed
-        ],
-        overall: {
-            total: 100,
-            placed: 80,
-            percentage: 80 // Calculate percentage based on total and placed
-        }
-    };
-    res.json(placementProgressData);
-});
-
-// New route for company stats
-dashboardRouter.get('/company-stats', (req, res) => {
-    const companyStatsData = {
-        distribution: [
-            { name: "Company A", value: 50 },
-            { name: "Company B", value: 30 },
-            { name: "Company C", value: 20 }
-        ],
-        packages: [
-            { range: "0-5 LPA", count: 10 },
-            { range: "5-10 LPA", count: 25 },
-            { range: "10-15 LPA", count: 15 }
-        ]
-    };
-    res.json(companyStatsData);
-});
-
-// New route for branch stats
-dashboardRouter.get('/branch-stats', (req, res) => {
-    const branchStatsData = {
-        branches: [
-            { name: "Computer Science", total: 100, placed: 80 },
-            { name: "Electronics", total: 80, placed: 60 },
-            { name: "Mechanical", total: 70, placed: 50 }
-        ]
-    };
-    res.json(branchStatsData);
-});
-
-// New route for CTC analysis
-dashboardRouter.get('/ctc-analysis', (req, res) => {
-    const ctcAnalysisData = {
-        distribution: [
-            { range: "0-5 LPA", count: 10 },
-            { range: "5-10 LPA", count: 25 },
-            { range: "10-15 LPA", count: 15 }
-        ],
-        branchWise: [
-            { branch: "Computer Science", avgCTC: 8.5 },
-            { branch: "Electronics", avgCTC: 7.0 },
-            { branch: "Mechanical", avgCTC: 6.5 }
-        ]
-    };
-    res.json(ctcAnalysisData);
-});
-
-// New route for career preferences
-dashboardRouter.get('/career-preferences', (req, res) => {
-    const careerPreferencesData = {
-        preferences: [
-            { name: "Higher Studies", value: 40, details: { "M.Tech": 20, "MBA": 15, "PhD": 5 } },
-            { name: "Startup", value: 30, details: { "Tech": 15, "Non-Tech": 15 } },
-            { name: "Research", value: 20, details: { "R&D": 10, "Academia": 10 } }
-        ],
-        branchWise: [
-            { branch: "Computer Science", higherStudies: 20, startup: 10, research: 5, civilServices: 2 },
-            { branch: "Electronics", higherStudies: 15, startup: 5, research: 3, civilServices: 1 }
-        ]
-    };
-    res.json(careerPreferencesData);
-});
-
-// New route for job profiles
-dashboardRouter.get('/job-profiles', (req, res) => {
-    const jobProfilesData = {
-        sectors: [
-            { name: "IT", value: 60 },
-            { name: "Core Engineering", value: 30 },
-            { name: "Consulting", value: 10 }
-        ],
-        profiles: [
-            { profile: "Software Engineer", count: 50, avgCTC: 8.0 },
-            { profile: "Data Scientist", count: 20, avgCTC: 10.0 },
-            { profile: "Mechanical Engineer", count: 15, avgCTC: 6.5 }
-        ]
-    };
-    res.json(jobProfilesData);
-});
-
-// New route for top companies
-dashboardRouter.get('/top-companies', (req, res) => {
-    const topCompaniesData = {
-        topPaying: [{ name: "Company A", avgCTC: 12.0 }, { name: "Company B", avgCTC: 11.5 }],
-        topHiring: [{ name: "Company C", count: 30 }, { name: "Company D", count: 25 }],
-        lowPaying: [{ name: "Company E", avgCTC: 4.0 }, { name: "Company F", avgCTC: 3.5 }]
-    };
-    res.json(topCompaniesData);
-});
-
-// New route for upcoming events
-dashboardRouter.get('/upcoming-events', (req, res) => {
-    const upcomingEventsData = {
-        events: [
-            { title: "Job Fair", date: "2023-10-15", location: "Campus" },
-            { title: "Alumni Meet", date: "2023-11-01", location: "Auditorium" }
-        ]
-    };
-    res.json(upcomingEventsData);
-});
-
-// New route for recent activities
-dashboardRouter.get('/recent-activities', (req, res) => {
-    const recentActivitiesData = {
-        activities: [
-            { activity: "Placement Drive", date: "2023-09-20" },
-            { activity: "Workshop on Resume Building", date: "2023-09-25" }
-        ]
-    };
-    res.json(recentActivitiesData);
-});
-
-// New route for total students
-dashboardRouter.get('/total-students', async (req, res) => {
+// Branch stats endpoint
+dashboardRouter.get('/branch-stats', asyncHandler(async (req, res) => {
     try {
-        const totalStudents = await getTotalStudents();
-        res.json({ totalStudents });
+        // Extract filter parameters
+        const { session, educationLevel, driveType, offerType } = req.query;
+        
+        // Build filter queries based on actual schema structure
+        const studentQuery = {};
+        const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
+        // Apply education level filter
+        if (educationLevel && educationLevel !== 'all') {
+            // Map educationLevel to department or degree type
+            if (educationLevel === 'UG') {
+                studentQuery['personalInfo.department'] = { $in: ['Computer Engineering', 'Information Technology', 'Electronics & Communication Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Production & Industrial Engineering', 'Civil Engineering'] };
+            } else if (educationLevel === 'PG') {
+                studentQuery['personalInfo.department'] = { $in: ['M.Tech', 'MBA', 'MCA', 'M.Sc', 'PhD'] };
+            }
+        }
+        
+        // Get all students
+        const students = await Student.find(studentQuery);
+        
+        // Get all placement drives that match the filters
+        const placements = await Placement.find(placementQuery);
+        
+        // Group students by department
+        const branchData = {};
+        
+        students.forEach(student => {
+            if (student.personalInfo && student.personalInfo.department) {
+                const department = student.personalInfo.department;
+                
+                if (!branchData[department]) {
+                    branchData[department] = {
+                        name: department,
+                        total: 0,
+                        placed: 0
+                    };
+                }
+                
+                branchData[department].total++;
+            }
+        });
+        
+        // Count placed students by branch
+        placements.forEach(placement => {
+            if (placement.roundDetails && placement.roundDetails.rounds) {
+                const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
+                if (finalRound && finalRound.selectedStudents) {
+                    finalRound.selectedStudents.forEach(async studentId => {
+                        try {
+                            const student = await Student.findById(studentId);
+                            if (student && student.personalInfo && student.personalInfo.department) {
+                                const department = student.personalInfo.department;
+                                if (branchData[department]) {
+                                    branchData[department].placed++;
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error finding student:", err);
+                        }
+                    });
+                }
+            }
+        });
+        
+        res.json({
+            branches: Object.values(branchData)
+        });
     } catch (error) {
-        console.error("Error fetching total students:", error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error("Error in branch-stats endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch branch stats data",
+            message: error.message 
+        });
     }
-});
+}));
+
+// CTC analysis endpoint
+dashboardRouter.get('/ctc-analysis', asyncHandler(async (req, res) => {
+    try {
+        // Extract filter parameters
+        const { session, educationLevel, driveType, offerType } = req.query;
+        
+        // Build filter queries based on actual schema structure
+        const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
+        // Apply drive type filter to placement drives
+        if (driveType && driveType !== 'all') {
+            if (driveType === 'placement') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (driveType === 'intern') {
+                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
+            }
+        }
+        
+        // Apply offer type filter
+        if (offerType && offerType !== 'all') {
+            if (offerType === 'fte') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (offerType === 'intern+ppo') {
+                placementQuery['jobProfile.jobType'] = 'internPpo';
+            } else if (offerType === 'intern+fte') {
+                placementQuery['jobProfile.jobType'] = 'fteIntern';
+            }
+        }
+        
+        // Get all placement drives that match the filters
+        const placements = await Placement.find(placementQuery);
+        
+        // CTC distribution ranges
+        const ctcRanges = [
+            { range: "0-5 LPA", min: 0, max: 5, count: 0 },
+            { range: "5-10 LPA", min: 5, max: 10, count: 0 },
+            { range: "10-15 LPA", min: 10, max: 15, count: 0 },
+            { range: "15-20 LPA", min: 15, max: 20, count: 0 },
+            { range: "20+ LPA", min: 20, max: Infinity, count: 0 }
+        ];
+        
+        // Branch-wise CTC data
+        const branchCTC = {};
+        
+        // Process placements to calculate CTC distribution
+        for (const placement of placements) {
+            if (placement.jobProfile && placement.jobProfile.ctc) {
+                const ctc = placement.jobProfile.ctc;
+                
+                // Count in CTC ranges
+                for (const range of ctcRanges) {
+                    if (ctc >= range.min && ctc < range.max) {
+                        range.count++;
+                        break;
+                    }
+                }
+                
+                // Process by branch
+                if (placement.roundDetails && placement.roundDetails.rounds) {
+                    const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
+                    if (finalRound && finalRound.selectedStudents) {
+                        for (const studentId of finalRound.selectedStudents) {
+                            try {
+                                const student = await Student.findById(studentId);
+                                if (student && student.personalInfo && student.personalInfo.department) {
+                                    const branch = student.personalInfo.department;
+                                    
+                                    if (!branchCTC[branch]) {
+                                        branchCTC[branch] = {
+                                            branch,
+                                            totalCTC: 0,
+                                            count: 0,
+                                            avgCTC: 0
+                                        };
+                                    }
+                                    
+                                    branchCTC[branch].totalCTC += ctc;
+                                    branchCTC[branch].count++;
+                                }
+                            } catch (err) {
+                                console.error("Error finding student:", err);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Calculate average CTC by branch
+        Object.values(branchCTC).forEach(branch => {
+            if (branch.count > 0) {
+                branch.avgCTC = (branch.totalCTC / branch.count).toFixed(2);
+            }
+            delete branch.totalCTC; // Remove the total CTC from the response
+            delete branch.count; // Remove the count from the response
+        });
+        
+        res.json({
+            distribution: ctcRanges,
+            branchWise: Object.values(branchCTC)
+        });
+    } catch (error) {
+        console.error("Error in ctc-analysis endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch CTC analysis data",
+            message: error.message 
+        });
+    }
+}));
+
+// Top companies endpoint
+dashboardRouter.get('/top-companies', asyncHandler(async (req, res) => {
+    try {
+        // Extract filter parameters
+        const { session, educationLevel, driveType, offerType } = req.query;
+        
+        // Build filter queries based on actual schema structure
+        const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
+        // Apply drive type filter to placement drives
+        if (driveType && driveType !== 'all') {
+            if (driveType === 'placement') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (driveType === 'intern') {
+                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
+            }
+        }
+        
+        // Apply offer type filter
+        if (offerType && offerType !== 'all') {
+            if (offerType === 'fte') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (offerType === 'intern+ppo') {
+                placementQuery['jobProfile.jobType'] = 'internPpo';
+            } else if (offerType === 'intern+fte') {
+                placementQuery['jobProfile.jobType'] = 'fteIntern';
+            }
+        }
+        
+        // Get all placement drives that match the filters
+        const placements = await Placement.find(placementQuery);
+        
+        // Process placements to get company statistics
+        const companyStats = {};
+        
+        for (const placement of placements) {
+            if (placement.companyDetails && placement.companyDetails.name) {
+                const companyName = placement.companyDetails.name;
+                
+                if (!companyStats[companyName]) {
+                    companyStats[companyName] = {
+                        name: companyName,
+                        ctc: 0,
+                        hired: 0,
+                        totalCTC: 0
+                    };
+                }
+                
+                // Count hired students
+                if (placement.roundDetails && placement.roundDetails.rounds) {
+                    const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
+                    if (finalRound && finalRound.selectedStudents) {
+                        companyStats[companyName].hired += finalRound.selectedStudents.length;
+                        
+                        // Calculate total CTC
+                        if (placement.jobProfile && placement.jobProfile.ctc) {
+                            companyStats[companyName].totalCTC += placement.jobProfile.ctc * finalRound.selectedStudents.length;
+                        }
+                    }
+                }
+                
+                // Set CTC
+                if (placement.jobProfile && placement.jobProfile.ctc) {
+                    // If multiple CTCs for same company, take the highest
+                    if (companyStats[companyName].ctc < placement.jobProfile.ctc) {
+                        companyStats[companyName].ctc = placement.jobProfile.ctc;
+                    }
+                }
+            }
+        }
+        
+        // Calculate average CTC for each company
+        Object.values(companyStats).forEach(company => {
+            if (company.hired > 0) {
+                company.avgCTC = (company.totalCTC / company.hired).toFixed(2);
+            }
+            delete company.totalCTC; // Remove the total CTC from the response
+        });
+        
+        // Convert to array and sort for different categories
+        const companiesArray = Object.values(companyStats);
+        
+        // Top paying companies (by CTC)
+        const topPaying = [...companiesArray]
+            .sort((a, b) => b.ctc - a.ctc)
+            .slice(0, 5);
+        
+        // Top hiring companies (by number of students hired)
+        const topHiring = [...companiesArray]
+            .sort((a, b) => b.hired - a.hired)
+            .slice(0, 5);
+        
+        // Least paying companies (by CTC, excluding zeros)
+        const leastPaying = [...companiesArray]
+            .filter(company => company.ctc > 0)
+            .sort((a, b) => a.ctc - b.ctc)
+            .slice(0, 5);
+        
+        res.json({
+            topPaying,
+            topHiring,
+            leastPaying
+        });
+    } catch (error) {
+        console.error("Error in top-companies endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch top companies data",
+            message: error.message 
+        });
+    }
+}));
+
+// Job profiles endpoint
+dashboardRouter.get('/job-profiles', asyncHandler(async (req, res) => {
+    try {
+        // Extract filter parameters
+        const { session, educationLevel, driveType, offerType } = req.query;
+        
+        // Build filter queries based on actual schema structure
+        const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
+        // Apply drive type filter to placement drives
+        if (driveType && driveType !== 'all') {
+            if (driveType === 'placement') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (driveType === 'intern') {
+                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
+            }
+        }
+        
+        // Apply offer type filter
+        if (offerType && offerType !== 'all') {
+            if (offerType === 'fte') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (offerType === 'intern+ppo') {
+                placementQuery['jobProfile.jobType'] = 'internPpo';
+            } else if (offerType === 'intern+fte') {
+                placementQuery['jobProfile.jobType'] = 'fteIntern';
+            }
+        }
+        
+        // Get all placement drives that match the filters
+        const placements = await Placement.find(placementQuery);
+        
+        // Process placements to get sector distribution
+        const sectorCounts = {};
+        let totalSectors = 0;
+        
+        // Process placements to get profile analysis
+        const profileStats = {};
+        
+        for (const placement of placements) {
+            // Process sector data
+            if (placement.companyDetails && placement.companyDetails.domain) {
+                const sector = placement.companyDetails.domain;
+                sectorCounts[sector] = (sectorCounts[sector] || 0) + 1;
+                totalSectors++;
+            }
+            
+            // Process profile data
+            if (placement.jobProfile && placement.jobProfile.profileId) {
+                const profile = placement.jobProfile.profileId;
+                
+                if (!profileStats[profile]) {
+                    profileStats[profile] = {
+                        profile,
+                        count: 0,
+                        totalCTC: 0,
+                        avgCTC: 0
+                    };
+                }
+                
+                // Count students in this profile
+                if (placement.roundDetails && placement.roundDetails.rounds) {
+                    const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
+                    if (finalRound && finalRound.selectedStudents) {
+                        profileStats[profile].count += finalRound.selectedStudents.length;
+                        
+                        // Calculate total CTC
+                        if (placement.jobProfile.ctc) {
+                            profileStats[profile].totalCTC += placement.jobProfile.ctc * finalRound.selectedStudents.length;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Convert sector counts to percentages
+        const sectors = Object.entries(sectorCounts).map(([name, count]) => ({
+            name,
+            value: Math.round((count / totalSectors) * 100) || 0
+        }));
+        
+        // Calculate average CTC for each profile
+        Object.values(profileStats).forEach(profile => {
+            if (profile.count > 0) {
+                profile.avgCTC = parseFloat((profile.totalCTC / profile.count).toFixed(2));
+            }
+            delete profile.totalCTC; // Remove the total CTC from the response
+        });
+        
+        // Convert profiles to array and sort by count
+        const profiles = Object.values(profileStats)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5); // Get top 5 profiles
+        
+        res.json({
+            sectors,
+            profiles
+        });
+    } catch (error) {
+        console.error("Error in job-profiles endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch job profile data",
+            message: error.message 
+        });
+    }
+}));
+
+// Career preferences endpoint
+dashboardRouter.get('/career-preferences', asyncHandler(async (req, res) => {
+    try {
+        // Extract filter parameters
+        const { session, educationLevel } = req.query;
+        
+        // Build filter queries based on actual schema structure
+        const studentQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
+        // Apply education level filter
+        if (educationLevel && educationLevel !== 'all') {
+            // Map educationLevel to department or degree type
+            if (educationLevel === 'UG') {
+                studentQuery['personalInfo.department'] = { $in: ['Computer Engineering', 'Information Technology', 'Electronics & Communication Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Production & Industrial Engineering', 'Civil Engineering'] };
+            } else if (educationLevel === 'PG') {
+                studentQuery['personalInfo.department'] = { $in: ['M.Tech', 'MBA', 'MCA', 'M.Sc', 'PhD'] };
+            }
+        }
+        
+        // Add filter for non-enrolled students (students who are not placed)
+        studentQuery['isPlaced'] = { $ne: true };
+        
+        // Get all students that match the filters
+        const students = await Student.find(studentQuery);
+        
+        // Process students to get career preferences
+        const careerCounts = {
+            'Higher Studies': 0,
+            'Startup': 0,
+            'Civil Services': 0,
+            'Research': 0,
+            'Family Business': 0,
+            'Other': 0
+        };
+        
+        // Branch-wise preferences
+        const branchPreferences = {};
+        
+        for (const student of students) {
+            // Get career preference
+            let careerPreference = 'Other';
+            
+            if (student.careerPreference) {
+                careerPreference = student.careerPreference;
+            }
+            
+            // Count career preferences
+            if (careerCounts[careerPreference] !== undefined) {
+                careerCounts[careerPreference]++;
+            } else {
+                careerCounts['Other']++;
+            }
+            
+            // Process branch-wise preferences
+            if (student.personalInfo && student.personalInfo.department) {
+                const branch = student.personalInfo.department;
+                
+                if (!branchPreferences[branch]) {
+                    branchPreferences[branch] = {
+                        branch,
+                        'Higher Studies': 0,
+                        'Startup': 0,
+                        'Civil Services': 0,
+                        'Research': 0,
+                        'Family Business': 0,
+                        'Other': 0
+                    };
+                }
+                
+                // Count preference for this branch
+                if (branchPreferences[branch][careerPreference] !== undefined) {
+                    branchPreferences[branch][careerPreference]++;
+                } else {
+                    branchPreferences[branch]['Other']++;
+                }
+            }
+        }
+        
+        // Calculate total for percentages
+        const totalStudents = students.length;
+        
+        // Convert career counts to percentages
+        const careerPreferences = Object.entries(careerCounts).map(([name, count]) => ({
+            name,
+            value: totalStudents > 0 ? Math.round((count / totalStudents) * 100) : 0
+        })).filter(item => item.value > 0);
+        
+        // Convert branch preferences to array and rename keys for the radar chart
+        const branchWisePreferences = Object.values(branchPreferences).map(branch => ({
+            branch: branch.branch,
+            higherStudies: branch['Higher Studies'],
+            startup: branch['Startup'],
+            civilServices: branch['Civil Services'],
+            research: branch['Research'],
+            familyBusiness: branch['Family Business'],
+            other: branch['Other']
+        }));
+        
+        res.json({
+            careerPreferences,
+            branchWisePreferences
+        });
+    } catch (error) {
+        console.error("Error in career-preferences endpoint:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch career preference data",
+            message: error.message 
+        });
+    }
+}));
 
 export default dashboardRouter; 

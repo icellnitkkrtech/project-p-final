@@ -52,6 +52,14 @@ export default class ApplicationModel {
           "Student does not meet CGPA criteria"
         );
       }
+      //check isplaced
+      if(student.isPlaced){
+        return new apiResponse(
+          400,
+          null,
+          "You are already placed in a company"
+        );
+      }
 
       // Create application
       const application = new this.application({
@@ -226,4 +234,39 @@ export default class ApplicationModel {
       return new apiResponse(500, null, "Error fetching eligible drives");
     }
   }
+ 
+async getApplicationById(applicationId) {
+  try {
+    const application = await Application.findById(applicationId)
+      .populate('student')
+      .populate({
+        path: 'placementDrive',
+        populate: {
+          path: 'company',
+          model: 'Company'
+        }
+      });
+    return application;
+  } catch (error) {
+    console.error("Model error:", error);
+    throw error;
+  }
+}
+
+async updateOfferResponse(applicationId, response, responseDate) {
+  try {
+    const application = await Application.findByIdAndUpdate(
+      applicationId,
+      {
+        'offerDetails.response': response,
+        'offerDetails.responseDate': responseDate
+      },
+      { new: true }
+    );
+    return application;
+  } catch (error) {
+    console.error("Model error:", error);
+    throw error;
+  }
+}
 }

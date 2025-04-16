@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Container, Tabs, Tab, Box, CircularProgress, Typography } from "@mui/material";
+import { Container, Tabs, Tab, Box, CircularProgress, Typography, IconButton, Badge, Tooltip } from "@mui/material";
+import { Notifications as NotificationsIcon } from "@mui/icons-material";
 import PlacementOverview from "../../components/admin/placements/PlacementOverview";
-import PlacementStudents from "../../components/admin/placements/PlacementStudents";
 import PlacementRounds from "../../components/admin/placements/PlacementRounds";
-import PlacementNotifications from "../../components/admin/placements/PlacementNotifations";
+import NotificationPanel from "../../components/admin/placements/NotificationPanel";
 import placementService from "../../services/admin/placementService"; // Import your API service
 
 const DriveManagement = () => {
@@ -13,6 +13,8 @@ const DriveManagement = () => {
   const [placementData, setPlacementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(3); // Example count
 
   // Fetch Placement Data
   useEffect(() => {
@@ -58,19 +60,63 @@ const DriveManagement = () => {
   const applicationDetails = placementData?.applicationDetails || {};
 
   return (
-     <Container>
-      <Tabs value={tabIndex} onChange={handleChange} centered>
-        <Tab label="Drive Overview" />
-        <Tab label="Students" />
-        <Tab label="Rounds" />
-        <Tab label="Notifications" />
-      </Tabs>
+    <Container sx={{ mt: 4 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        mb: 2
+      }}>
+        <Tabs 
+          value={tabIndex} 
+          onChange={handleChange} 
+          centered
+          sx={{ flex: 1 }}
+        >
+          <Tab label="Overview" />
+          <Tab label="Rounds" />
+        </Tabs>
+        
+        <Box sx={{ pr: 2 }}>
+          <Tooltip title="Notifications">
+            <IconButton 
+              onClick={() => setShowNotifications(true)}
+              sx={{ 
+                '&:hover': { 
+                  backgroundColor: 'action.hover' 
+                } 
+              }}
+            >
+              <Badge 
+                badgeContent={unreadCount} 
+                color="error"
+                sx={{
+                  '& .MuiBadge-badge': {
+                    right: -3,
+                    top: 3,
+                    border: '2px solid',
+                    borderColor: 'background.paper',
+                    padding: '0 4px',
+                  }
+                }}
+              >
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+
       <Box mt={2}>
         {tabIndex === 0 && <PlacementOverview id={placementId} />}
-        {tabIndex === 1 && <PlacementStudents placementId={placementId} />}
-        {tabIndex === 2 && <PlacementRounds placementId={placementId} />}
-        {tabIndex === 3 && <PlacementNotifications students={placementData?.applicationDetails?.appliedStudents} />}
+        {tabIndex === 1 && <PlacementRounds placementId={placementId} placementTitle={placementData?.placementDrive_title} />}
       </Box>
+
+      {showNotifications && (
+        <NotificationPanel onClose={() => setShowNotifications(false)} />
+      )}
     </Container>
   );
 };

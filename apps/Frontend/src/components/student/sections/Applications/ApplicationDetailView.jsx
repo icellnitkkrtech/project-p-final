@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, Typography, Divider, Box } from "@mui/material";
+import { Card, CardContent, Typography, Divider, Box, Button } from "@mui/material";
 import {
   Business,
   Work,
@@ -13,7 +13,7 @@ import {
   Timeline,
 } from "@mui/icons-material";
 
-const ApplicationDetailView = ({ application, onClose }) => {
+const ApplicationDetailView = ({ application, onClose, onViewOfferLetter }) => {
   if (!application) return null;
 
   const {
@@ -35,6 +35,16 @@ const ApplicationDetailView = ({ application, onClose }) => {
       "on-hold": "bg-gray-100 text-gray-800 border border-gray-200",
     };
     return statusClasses[status] || statusClasses.applied;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   return (
@@ -91,6 +101,53 @@ const ApplicationDetailView = ({ application, onClose }) => {
                 </Typography>
               </Box>
             </Box>
+
+            {application.offerDetails && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Box>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Description color="primary" />
+                    <Typography variant="h6" color="primary">
+                      Offer Letter
+                    </Typography>
+                  </Box>
+                  
+                  <Box p={2} bgcolor="#f5f5f5" borderRadius={1}>
+                    <Typography variant="body2" gutterBottom>
+                      <strong>Offer Date:</strong> {formatDate(application.offerDetails.offerDate)}
+                    </Typography>
+                    
+                    {application.offerDetails.response ? (
+                      <Typography 
+                        variant="body2" 
+                        color={application.offerDetails.response === 'accept' ? 'success.main' : 'error.main'}
+                      >
+                        <strong>Status:</strong> {application.offerDetails.response === 'accept' ? 'Accepted' : 'Rejected'} 
+                        on {formatDate(application.offerDetails.responseDate)}
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="warning.main">
+                        <strong>Status:</strong> Pending Response
+                      </Typography>
+                    )}
+                    
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      startIcon={<Description />}
+                      sx={{ mt: 1 }}
+                      onClick={() => {
+                        onViewOfferLetter(application);
+                      }}
+                    >
+                      View Offer Letter
+                    </Button>
+                  </Box>
+                </Box>
+              </>
+            )}
 
             <Divider sx={{ my: 2 }} />
 

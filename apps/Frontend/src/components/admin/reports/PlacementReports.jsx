@@ -1,21 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { debounce } from 'lodash';
-import dayjs from 'dayjs';
+import { useState, useEffect } from 'react';
 import {
-  Grid,
-  Paper,
-  Typography,
   Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
   TextField,
   MenuItem,
   Button,
+  Divider,
   CircularProgress,
-  Card,
-  CardContent,
+  Alert,
+  Stack
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
-import { Download, FilterList } from '@mui/icons-material';
-import reportService from '../../../services/admin/reportService';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
 import {
   BarChart,
   Bar,
@@ -24,14 +25,24 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
+  Cell
 } from 'recharts';
+import reportService from '../../../services/admin/reportService';
 import FilterDebug from '../../common/FilterDebug';
-import { logPerformance, debugFilters } from '../../../utils/debug';
+import DownloadIcon from '@mui/icons-material/Download';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+// Get current year and 2 years back for dropdown
+const currentYear = new Date().getFullYear();
+const years = [
+  (currentYear - 2).toString(),
+  (currentYear - 1).toString(),
+  currentYear.toString()
+];
 
 const PlacementReports = () => {
   const [loading, setLoading] = useState(false);
@@ -39,52 +50,35 @@ const PlacementReports = () => {
   const [error, setError] = useState(null);
   const [showDebug, setShowDebug] = useState(false);
 
-  const [loadingStates, setLoadingStates] = useState({
-    filters: false,
-    charts: false,
-    download: false
-  });
-
   const [filters, setFilters] = useState({
-    year: new Date().getFullYear().toString(),
+    year: currentYear.toString(),
     branch: 'all',
-    startDate: dayjs(),
+    startDate: dayjs().subtract(1, 'year'),
     endDate: dayjs(),
   });
 
   const fetchData = async () => {
-    setLoadingStates(prev => ({ ...prev, filters: true }));
+    setLoading(true);
     setError(null);
     
     try {
-      console.time('fetchData');
       const response = await reportService.getFilteredReports('placement', filters);
-      console.timeEnd('fetchData');
-      
       setData(response);
-      console.log('Filtered Data:', response);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to fetch data. Please try again.');
     } finally {
-      setLoadingStates(prev => ({ ...prev, filters: false }));
+      setLoading(false);
     }
   };
 
-  const debouncedFetchData = useCallback(
-    debounce(() => {
-      fetchData();
-    }, 500),
-    [filters]
-  );
-
   useEffect(() => {
-    console.log('Filters changed:', filters);
-  }, [filters]);
+    fetchData();
+  }, []);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
-    setFilters((prev) => ({
+    setFilters(prev => ({
       ...prev,
       [name]: value,
     }));
@@ -101,224 +95,257 @@ const PlacementReports = () => {
     fetchData();
   };
 
-  const handleDownload = async () => {
+  const handleDownload = async (format) => {
     try {
       setLoading(true);
-      await reportService.downloadReport('placement', filters);
+      await reportService.downloadReport('placement', filters, format);
+      setError(null);
     } catch (error) {
       console.error('Error downloading report:', error);
+      setError(`Failed to download ${format.toUpperCase()} report. Please try again.`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Filters
-          </Typography>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                name="year"
-                label="Year"
-                value={filters.year}
-                onChange={handleFilterChange}
-              >
-                {[2022, 2023, 2024].map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                name="branch"
-                label="Branch"
-                value={filters.branch}
-                onChange={handleFilterChange}
-              >
-                <MenuItem value="all">All Branches</MenuItem>
-                <MenuItem value="CSE">Computer Science</MenuItem>
-                <MenuItem value="IT">Information Technology</MenuItem>
-                <MenuItem value="ECE">Electronics</MenuItem>
-                <MenuItem value="ME">Mechanical</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-            <DatePicker
-              label="Start Date"
-              value={filters.startDate}
-              onChange={handleDateChange('startDate')}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-            <DatePicker
-              label="End Date"
-              value={filters.endDate}
-              onChange={handleDateChange('endDate')}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-            </Grid>
-            <Grid item xs={12} container justifyContent="flex-end" spacing={1}>
-              <Grid item>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => setShowDebug(!showDebug)}
-                >
-                  {showDebug ? 'Hide Debug' : 'Show Debug'}
-                </Button>
-              </Grid>
-              <Grid item>
-                <Button
-                  variant="outlined"
-                  startIcon={<FilterList />}
-                  onClick={fetchData}
-                  disabled={loadingStates.filters}
-                >
-                  {loadingStates.filters ? 'Applying...' : 'Apply Filters'}
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<Download />}
-                  onClick={handleDownload}
-                  disabled={loadingStates.download}
-                  sx={{ ml: 1 }}
-                >
-                  {loadingStates.download ? 'Downloading...' : 'Download Report'}
-                </Button>
-              </Grid>
-            </Grid>
-          </Grid>
-
-          {showDebug && <FilterDebug filters={filters} />}
-          
-          {error && (
-            <Typography color="error" sx={{ mt: 2 }}>
-              {error}
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Placement Report Filters
             </Typography>
-          )}
-        </Paper>
-      </Grid>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Academic Year"
+                  name="year"
+                  value={filters.year}
+                  onChange={handleFilterChange}
+                >
+                  {years.map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}-{parseInt(year) + 1}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Branch"
+                  name="branch"
+                  value={filters.branch}
+                  onChange={handleFilterChange}
+                >
+                  <MenuItem value="all">All Branches</MenuItem>
+                  <MenuItem value="cse">Computer Science</MenuItem>
+                  <MenuItem value="it">Information Technology</MenuItem>
+                  <MenuItem value="ece">Electronics & Communication</MenuItem>
+                  <MenuItem value="ee">Electrical Engineering</MenuItem>
+                  <MenuItem value="me">Mechanical Engineering</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <DatePicker
+                  label="Start Date"
+                  value={filters.startDate}
+                  onChange={handleDateChange('startDate')}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <DatePicker
+                  label="End Date"
+                  value={filters.endDate}
+                  onChange={handleDateChange('endDate')}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => setShowDebug(!showDebug)}
+                  >
+                    {showDebug ? 'Hide Debug' : 'Show Debug'}
+                  </Button>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleApplyFilters}
+                    disabled={loading}
+                  >
+                    Apply Filters
+                  </Button>
+                </Box>
+              </Grid>
+            </Grid>
+            
+            {showDebug && <FilterDebug filters={filters} />}
+          </CardContent>
+        </Card>
 
-      {loading && (
-        <Grid item xs={12}>
-          <Box display="flex" justifyContent="center" p={3}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
             <CircularProgress />
           </Box>
-        </Grid>
-      )}
+        ) : data ? (
+          <>
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    Placement Summary
+                  </Typography>
+                  <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                    <Button 
+                      variant="outlined" 
+                      onClick={() => handleDownload('pdf')}
+                      disabled={loading}
+                      startIcon={<DownloadIcon />}
+                    >
+                      Download PDF
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      onClick={() => handleDownload('excel')}
+                      disabled={loading}
+                      startIcon={<DownloadIcon />}
+                    >
+                      Download Excel
+                    </Button>
+                  </Stack>
+                </Box>
+                <Divider sx={{ mb: 3 }} />
+                
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Total Students
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.totalStudents}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Placed Students
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.placedStudents} ({data.summary.placementPercentage}%)
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Average CTC (LPA)
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.averageCTC}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Highest CTC (LPA)
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.highestCTC}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Companies Visited
+                        </Typography>
+                        <Typography variant="h4">
+                          {data.summary.companiesVisited}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
 
-      {!loading && data && (
-        <>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Total Students
-                </Typography>
-                <Typography variant="h4">{data.overview.totalStudents}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Placed Students
-                </Typography>
-                <Typography variant="h4">{data.overview.placedStudents}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Average Package
-                </Typography>
-                <Typography variant="h4">{data.overview.averagePackage}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Highest Package
-                </Typography>
-                <Typography variant="h4">{data.overview.highestPackage}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Branch-wise Placements
-              </Typography>
-              <BarChart
-                width={500}
-                height={300}
-                data={data.branchWise}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="branch" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="placed" fill="#8884d8" name="Placed" />
-                <Bar dataKey="total" fill="#82ca9d" name="Total" />
-              </BarChart>
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Package Distribution
-              </Typography>
-              <PieChart width={500} height={300}>
-                <Pie
-                  data={data.packageRanges}
-                  dataKey="count"
-                  nameKey="range"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  label
-                >
-                  {data.packageRanges.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </Paper>
-          </Grid>
-        </>
-      )}
-    </Grid>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Monthly Placement Trend
+                    </Typography>
+                    <Box height={300}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data.monthlyData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="placements" fill="#8884d8" name="Placements" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Branch-wise Placement
+                    </Typography>
+                    <Box height={300}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data.branchData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="branch" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="placed" fill="#82ca9d" name="Placed" />
+                          <Bar dataKey="total" fill="#8884d8" name="Total" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </>
+        ) : (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            No data available. Please adjust your filters and try again.
+          </Alert>
+        )}
+      </Box>
+    </LocalizationProvider>
   );
 };
 

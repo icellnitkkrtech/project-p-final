@@ -211,6 +211,28 @@ const placementDriveSchema = new mongoose.Schema(
       enum: ['upcoming', 'ongoing', 'completed'],
       default: 'upcoming'
     },
+    placementSession: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PlacementSession",
+    },
+
+    // Offer Letters
+    offerLetters: {
+      type: [{
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+        studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+        content: { type: String, required: true },
+        sentDate: { type: Date, default: Date.now },
+        expiryDate: { type: Date, required: true },
+        responseDate: { type: Date },
+        status: { 
+          type: String, 
+          enum: ['pending', 'accepted', 'rejected', 'expired'], 
+          default: 'pending' 
+        }
+      }],
+      default: []
+    },
 
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },

@@ -80,13 +80,13 @@ const PersonalInfoEdit = ({ data, isLocked, onChange }) => {
                 <TextField
                   fullWidth
                   required
-                  label="Gender"
-                  name="Gender"
-                  value={data.Gender || ""}
+                  label="gender"
+                  name="gender"
+                  value={data.gender || ""}
                   onChange={handleChange}
                   disabled={isLocked}
-                  error={!data.Gender}
-                  helperText={!data.Gender && "Gender is required"}
+                  error={!data.gender}
+                  helperText={!data.gender && "gender is required"}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
