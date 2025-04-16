@@ -181,4 +181,44 @@ export default class PlacementService {
             throw new Error("Error fetching rounds: " + error.message);
         }
     }
+    async sendOfferLetters(placementId, studentIds, content, expiryDate) {
+        try {
+            return await this.placementModel.sendOfferLetters(
+                placementId, 
+                studentIds, 
+                content, 
+                expiryDate
+            );
+        } catch (error) {
+            throw new Error("Error sending offer letters: " + error.message);
+        }
+    }
+    async getOfferLetters(placementId) {
+        try {
+            return await this.placementModel.getOfferLetters(placementId);
+        } catch (error) {
+            throw new Error("Error getting offer letters: " + error.message);
+        }
+    }
+    async getOfferLetter(placementId, offerId) {
+        try {
+            return await this.placementModel.getOfferLetter(placementId, offerId);
+        } catch (error) {
+            throw new Error("Error fetching offer letter: " + error.message);
+        }
+    }
+    async updateOfferStatus(placementId, offerId, status) {
+        try {
+            return await this.placementModel.updateOfferStatus(placementId, offerId, status);
+        } catch (error) {
+            throw new Error("Error updating offer status: " + error.message);
+        }
+    }
+    async getFinalSelectedStudents(placementId) {
+        try {
+            return await this.placementModel.getFinalSelectedStudents(placementId);
+        } catch (error) {
+            throw new Error("Error fetching final selected students: " + error.message);
+        }
+    }
 }

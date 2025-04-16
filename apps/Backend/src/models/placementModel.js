@@ -532,4 +532,177 @@ export default class PlacementModel {
             throw error;
         }
     }
+
+    async getOfferLetters(placementId) {
+        console.log("Placement Model: getOfferLetters called");
+        try {
+            const placement = await this.placement.findById(placementId);
+            if (!placement) {
+                throw new Error("Placement not found");
+            }
+            
+            return placement.offerLetters || [];
+        } catch (error) {
+            console.error("Error in getOfferLetters:", error);
+            throw error;
+        }
+    }
+
+    async sendOfferLetters(placementId, studentIds, content, expiryDate) {
+        try {
+            console.log("Starting sendOfferLetters with:", { placementId, studentIds, contentLength: content?.length, expiryDate });
+            
+            // Validate inputs
+            if (!placementId) {
+                throw new Error("Placement ID is required");
+            }
+            
+            if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+                throw new Error("Student IDs must be a non-empty array");
+            }
+            
+            if (!content) {
+                throw new Error("Offer letter content is required");
+            }
+            
+            // Find the placement
+            const placement = await this.placement.findById(placementId);
+            console.log("Placement found:", placement ? "Yes" : "No");
+            
+            if (!placement) {
+                throw new Error(`Placement not found with ID: ${placementId}`);
+            }
+            
+            // Initialize offerLetters array if it doesn't exist
+            if (!placement.offerLetters) {
+                placement.offerLetters = [];
+            }
+            
+            // Create offer letters for each student
+            const newOfferLetters = [];
+            
+            for (const studentId of studentIds) {
+                console.log("Processing student ID:", studentId);
+                
+                try {
+                    // Check if an offer letter already exists for this student
+                    const existingOfferIndex = placement.offerLetters.findIndex(
+                        offer => offer.studentId && offer.studentId.toString() === studentId
+                    );
+                    
+                    if (existingOfferIndex !== -1) {
+                        console.log("Updating existing offer letter");
+                        // Update existing offer letter
+                        placement.offerLetters[existingOfferIndex] = {
+                            ...placement.offerLetters[existingOfferIndex],
+                            content,
+                            sentDate: new Date(),
+                            expiryDate: expiryDate || new Date(Date.now() + 7*24*60*60*1000), // Default 7 days
+                            status: 'pending'
+                        };
+                        
+                        newOfferLetters.push(placement.offerLetters[existingOfferIndex]);
+                    } else {
+                        console.log("Creating new offer letter");
+                        // Create new offer letter with mongoose ObjectId
+                        const newOffer = {
+                            _id: new mongoose.Types.ObjectId(),
+                            studentId,
+                            content,
+                            sentDate: new Date(),
+                            expiryDate: expiryDate || new Date(Date.now() + 7*24*60*60*1000), // Default 7 days
+                            status: 'pending'
+                        };
+                        
+                        placement.offerLetters.push(newOffer);
+                        newOfferLetters.push(newOffer);
+                    }
+                } catch (studentError) {
+                    console.error(`Error processing student ${studentId}:`, studentError);
+                    // Continue with next student instead of failing the entire operation
+                }
+            }
+            
+            console.log("Saving placement with new offer letters");
+            await placement.save();
+            console.log("Placement saved successfully");
+            
+            return newOfferLetters;
+        } catch (error) {
+            console.error("Error in sendOfferLetters:", error);
+            throw new Error(`Error sending offer letters: ${error.message}`);
+        }
+    }
+
+    async updateOfferStatus(placementId, offerId, status) {
+        try {
+            const placement = await this.placement.findById(placementId);
+            if (!placement) {
+                throw new Error("Placement not found");
+            }
+            
+            if (!placement.offerLetters) {
+                throw new Error("No offer letters found");
+            }
+            
+            const offerIndex = placement.offerLetters.findIndex(
+                offer => offer._id.toString() === offerId
+            );
+            
+            if (offerIndex === -1) {
+                throw new Error("Offer letter not found");
+            }
+            
+            // Update the status
+            placement.offerLetters[offerIndex].status = status;
+            placement.offerLetters[offerIndex].responseDate = new Date();
+            
+            // If accepted, update student's placement status
+            if (status === 'accepted') {
+                const studentId = placement.offerLetters[offerIndex].studentId;
+                
+                // Update student's placement status in a separate collection if needed
+                // This would require additional code to update the student model
+            }
+            
+            await placement.save();
+            return placement.offerLetters[offerIndex];
+        } catch (error) {
+            console.error("Error in updateOfferStatus:", error);
+            throw error;
+        }
+    }
+
+    async getFinalSelectedStudents(placementId) {
+        console.log("Placement Model: getFinalSelectedStudents called");
+        try {
+            const placement = await this.placement.findById(placementId);
+            
+            if (!placement) {
+                throw new Error("Placement drive not found");
+            }
+            
+            // Get the last round with results
+            let lastRoundWithResults = null;
+            
+            if (placement.roundDetails && placement.roundDetails.rounds) {
+                const completedRounds = placement.roundDetails.rounds
+                    .filter(round => round.roundStatus === 'completed' && round.resultMessage)
+                    .sort((a, b) => b.roundNumber - a.roundNumber);
+                
+                if (completedRounds.length > 0) {
+                    lastRoundWithResults = completedRounds[0];
+                }
+            }
+            
+            if (!lastRoundWithResults) {
+                return [];
+            }
+            
+            return lastRoundWithResults.selectedStudents || [];
+        } catch (error) {
+            console.error("Error in getFinalSelectedStudents:", error);
+            throw error;
+        }
+    }
 }

@@ -73,6 +73,7 @@ import {
 import placementService from "../../../services/admin/placementService";
 import PlacementStudents from "./PlacementStudents";
 import { styled } from "@mui/material/styles";
+import OfferLetterPanel from "./OfferLetterPanel";
 
 const ResponsiveToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: '64px',
@@ -145,6 +146,7 @@ const PlacementOverview = ({ id }) => {
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [openDeclareResultDialog, setOpenDeclareResultDialog] = useState(false);
   const [selectedRound, setSelectedRound] = useState(null);
+  const [showOfferLetters, setShowOfferLetters] = useState(false);
 
   useEffect(() => {
     const fetchPlacement = async () => {
@@ -604,27 +606,55 @@ const PlacementOverview = ({ id }) => {
                 >
                   Declare Results
                 </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size={isMobile ? "small" : "medium"}
+                  onClick={() => setShowOfferLetters(!showOfferLetters)}
+                  startIcon={<EmailIcon />}
+                  sx={{ 
+                    fontWeight: 500,
+                    minWidth: { xs: 'auto', sm: '140px' },
+                  }}
+                >
+                  {showOfferLetters ? "Hide Offers" : "Manage Offers"}
+                </Button>
               </>
             )}
             {placementData.status === 'closed' && (
-              <Button
-                variant="outlined"
-                startIcon={<Assessment />}
-                size={isMobile ? "small" : "medium"}
-                onClick={handleOpenStudentDialog}
-                sx={{
-                  minWidth: { xs: 'auto', sm: '140px' },
-                  whiteSpace: 'nowrap',
-                  color: theme.palette.primary.main,
-                  borderColor: theme.palette.primary.main,
-                  '&:hover': {
-                    backgroundColor: theme.palette.primary.main + '10',
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<Assessment />}
+                  size={isMobile ? "small" : "medium"}
+                  onClick={handleOpenStudentDialog}
+                  sx={{
+                    minWidth: { xs: 'auto', sm: '140px' },
+                    whiteSpace: 'nowrap',
+                    color: theme.palette.primary.main,
                     borderColor: theme.palette.primary.main,
-                  }
-                }}
-              >
-                View Results
-              </Button>
+                    '&:hover': {
+                      backgroundColor: theme.palette.primary.main + '10',
+                      borderColor: theme.palette.primary.main,
+                    }
+                  }}
+                >
+                  View Results
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<EmailIcon />}
+                  size={isMobile ? "small" : "medium"}
+                  onClick={() => setShowOfferLetters(!showOfferLetters)}
+                  sx={{ 
+                    fontWeight: 500,
+                    minWidth: { xs: 'auto', sm: '140px' },
+                  }}
+                >
+                  {showOfferLetters ? "Hide Offers" : "View Offers"}
+                </Button>
+              </>
             )}
           </ResponsiveButtonGroup>
         </ResponsiveToolbar>
@@ -1238,6 +1268,17 @@ const PlacementOverview = ({ id }) => {
                     </Grid>
                   )}
                 </Grid>
+              </AnimatedPaper>
+            )}
+
+            {showOfferLetters && (
+              <AnimatedPaper color={getSectionColor(5)}>
+                <SectionHeader icon={EmailIcon} title="Offer Letters" />
+                <OfferLetterPanel 
+                  placementId={id} 
+                  companyName={companyDetails?.name}
+                  jobProfile={jobProfile}
+                />
               </AnimatedPaper>
             )}
           </Stack>

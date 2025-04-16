@@ -2,15 +2,16 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Card, CardContent, Button, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Stepper, Step, StepLabel, FormControl, InputLabel, Select, MenuItem, Grid,
-  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress, useTheme, AppBar, Toolbar, useMediaQuery
+  IconButton, Snackbar, Alert, Chip, Paper, List, ListItem, ListItemText, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress, useTheme, AppBar, Toolbar, useMediaQuery, Tooltip
 } from "@mui/material";
-import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event, Close } from "@mui/icons-material";
+import { AddCardRounded, Assignment, Category, Circle, Start, TrackChanges, Event, Close, HourglassEmpty, People, Edit, Assessment } from "@mui/icons-material";
 import RoundStudents from "./RoundStudents";
 import { styled } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
 import { AccessTime, LocationOn, Schedule, Upcoming, Autorenew, CheckCircle } from "@mui/icons-material";
 import placementService from "../../../services/admin/placementService";
 import { motion, AnimatePresence } from "framer-motion";
+import studentService from "../../../services/admin/studentService";
 
 const RoundButton = styled(IconButton)(({ theme }) => ({
   width:35,
@@ -213,6 +214,9 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
   const [openDeclareResultDialog, setOpenDeclareResultDialog] = useState(false);
   const [appearedStudents, setAppearedStudents] = useState({});
   const [[page, direction], setPage] = useState([0, 0]);
+  const [selectedStudentDetails, setSelectedStudentDetails] = useState({});
+  const [appearedStudentDetails, setAppearedStudentDetails] = useState({});
+  const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -281,32 +285,49 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
   }, [placementId]);
 
   useEffect(() => {
-    const fetchRoundResult = async () => {
+    const fetchStudentDetails = async () => {
+      if (!roundResult) return;
+      
+      // Extract student IDs from the round result
+      const selectedIds = roundResult.selectedStudents?.map(student => 
+        typeof student === 'string' ? student : student._id
+      ).filter(Boolean) || [];
+      
+      const appearedIds = roundResult.appearedStudents?.map(student => 
+        typeof student === 'string' ? student : student._id
+      ).filter(Boolean) || [];
+      
+      if (selectedIds.length === 0 && appearedIds.length === 0) return;
+      
+      setLoadingStudentDetails(true);
+      
       try {
-        if (!selectedRound) return;
+        // Create a Set to avoid duplicate fetches
+        const uniqueIds = [...new Set([...selectedIds, ...appearedIds])];
         
-        const result = await placementService.getResults(placementId, selectedRound._id);
-        if (result) {
-          setRoundResult({
-            resultMessage: result.resultMessage,
-            resultDescription: result.resultDescription
-          });
-        } else {
-          throw new Error(result.message);
+        // Fetch details for each student
+        const detailsMap = {};
+        
+        for (const id of uniqueIds) {
+          try {
+            const studentData = await studentService.getStudentById(id);
+            detailsMap[id] = studentData;
+          } catch (error) {
+            console.error(`Error fetching details for student ${id}:`, error);
+          }
         }
-      } catch (err) {
-        console.error("Error fetching round result:", err);
-        // Only set error for non-404 responses
-        if (!err.message?.includes("No results found")) {
-          setError(err.message || "Failed to fetch round result");
-        }
+        
+        setSelectedStudentDetails(detailsMap);
+        setAppearedStudentDetails(detailsMap);
+      } catch (error) {
+        console.error("Error fetching student details:", error);
+      } finally {
+        setLoadingStudentDetails(false);
       }
     };
-
-    if (placementId && selectedRound) {
-      fetchRoundResult();
-    }
-  }, [placementId, selectedRound]);
+    
+    fetchStudentDetails();
+  }, [roundResult]);
 
   const handleRoundClick = (index) => {
     const currentIndex = rounds.findIndex(r => r._id === selectedRound?._id);
@@ -470,15 +491,34 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
   };
 
   const handleViewResults = async () => {
-    try {
-      setRoundResult(roundResult);
-      setOpenResultDialog(true);
-    } catch (error) {
+    if (!selectedRound) {
       setSnackbar({
         open: true,
-        message: "Failed to fetch results",
+        message: "No round selected",
         severity: "error"
       });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      console.log("Fetching results for round:", selectedRound._id);
+      
+      // Use the detailed results endpoint
+      const detailedResults = await placementService.getDetailedResults(placementId, selectedRound._id);
+      
+      console.log("Received results:", detailedResults);
+      setRoundResult(detailedResults);
+      setOpenResultDialog(true);
+    } catch (error) {
+      console.error("Error fetching round results:", error);
+      setSnackbar({
+        open: true,
+        message: error.message || "Failed to fetch round results",
+        severity: "error"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -674,15 +714,17 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                   }}
                 >
                   <TrackChanges fontSize={isMobile ? "small" : "medium"} />
-                  {selectedRound.roundName}
+                  {selectedRound.roundName} {selectedRound.roundNumber && `(Round ${selectedRound.roundNumber})`}
                 </Typography>
 
                 <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: 3 }}>
                   {[
                     ["Type", "roundType", Assignment],
-                    ["Date", "roundDate", Event],
-                    ["Time", "roundDuration", AccessTime],
-                    ["Venue", "venue", LocationOn]
+                    ["Date", selectedRound.startTime ? new Date(selectedRound.startTime).toLocaleDateString() : selectedRound.roundDate, Event],
+                    ["Time", selectedRound.startTime ? new Date(selectedRound.startTime).toLocaleTimeString() : "Not specified", AccessTime],
+                    ["Duration", "roundDuration", HourglassEmpty],
+                    ["Venue", "venue", LocationOn],
+                    ["Students", `${selectedRound.appearedStudents?.length || 0} appeared / ${selectedRound.selectedStudents?.length || 0} selected`, People]
                   ].map(([label, value, Icon]) => (
                     <Grid item xs={12} sm={6} key={label}>
                       <DetailItem>
@@ -692,13 +734,26 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                             {label}
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {selectedRound[value] || 'Not specified'}
+                            {typeof value === 'string' ? (selectedRound[value] || value) : value}
                           </Typography>
                         </Box>
                       </DetailItem>
                     </Grid>
                   ))}
                 </Grid>
+
+                {selectedRound.details && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                      Details
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1 }}>
+                      <Typography variant="body2">
+                        {selectedRound.details}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                )}
 
                 <Box sx={{ 
                   display: "flex", 
@@ -721,6 +776,18 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                     size="small"
                     sx={{ fontWeight: 600 }}
                   />
+                  
+                  {selectedRound.resultMessage && (
+                    <Tooltip title="Results have been declared">
+                      <Chip
+                        icon={<CheckCircle fontSize="small" />}
+                        label="Results Declared"
+                        color="success"
+                        size="small"
+                        sx={{ ml: 'auto', fontWeight: 500 }}
+                      />
+                    </Tooltip>
+                  )}
                 </Box>
 
                 <Box sx={{ 
@@ -731,9 +798,15 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                 }}>
                   {selectedRound.roundStatus === "ongoing" && (
                     <>
-                    <Button variant="contained" color= "success" size="small" onClick={handleOpenStudentDialog} startIcon={<List />}>
-                      Manage
-                    </Button>
+                      <Button 
+                        variant="contained" 
+                        color="success" 
+                        size="small" 
+                        onClick={handleOpenStudentDialog} 
+                        startIcon={<List />}
+                      >
+                        Manage Students
+                      </Button>
                       <Button
                         variant="outlined"
                         color="success"
@@ -749,7 +822,7 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                         color="success"
                         size="medium"
                         onClick={handleOpenEditDialog}
-                        startIcon={<Event />}
+                        startIcon={<Edit />}
                         sx={{ fontWeight: 500 }}
                       >
                         Edit Round
@@ -757,28 +830,87 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
                     </>
                   )}
                   {selectedRound.roundStatus === "upcoming" && (
+                    <>
                     <Button
                       variant="outlined"
                       color="default"
                       size="medium"
                       onClick={handleOpenEditDialog}
-                      startIcon={<Event />}
+                      startIcon={<Edit />}
                       sx={{ fontWeight: 500 }}
                     >
                       Edit Round
                     </Button>
-                  )}
-                  {selectedRound.roundStatus === "completed" && (
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      size="medium"
-                      onClick={handleViewResults}
-                      startIcon={<AccessTime />}
+                     <Button
+                     variant="contained"
+                     color="primary"
+                     size="medium"
+                     onClick={async () => {
+                       try {
+                         if (!selectedRound) {
+                           setSnackbar({
+                             open: true,
+                             message: "No round selected",
+                             severity: "error"
+                           });
+                           return;
+                         }
+                         
+                         // Update round status to ongoing
+                         await placementService.updateRound(placementId, selectedRound._id, {
+                           ...selectedRound,
+                           roundStatus: "ongoing"
+                         });
+                         
+                         // Refresh round details
+                         fetchRoundDetails();
+                         
+                         setSnackbar({
+                           open: true,
+                           message: "Round started successfully",
+                           severity: "success"
+                         });
+                        } catch (error) {
+                          console.error("Error starting round:", error);
+                          setSnackbar({
+                            open: true,
+                            message: error.message || "Failed to start round",
+                            severity: "error"
+                          });
+                        }
+                      }}
+                      startIcon={<Start />}
                       sx={{ fontWeight: 500 }}
                     >
-                      View Results
+                      Start Round
                     </Button>
+                    </>
+                  )}
+                  {selectedRound.roundStatus === "completed" && (
+                    <>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        size="medium"
+                        onClick={handleViewResults}
+                        startIcon={<Assessment />}
+                        sx={{ fontWeight: 500 }}
+                      >
+                        View Results
+                      </Button>
+                      {!selectedRound.resultMessage && (
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          size="medium"
+                          onClick={() => setOpenDeclareResultDialog(true)}
+                          startIcon={<Event />}
+                          sx={{ fontWeight: 500 }}
+                        >
+                          Declare Results
+                        </Button>
+                      )}
+                    </>
                   )}
                 </Box>
               </CardContent>
@@ -987,25 +1119,189 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
         fullWidth 
         maxWidth="md"
       >
-        <DialogTitle>Round Results</DialogTitle>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6">
+            {selectedRound?.roundName || 'Round'} Results
+          </Typography>
+          <IconButton onClick={() => setOpenResultDialog(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
-          <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Result Message
-            </Typography>
-            <Typography variant="body1" paragraph>
-              {roundResult.resultMessage}
-            </Typography>
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-              Result Description
-            </Typography>
-            <Typography variant="body1" paragraph>
-              {roundResult.resultDescription}
-            </Typography>
-          </Paper>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              <Paper elevation={3} sx={{ p: 3, mt: 2, mb: 3 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle1" color="textSecondary" gutterBottom>
+                      Round Details
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography variant="body2">
+                        <strong>Round Name:</strong> {roundResult?.roundName || 'N/A'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Round Number:</strong> {roundResult?.roundNumber || 'N/A'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Round Type:</strong> {roundResult?.roundType || 'Not specified'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Date:</strong> {roundResult?.startTime ? new Date(roundResult.startTime).toLocaleDateString() : 'Not specified'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Duration:</strong> {roundResult?.roundDuration || 'Not specified'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Venue:</strong> {roundResult?.venue || 'Not specified'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Status:</strong> {roundResult?.roundStatus || 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle1" color="textSecondary" gutterBottom>
+                      Result Information
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography variant="body2">
+                        <strong>Result Declared:</strong> {roundResult?.resultDeclaredAt ? new Date(roundResult.resultDeclaredAt).toLocaleString() : 'Not available'}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Selected Students:</strong> {roundResult?.totalSelected || roundResult?.selectedStudents?.length || 0}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Total Appeared:</strong> {roundResult?.totalAppeared || roundResult?.appearedStudents?.length || 0}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Selection Rate:</strong> {
+                          (roundResult?.totalAppeared || roundResult?.appearedStudents?.length) > 0 
+                            ? `${(((roundResult?.totalSelected || roundResult?.selectedStudents?.length) / 
+                                   (roundResult?.totalAppeared || roundResult?.appearedStudents?.length)) * 100).toFixed(1)}%` 
+                            : 'N/A'
+                        }
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              <Typography variant="h6" gutterBottom>
+                Result Message
+              </Typography>
+              <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
+                <Typography variant="body1" paragraph>
+                  {roundResult?.resultMessage || 'No result message available'}
+                </Typography>
+              </Paper>
+
+              <Typography variant="h6" gutterBottom>
+                Result Description
+              </Typography>
+              <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
+                <Typography variant="body1" paragraph>
+                  {roundResult?.resultDescription || 'No result description available'}
+                </Typography>
+              </Paper>
+
+              {/* Selected Students Table */}
+              <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+                Selected Students ({roundResult?.selectedStudents?.length || 0})
+              </Typography>
+              {loadingStudentDetails ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : roundResult?.selectedStudents?.length > 0 ? (
+                <TableContainer component={Paper} sx={{ mb: 3 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Roll Number</TableCell>
+                        <TableCell>Department</TableCell>
+                        <TableCell>Batch</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {roundResult.selectedStudents.map((student, index) => {
+                        const studentId = typeof student === 'string' ? student : student._id;
+                        const studentData = selectedStudentDetails[studentId]?.data;
+                        
+                        return (
+                          <TableRow key={studentId || index}>
+                            <TableCell>{studentData?.personalInfo?.name || 'N/A'}</TableCell>
+                            <TableCell>{studentData?.personalInfo?.rollNumber || 'N/A'}</TableCell>
+                            <TableCell>{studentData?.personalInfo?.department || 'N/A'}</TableCell>
+                            <TableCell>{studentData?.personalInfo?.batch || 'N/A'}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                  No selected students data available
+                </Typography>
+              )}
+
+              {/* Appeared Students Table */}
+              <Typography variant="h6" gutterBottom>
+                Appeared Students ({roundResult?.appearedStudents?.length || 0})
+              </Typography>
+              {loadingStudentDetails ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : roundResult?.appearedStudents?.length > 0 ? (
+                <TableContainer component={Paper} sx={{ mb: 3 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Roll Number</TableCell>
+                        <TableCell>Department</TableCell>
+                        <TableCell>Batch</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {roundResult.appearedStudents.map((student, index) => {
+                        const studentId = typeof student === 'string' ? student : student._id;
+                        const studentData = appearedStudentDetails[studentId]?.data;
+                        
+                        return (
+                          <TableRow key={studentId || index}>
+                            <TableCell>{studentData?.personalInfo?.name || 'N/A'}</TableCell>
+                            <TableCell>{studentData?.personalInfo?.rollNumber || 'N/A'}</TableCell>
+                            <TableCell>{studentData?.personalInfo?.department || 'N/A'}</TableCell>
+                            <TableCell>{studentData?.personalInfo?.batch || 'N/A'}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                  No appeared students data available
+                </Typography>
+              )}
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenResultDialog(false)}>Close</Button>
+          <Button 
+            variant="contained" 
+            onClick={() => setOpenResultDialog(false)}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
