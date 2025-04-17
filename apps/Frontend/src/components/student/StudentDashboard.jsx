@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useParams, useNavigate } from "react-router-dom";
+import { LogoutOutlined } from "@mui/icons-material";
 import axios from "./axios";
-import { Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
+import {
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  QuestionAnswer as QuestionAnswerIcon,
+  Notifications as NotificationsIcon,
+  Person as PersonIcon,
+  Work as WorkIcon,
+  Description as DescriptionIcon,
+  BusinessCenter as BusinessCenterIcon,
+} from "@mui/icons-material";
 
 const StudentDashboard = () => {
-  const { id } = useParams();
+  // const { id } = useParams();
   const navigate = useNavigate();
   const [student, setStudent] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
@@ -13,16 +23,27 @@ const StudentDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const tabs = [
-    { id: "profile", label: "Profile" },
-    { id: "applications", label: "Job Applications" },
-    { id: "resume", label: "Resume" },
-    { id: "jobs", label: "Available Jobs" },
-    { id: "notifications", label: "Notifications" },
+    { id: "profile", label: "Profile", icon: <PersonIcon /> },
+    { id: "applications", label: "Job Applications", icon: <WorkIcon /> },
+    { id: "resume", label: "Resume", icon: <DescriptionIcon /> },
+    { id: "jobs", label: "Available Jobs", icon: <BusinessCenterIcon /> },
+    {
+      id: "notifications",
+      label: "Notifications",
+      icon: <NotificationsIcon />,
+    },
+    { id: "queries", label: "Support Queries", icon: <QuestionAnswerIcon /> },
   ];
 
   useEffect(() => {
     const fetchStudent = async () => {
       try {
+        // Get student ID from localStorage
+        const id = localStorage.getItem("studentId");
+        if (!id) {
+          throw new Error("No student ID found");
+        }
+
         const response = await axios.get(`/student/profile/${id}`);
         setStudent(response.data.data);
       } catch (error) {
@@ -34,11 +55,18 @@ const StudentDashboard = () => {
       }
     };
     fetchStudent();
-  }, [id]);
-
+  }, []);
+  const handleLogout = () => {
+    // Clear all localStorage items
+    localStorage.removeItem("studentId");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    // Redirect to login page
+    navigate("/auth/student/login");
+  };
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    navigate(`/student/${id}/${tabId}`);
+    navigate(`/student/${tabId}`);
     setIsSidebarOpen(false);
   };
 
@@ -84,16 +112,9 @@ const StudentDashboard = () => {
 
       <div className="flex h-screen overflow-hidden">
         <aside
-          className={`
-            fixed lg:static top-0 left-0 h-full bg-white shadow-lg z-20
-            transform transition-transform duration-300 ease-in-out
-            w-64 flex-shrink-0
-            ${
-              isSidebarOpen
-                ? "translate-x-0"
-                : "-translate-x-full lg:translate-x-0"
-            }
-          `}
+          className={`fixed lg:static top-0 left-0 h-full bg-white shadow-lg z-20
+        transform transition-transform duration-300 ease-in-out
+        w-64 flex-shrink-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
         >
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-2xl font-semibold text-gray-800">Dashboard</h2>
@@ -101,7 +122,6 @@ const StudentDashboard = () => {
               Welcome, {student?.personalInfo?.name}
             </p>
           </div>
-
           <nav className="mt-6 px-3">
             {tabs.map((tab) => (
               <button
@@ -117,10 +137,20 @@ const StudentDashboard = () => {
                   }
                 `}
               >
+                {tab.icon}
                 {tab.label}
               </button>
             ))}
           </nav>
+          <div className="absolute bottom-0 left-0 w-full p-4 border-t border-gray-200">
+            <button
+              onClick={handleLogout}
+              className="w-full px-4 py-3 flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+            >
+              <LogoutOutlined />
+              <span>Logout</span>
+            </button>
+          </div>
         </aside>
 
         <main className="flex-1 overflow-y-auto p-8 lg:p-10">

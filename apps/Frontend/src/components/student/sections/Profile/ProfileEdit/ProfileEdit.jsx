@@ -83,7 +83,7 @@ const ProfileEdit = () => {
         setSuccess(true);
         setStudent(response.data.data);
         setTimeout(() => {
-          navigate(`/student/${student._id}`);
+          navigate(`/student/profile`);
         }, 1500);
       }
     } catch (err) {

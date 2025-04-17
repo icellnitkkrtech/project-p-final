@@ -10,8 +10,21 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  MenuItem,
 } from "@mui/material";
+
 import { Lock, ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
+const DEPARTMENT_OPTIONS = [
+  "Computer Engineering",
+  "Information Technology",
+  "Electronics & Communication Engineering",
+  "Electrical Engineering",
+  "Mechanical Engineering",
+  "Production & Industrial Engineering",
+  "Civil Engineering",
+];
+
+const GENDER_OPTIONS = ["Male", "Female", "Other"];
 
 const PersonalInfoEdit = ({ data, isLocked, onChange }) => {
   const [expanded, setExpanded] = useState(false);
@@ -78,19 +91,28 @@ const PersonalInfoEdit = ({ data, isLocked, onChange }) => {
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
+                  select
                   fullWidth
                   required
-                  label="gender"
+                  label="Gender"
                   name="gender"
                   value={data.gender || ""}
                   onChange={handleChange}
                   disabled={isLocked}
                   error={!data.gender}
-                  helperText={!data.gender && "gender is required"}
-                />
+                  helperText={!data.gender && "Gender is required"}
+                >
+                  <MenuItem value="">Select Gender</MenuItem>
+                  {GENDER_OPTIONS.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
+                  select
                   fullWidth
                   required
                   label="Department"
@@ -100,7 +122,14 @@ const PersonalInfoEdit = ({ data, isLocked, onChange }) => {
                   disabled={isLocked}
                   error={!data.department}
                   helperText={!data.department && "Department is required"}
-                />
+                >
+                  <MenuItem value="">Select Department</MenuItem>
+                  {DEPARTMENT_OPTIONS.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
@@ -115,6 +144,27 @@ const PersonalInfoEdit = ({ data, isLocked, onChange }) => {
                   error={!data.batch}
                   helperText={!data.batch && "Batch year is required"}
                 />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  select
+                  fullWidth
+                  required
+                  label="Category"
+                  name="category"
+                  value={data.category || ""}
+                  onChange={handleChange}
+                  disabled={isLocked}
+                  error={!data.category}
+                  helperText={!data.category && "Category is required"}
+                >
+                  <MenuItem value="">Select Category</MenuItem>
+                  <MenuItem value="GENERAL">GENERAL</MenuItem>
+                  <MenuItem value="OBC">OBC</MenuItem>
+                  <MenuItem value="SC">SC</MenuItem>
+                  <MenuItem value="ST">ST</MenuItem>
+                  <MenuItem value="EWS">EWS</MenuItem>
+                </TextField>
               </Grid>
             </Grid>
           </AccordionDetails>

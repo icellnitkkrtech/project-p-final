@@ -3,68 +3,81 @@ import { Container, Button, Box, Typography} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AddPlacementDialog from '../../components/admin/placements/AddPlacementDialog';
 import PlacementTable from '../../components/admin/placements/PlacementTable';
-import PlacementFilters from '../../components/admin/placements/PlacementFilters';
 import PlacementAnalytics from '../../components/admin/placements/PlacementAnalytics';
 import {useJNFData} from '../../hooks/admin/useJNFData';
 import { useEffect } from 'react';
 import { useTheme } from '@mui/material';
+import placementService from '../../services/admin/placementService';
 
 
 const Internships = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const { getAcceptedJNFs, getJNFById } = useJNFData();
-  
+  const [open, setOpen] = useState(false);
+
   const theme = useTheme();
 
-//  Mock data for development
-  const mockData = [
-    {
-      id: 1,
-      companyName: 'Tech Corp',
-      role: 'Software Engineer',
-      package: '12.5',
-      appliedCount: 50,
-      selectedCount: 5,
-      status: 'In Progress',
-      startDate: '2024-02-15',
-    },
-    {
-      id: 2,
-      companyName: 'Data Systems',
-      role: 'Data Analyst',
-      package: '8.5',
-      appliedCount: 30,
-      selectedCount: 3,
-      status: 'Completed',
-      startDate: '2024-02-10',
-    },
-  ];
-
-  const mockPagination = {
-      page: 0,
-      rowsPerPage: 10,
-      total: mockData.length,
-  };
-
   const [newPlacement, setNewPlacement] = useState({
+    title: '',
     companyName: '',
-    role: '',
-    location: [],
-    ctcTotal: '',
-    inHand: '',
-    perksAndBenefits: '',
-    stipend: '',
-    bond: '',
-    expectedJoiningDate: '',
-    aboutRole: '',
-    aboutCompany: '',
+    companyEmail: '',
+    companyWebsite: '',
+    companyType: '',
+    companyDomain: '',
+    companyDescription: '',
+    jobId: '',
+    course: '',
+    jobDesignation: '',
+    jobDescription:'',
+    jobDescriptionFile: '',
+    ctc: '',
+    takeHome: '',
+    perks: '',
+    stipend: null,
+    trainingPeriod: '',
+    internDuration: null,
+    btech:[],
+    mtech:[],
+    msc:[],
+    phd:[],
+    mca:[],
     eligibility: '',
     branches: [],
     cgpa: '',
     backlogs: '',
+    location: [],
+    selectionRounds: [],
+    selectionDetails: {},
+    expectedRecruits: '',
+    bond: '',
+    pointOfContact: [],
+    assignedUser: '',
+    applicationDeadline: '',
+    applicationLink: '',
   });
 
-  const [placements, setPlacements] = useState(mockData);
+  const [placements, setPlacements] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    const fetchPlacements = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await placementService.getAllPlacements();
+        setPlacements(data);
+      } catch (err) {
+        setError(err.message || "Something went wrong!");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchPlacements();
+  }, []);
+  
+  console.log(placements); 
 
   const handleChange = (e, value, fieldName) => {
     if (fieldName === 'branches') {
@@ -77,48 +90,98 @@ const Internships = () => {
     }
   };
 
-  const handleAddPlacement = () => {
-    const newId = placements.length ? Math.max(...placements.map(p => p.id)) + 1 : 1;
-    
-    const newPlacementWithId = {
-      id: newId,
-      companyName: newPlacement.companyName,
-      role: newPlacement.role,
-      package: newPlacement.ctcTotal/100000,
-      appliedCount: 0,
-      selectedCount: 0,
-      status: 'In Progress',
-      startDate: newPlacement.expectedJoiningDate,
-      location: newPlacement.location.join(', '),
-    };
-
-    setPlacements(prev => [...prev, newPlacementWithId]);
-    
-    // Reset the form
-    setNewPlacement({
-      companyName: '',
-      role: '',
-      location: [],
-      ctcTotal: '',
-      inHand: '',
-      perksAndBenefits: '',
-      stipend: '',
-      bond: '',
-      expectedJoiningDate: '',
-      aboutRole: '',
-      aboutCompany: '',
-      eligibility: '',
-      branches: [],
-      cgpa: '',
-      backlogs: '',
-    });
-    
-    setSelectedJNF('');
-    setOpenDialog(false);
+  const handleOpen = () => {
+    setOpen(true);
   };
 
-  const handleViewPlacement = () => {
-    // Redirect to placement details page
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleAddPlacement = async () => {
+    try {
+      const placementDriveData = {
+        placementDrive_title: `${newPlacement.companyName} Placement Drive`,
+  
+        companyDetails: {
+          name: newPlacement.companyName,
+          email: newPlacement.companyEmail || "", // Ensure email is provided
+          website: newPlacement.companyWebsite || "",
+          companyType: newPlacement.companyType || "",
+          domain: newPlacement.domain || "",
+          description: newPlacement.aboutCompany || "",
+        },
+  
+        jobProfile: {
+          profileId: newPlacement.profileId || "",
+          course: newPlacement.course || "",
+          designation: newPlacement.role,
+          jobDescription: {
+            description: newPlacement.aboutRole || "",
+            attachFile: !!newPlacement.jobDescriptionFile, // Convert to boolean
+            file: newPlacement.jobDescriptionFile || "", // File URL (if applicable)
+          },
+          ctc: parseFloat(newPlacement.ctcTotal) || 0,
+          takeHome: parseFloat(newPlacement.inHand) || 0,
+          perks: newPlacement.perksAndBenefits || "",
+          trainingPeriod: newPlacement.trainingPeriod || "",
+          placeOfPosting: Array.isArray(newPlacement.location) ? newPlacement.location.join(", ") : newPlacement.location,
+          jobType: newPlacement.jobType || "",
+          stipend: parseFloat(newPlacement.stipend) || 0,
+          internDuration: newPlacement.internDuration || "",
+        },
+  
+        eligibleBranchesForProfiles: {
+          profileId: newPlacement.profileId || "",
+          branches: {
+            btech: newPlacement.branches.map((branch) => ({
+              name: branch,
+              eligible: true,
+            })),
+          },
+        },
+  
+        // selectionProcessForProfile: {
+        //   profileId: newPlacement.profileId || "",
+        //   rounds: newPlacement.selectionRounds.map((round, index) => ({
+        //     roundNumber: index + 1,
+        //     roundName: round,
+        //     details: newPlacement.selectionDetails?.[round] || "",
+        //   })),
+        //   expectedRecruits: newPlacement.expectedRecruits || 0,
+        //   tentativeDate: newPlacement.expectedJoiningDate || "",
+        // },
+  
+        eligibilityCriteria: {
+          minCgpa: parseFloat(newPlacement.cgpa) || 0,
+          backlogAllowed: parseInt(newPlacement.backlogs) || 0,
+        },
+  
+        bondDetails: {
+          hasBond: Boolean(newPlacement.bond),
+          details: newPlacement.bond || "",
+        },
+  
+        pointOfContact: newPlacement.pointOfContact || [],
+  
+        assignedUser: newPlacement.assignedUser || "",
+  
+        applicationDetails: {
+          applicationDeadline: newPlacement.applicationDeadline || "",
+          applicationLink: newPlacement.applicationLink || "",
+        },
+      };
+  
+      // Call API to create placement drive
+      const response = await placementService.createPlacementDrive(placementDriveData);
+        
+      setSelectedJNF('');
+      setOpenDialog(false);
+  
+      console.log("✅ Placement Drive Created Successfully:", response);
+    } catch (error) {
+      console.error("❌ Failed to create placement drive:", error);
+    }
   };
 
   // Add this branches data
@@ -234,17 +297,6 @@ const Internships = () => {
     handleFilterChange('search', value);
   };
 
-  const filteredPlacements = placements.filter((placement) => {
-    return (
-      ((filters.search || '') === '' || 
-        [placement.companyName, placement.role, placement.startDate, placement.location, placement.ctcTotal]
-          .some(field => field?.toLowerCase().includes((filters.search || '').toLowerCase()))
-      ) &&
-      (filters.status === 'All' || placement.status === filters.status) &&
-      (filters.year === '' || placement.year === filters.year)
-    );
-  });
-  
 
   return (
     <Container>
@@ -254,37 +306,16 @@ const Internships = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick= {() => setOpenDialog(true)}
-        >
-          Add Internship Drive
+          onClick={handleOpen}        >
+          Add Intership Drive
         </Button>
       </Box>
-      <AddPlacementDialog 
-        open={openDialog} 
-        handleClose={() => setOpenDialog(false)}
-        setPlacements={setPlacements}
-        acceptedJNFs={acceptedJNFs}
-        locationOptions={locationOptions} 
-        branchOptions={branchOptions} 
-        handleJNFSelect={handleJNFSelect}
-        newPlacement={newPlacement}
-        handleChange={handleChange}
-        handleAddPlacement={handleAddPlacement}
-        selectionRounds={selectionRounds}
-        courses={courses}
-      />
+      <AddPlacementDialog open={open} handleClose={handleClose} />
+
       <PlacementAnalytics 
-        placements={filteredPlacements}
+        placements={placements}
       />
-      <PlacementFilters
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onSearchChange={handleSearchChange}
-      />
-      <PlacementTable
-        placements={filteredPlacements}
-        mockPagination={mockPagination}
-       />
+      <PlacementTable/>
     </Container>
   );
 };

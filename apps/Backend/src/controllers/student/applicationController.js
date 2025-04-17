@@ -44,4 +44,16 @@ export default class ApplicationController {
     const drives = await this.applicationService.getEligibleDrives(studentId);
     res.status(drives.statusCode).json(drives);
   });
+  getOfferLetter = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const result = await this.applicationService.getOfferLetter(applicationId);
+    res.status(result.statusCode).json(result);
+  });
+  
+  respondToOffer = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { response } = req.body; // 'accept' or 'reject'
+    const result = await this.applicationService.respondToOffer(applicationId, response);
+    res.status(result.statusCode).json(result);
+  });
 }

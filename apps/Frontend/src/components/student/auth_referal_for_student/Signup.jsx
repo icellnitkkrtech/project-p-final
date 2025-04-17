@@ -13,6 +13,7 @@ const Signup = () => {
       department: "",
       batch: "",
       gender: "",
+      category: "",
     },
     academics: {
       cgpa: "",
@@ -63,7 +64,13 @@ const Signup = () => {
         academics: formData.academics,
       });
       if (response.data.statusCode === 201) {
-        navigate(`/student/${response.data.data.student._id}`);
+        // Store auth data
+        localStorage.setItem("studentId", response.data.data.student._id);
+        localStorage.setItem("authToken", response.data.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
+
+        // Navigate to dashboard instead of profile
+        navigate("/student");
       }
     } catch (err) {
       console.error("Registration error:", err);
@@ -137,13 +144,25 @@ const Signup = () => {
                   className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select Department</option>
-                  <option value="Computer Engineering">Computer Engineering</option>
-                  <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
-                  <option value="Mechanical Engineering">Mechanical Engineering</option>
+                  <option value="Computer Engineering">
+                    Computer Engineering
+                  </option>
+                  <option value="Electronics & Communication Engineering">
+                    Electronics & Communication Engineering
+                  </option>
+                  <option value="Mechanical Engineering">
+                    Mechanical Engineering
+                  </option>
                   <option value="Civil Engineering">Civil Engineering</option>
-                  <option value="Electrical Engineering">Electrical Engineering</option>
-                  <option value="Production & Industrial Engineering">Production & Industrial Engineering</option>
-                  <option value="Information Technology">Information Technology</option>
+                  <option value="Electrical Engineering">
+                    Electrical Engineering
+                  </option>
+                  <option value="Production & Industrial Engineering">
+                    Production & Industrial Engineering
+                  </option>
+                  <option value="Information Technology">
+                    Information Technology
+                  </option>
                   {/* <option value="M.Tech">M.Tech</option>
                   <option value="MBA">MBA</option>
                   <option value="MCA">MCA</option>
@@ -152,10 +171,26 @@ const Signup = () => {
                 </select>
               </div>
               <div>
+                <select
+                  name="personalInfo.category"
+                  required
+                  value={formData.personalInfo.category}
+                  onChange={handleChange}
+                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select Category</option>
+                  <option value="GENERAL">GENERAL</option>
+                  <option value="OBC">OBC</option>
+                  <option value="SC">SC</option>
+                  <option value="ST">ST</option>
+                  <option value="EWS">EWS</option>
+                </select>
+              </div>
+              <div>
                 <input
                   name="personalInfo.batch"
                   type="number"
-                  required 
+                  required
                   placeholder="Batch Year (Passing year)"
                   value={formData.personalInfo.batch}
                   onChange={handleChange}

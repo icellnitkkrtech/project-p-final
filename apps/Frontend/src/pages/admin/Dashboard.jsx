@@ -11,6 +11,7 @@ import CareerPreferences from '../../components/admin/dashboard/CareerPreference
 import JobProfileStats from '../../components/admin/dashboard/JobProfileStats';
 import TopCompanies from '../../components/admin/dashboard/TopCompanies';
 import axios from '../../config/axios';
+import placementSessionService from '../../services/admin/placementSessionService';
 
 const Dashboard = () => {
   // Filter states
@@ -21,11 +22,37 @@ const Dashboard = () => {
     offerType: 'all'
   });
   
-  // Available filter options (these could be fetched from API)
-  const sessions = ['all', '2022-23', '2023-24', '2024-25'];
+  // State for placement sessions
+  const [placementSessions, setPlacementSessions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Available filter options
   const educationLevels = ['all', 'UG', 'PG'];
   const driveTypes = ['all', 'placement', 'intern'];
   const offerTypes = ['all', 'intern+fte', 'intern+ppo', 'fte'];
+  
+  // Fetch placement sessions on component mount
+  useEffect(() => {
+    const fetchPlacementSessions = async () => {
+      setLoading(true);
+      try {
+        const response = await placementSessionService.getAll();
+        if (response.data && Array.isArray(response.data)) {
+          // Sort sessions by name in descending order (newest first)
+          const sortedSessions = response.data.sort((a, b) => {
+            return b.name.localeCompare(a.name);
+          });
+          setPlacementSessions(sortedSessions);
+        }
+      } catch (error) {
+        console.error("Error fetching placement sessions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchPlacementSessions();
+  }, []);
   
   // Handle filter changes
   const handleFilterChange = (event) => {
@@ -52,9 +79,10 @@ const Dashboard = () => {
                 label="Placement Session"
                 onChange={handleFilterChange}
               >
-                {sessions.map(session => (
-                  <MenuItem key={session} value={session}>
-                    {session === 'all' ? 'All Sessions' : session}
+                <MenuItem value="all">All Sessions</MenuItem>
+                {placementSessions.map(session => (
+                  <MenuItem key={session._id} value={session._id}>
+                    {session.name}
                   </MenuItem>
                 ))}
               </Select>
