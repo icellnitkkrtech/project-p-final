@@ -283,6 +283,94 @@ const placementService = {
         const response = await axios.get(`${API_BASE_URL}/student/applications/detail/${applicationId}`);
         return response.data;
       },
+
+    // Add this new method to placementService
+    getDetailedResults: async (placementId, roundId) => {
+        try {
+            console.log(`Fetching detailed results for placement ${placementId}, round ${roundId}`);
+            
+            // Use the existing endpoint for detailed round results
+            const response = await axios.get(`${API_BASE_URL}/placement/${placementId}/rounds/${roundId}/detailed-results`);
+            
+            console.log("Detailed results response:", response.data);
+            
+            // Process the response to ensure we have the correct structure
+            const results = {
+                ...response.data,
+                selectedStudents: response.data.selectedStudents || [],
+                appearedStudents: response.data.appearedStudents || []
+            };
+            
+            return results;
+        } catch (error) {
+            console.error("Error fetching detailed results:", error);
+            // Return a default object with empty arrays
+            return {
+                selectedStudents: [],
+                appearedStudents: [],
+                resultMessage: "Unable to load results",
+                resultDescription: "There was an error loading the round results."
+            };
+        }
+    },
+
+    // Get final selected students (from the last round)
+    getFinalSelectedStudents: async (placementId) => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/placement/${placementId}/final-selected-students`);
+            return response.data.data;
+        } catch (error) {
+            console.error("Error fetching final selected students:", error);
+            throw error;
+        }
+    },
+
+    // Get offer letters for a placement
+    getOfferLetters: async (placementId) => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/placement/${placementId}/offer-letters`);
+            return response.data.data;
+        } catch (error) {
+            console.error("Error fetching offer letters:", error);
+            throw error;
+        }
+    },
+
+    // Send offer letters to selected students
+    sendOfferLetters: async (placementId, offerData) => {
+        try {
+          console.log("Sending offer letters with data:", offerData);
+          
+          // Make sure studentIds is an array
+          if (!offerData.studentIds || !Array.isArray(offerData.studentIds) || offerData.studentIds.length === 0) {
+            throw new Error("Student IDs are required and must be an array");
+          }
+          
+          const response = await axios.post(
+            `${API_BASE_URL}/placement/${placementId}/offer-letters`, 
+            offerData
+          );
+          
+          console.log("Send offer letters response:", response.data);
+          return response.data;
+        } catch (error) {
+          console.error("Error in sendOfferLetters service method:", error);
+          throw error;
+        }
+      },
+
+    // Update student offer status (for student portal)
+    updateOfferStatus: async (placementId, offerId, status) => {
+        try {
+            const response = await axios.patch(`${API_BASE_URL}/placement/${placementId}/offer-letters/${offerId}`, {
+                status
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error updating offer status:", error);
+            throw error;
+        }
+    },
 };
 
 // Helper function to create automatic notifications

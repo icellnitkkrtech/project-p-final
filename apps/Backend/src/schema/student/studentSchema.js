@@ -126,11 +126,10 @@ const StudentSchema = new Schema(
     },
     isPlaced: {
       type: Boolean,
-      default: false,
+      default: false
     },
     placedAt: String,
-    placementDate : Date,
-
+    placementDate: Date,
     // Verification metadata
     verificationStatus: {
       type: String,

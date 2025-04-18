@@ -126,6 +126,36 @@ placementRoutes.delete("/:id/notifications/:notification_id/delete", (req, res) 
 placementRoutes.get("/:id/rounds/all", (req, res) => {
     placementController.getAllRounds(req, res);
 });
+// Add this new route to placementRoutes.js
+placementRoutes.get("/:id/rounds/:round_id/detailed-results", (req, res) => {
+  placementController.getDetailedRoundResults(req, res);
+});
+
+// Get final selected students (from the last round)
+placementRoutes.get("/:id/final-selected-students", (req, res) => {
+    placementController.getFinalSelectedStudents(req, res);
+});
+
+// Send offer letters to selected students
+placementRoutes.post("/:id/offer-letters", (req, res) => {
+    placementController.sendOfferLetters(req, res);
+  });
+  
+
+// Get all offer letters for a placement
+placementRoutes.get("/:id/offer-letters", (req, res) => {
+    placementController.getOfferLetters(req, res);
+});
+
+// Get a specific offer letter
+placementRoutes.get("/:id/offer-letters/:offer_id", (req, res) => {
+    placementController.getOfferLetter(req, res);
+});
+
+// Update offer letter status (accept/reject)
+placementRoutes.patch("/:id/offer-letters/:offer_id", (req, res) => {
+    placementController.updateOfferStatus(req, res);
+});
 
 placementRoutes.post('/student-placement', placementController.createStudentPlacement.bind(placementController));
 

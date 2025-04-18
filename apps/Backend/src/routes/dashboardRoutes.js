@@ -17,11 +17,9 @@ dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
         const companyQuery = {};
         const placementQuery = {};
         
-        // Apply batch filter (equivalent to session)
+        // Apply placement session filter
         if (session && session !== 'all') {
-            // Convert session (e.g., "2023-24") to batch year (e.g., 2023)
-            const batchYear = parseInt(session.split('-')[0]);
-            studentQuery['personalInfo.batch'] = batchYear;
+            placementQuery['placementSession'] = session;
         }
         
         // Apply education level filter
@@ -124,11 +122,9 @@ dashboardRouter.get('/placement-progress', asyncHandler(async (req, res) => {
         const studentQuery = {};
         const placementQuery = {};
         
-        // Apply batch filter (equivalent to session)
+        // Apply placement session filter
         if (session && session !== 'all') {
-            // Convert session (e.g., "2023-24") to batch year (e.g., 2023)
-            const batchYear = parseInt(session.split('-')[0]);
-            studentQuery['personalInfo.batch'] = batchYear;
+            placementQuery['placementSession'] = session;
         }
         
         // Apply education level filter
@@ -235,6 +231,11 @@ dashboardRouter.get('/company-stats', asyncHandler(async (req, res) => {
         // Build filter queries based on actual schema structure
         const companyQuery = {};
         const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
         
         // Apply drive type filter to placement drives
         if (driveType && driveType !== 'all') {
@@ -343,11 +344,9 @@ dashboardRouter.get('/branch-stats', asyncHandler(async (req, res) => {
         const studentQuery = {};
         const placementQuery = {};
         
-        // Apply batch filter (equivalent to session)
+        // Apply placement session filter
         if (session && session !== 'all') {
-            // Convert session (e.g., "2023-24") to batch year (e.g., 2023)
-            const batchYear = parseInt(session.split('-')[0]);
-            studentQuery['personalInfo.batch'] = batchYear;
+            placementQuery['placementSession'] = session;
         }
         
         // Apply education level filter
@@ -427,6 +426,11 @@ dashboardRouter.get('/ctc-analysis', asyncHandler(async (req, res) => {
         
         // Build filter queries based on actual schema structure
         const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
         
         // Apply drive type filter to placement drives
         if (driveType && driveType !== 'all') {
@@ -537,6 +541,11 @@ dashboardRouter.get('/top-companies', asyncHandler(async (req, res) => {
         
         // Build filter queries based on actual schema structure
         const placementQuery = {};
+        
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
         
         // Apply drive type filter to placement drives
         if (driveType && driveType !== 'all') {
@@ -650,6 +659,11 @@ dashboardRouter.get('/job-profiles', asyncHandler(async (req, res) => {
         // Build filter queries based on actual schema structure
         const placementQuery = {};
         
+        // Apply placement session filter
+        if (session && session !== 'all') {
+            placementQuery['placementSession'] = session;
+        }
+        
         // Apply drive type filter to placement drives
         if (driveType && driveType !== 'all') {
             if (driveType === 'placement') {
@@ -757,11 +771,9 @@ dashboardRouter.get('/career-preferences', asyncHandler(async (req, res) => {
         // Build filter queries based on actual schema structure
         const studentQuery = {};
         
-        // Apply batch filter (equivalent to session)
+        // Apply placement session filter
         if (session && session !== 'all') {
-            // Convert session (e.g., "2023-24") to batch year (e.g., 2023)
-            const batchYear = parseInt(session.split('-')[0]);
-            studentQuery['personalInfo.batch'] = batchYear;
+            placementQuery['placementSession'] = session;
         }
         
         // Apply education level filter

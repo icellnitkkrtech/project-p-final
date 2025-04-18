@@ -61,4 +61,67 @@ export default class ApplicationService {
       return new apiResponse(500, null, "Error fetching eligible drives");
     }
   }
+ 
+
+async getOfferLetter(applicationId) {
+  try {
+    const application = await this.applicationModel.getApplicationById(applicationId);
+    
+    if (!application) {
+      return new apiResponse(404, null, "Application not found");
+    }
+    
+    if (!application.offerDetails) {
+      return new apiResponse(404, null, "No offer letter available for this application");
+    }
+    
+    return new apiResponse(200, application.offerDetails, "Offer letter fetched successfully");
+  } catch (error) {
+    console.error("Service error:", error);
+    return new apiResponse(500, null, "Error fetching offer letter");
+  }
+}
+
+async respondToOffer(applicationId, response) {
+  try {
+    if (!['accept', 'reject'].includes(response)) {
+      return new apiResponse(400, null, "Invalid response. Must be 'accept' or 'reject'");
+    }
+    
+    const application = await this.applicationModel.getApplicationById(applicationId);
+    
+    if (!application) {
+      return new apiResponse(404, null, "Application not found");
+    }
+    
+    if (!application.offerDetails) {
+      return new apiResponse(404, null, "No offer letter available for this application");
+    }
+    
+    // Update the offer response
+    const updatedApplication = await this.applicationModel.updateOfferResponse(
+      applicationId, 
+      response, 
+      new Date()
+    );
+    
+    // If accepted, update student status to placed
+    if (response === 'accept') {
+      await this.studentService.updatePlacementStatus(
+        application.student, 
+        true, 
+        application.placementDrive.company.name
+      );
+    }
+    
+    return new apiResponse(
+      200, 
+      updatedApplication, 
+      `Offer ${response === 'accept' ? 'accepted' : 'rejected'} successfully`
+    );
+  } catch (error) {
+    console.error("Service error:", error);
+    return new apiResponse(500, null, "Error responding to offer");
+  }
+}
 }

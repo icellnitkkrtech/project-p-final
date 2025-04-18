@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "../../axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Refresh, FilterList, Sort } from "@mui/icons-material";
+import {
+  Search,
+  Refresh,
+  FilterList,
+  Sort,
+  Description,
+} from "@mui/icons-material";
 import ApplicationDetailView from "./ApplicationDetailView";
 import ApplicationSkeleton from "./ApplicationSkeleton";
+import OfferLetterView from "./OfferLetterView";
+import { Alert } from "@mui/material";
 import { useOutletContext } from "react-router-dom";
 import {
   Box,
@@ -13,6 +21,7 @@ import {
   Menu,
   Chip,
   MenuItem,
+  Button,
 } from "@mui/material";
 
 const ApplicationsSection = () => {
@@ -30,7 +39,7 @@ const ApplicationsSection = () => {
     direction: "desc",
   });
   const [anchorEl, setAnchorEl] = useState(null);
-
+  const [viewingOffer, setViewingOffer] = useState(null);
   const itemsPerPage = 10;
 
   const fetchApplications = async () => {
@@ -73,7 +82,14 @@ const ApplicationsSection = () => {
     });
     setAnchorEl(null);
   };
-
+  const handleOfferResponseSubmitted = (updatedApplication) => {
+    // Update the application in the list
+    setApplications(
+      applications.map((app) =>
+        app._id === updatedApplication._id ? updatedApplication : app
+      )
+    );
+  };
   const filteredApplications = applications
     .filter((app) => {
       if (filter === "all") return true;
@@ -263,6 +279,20 @@ const ApplicationsSection = () => {
                   <Typography variant="caption" color="textSecondary">
                     Applied: {new Date(app.appliedAt).toLocaleDateString()}
                   </Typography>
+                  {app.offerDetails && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewingOffer(app);
+                      }}
+                      startIcon={<Description />}
+                    >
+                      View Offer
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -313,6 +343,21 @@ const ApplicationsSection = () => {
                       <td className="px-6 py-4">
                         {new Date(app.appliedAt).toLocaleDateString()}
                       </td>
+                      {app.offerDetails && (
+                        <td className="px-6 py-4">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingOffer(app);
+                            }}
+                          >
+                            View Offer
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -371,6 +416,15 @@ const ApplicationsSection = () => {
           />
         )}
       </AnimatePresence>
+
+      {viewingOffer && (
+        <OfferLetterView
+          application={viewingOffer}
+          open={Boolean(viewingOffer)}
+          onClose={() => setViewingOffer(null)}
+          onResponseSubmitted={handleOfferResponseSubmitted}
+        />
+      )}
     </motion.div>
   );
 };
