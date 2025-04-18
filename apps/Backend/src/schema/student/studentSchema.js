@@ -75,11 +75,11 @@ const StudentSchema = new Schema(
         enum: ["GENERAL", "OBC", "SC", "ST", "EWS"],
         required: false,
       },
-      course: {
-        type: String,
-        enum: ["B.Tech", "M.Tech", "M.Sc", "M.Tech","MCA","MBA"],
-        required: false,
-      },
+      // course: {
+      //   type: String,
+      //   enum: ["B.Tech", "M.Tech", "M.Sc", "M.Tech","MCA","MBA"],
+      //   required: false,
+      // },
     },
 
     academics: {
