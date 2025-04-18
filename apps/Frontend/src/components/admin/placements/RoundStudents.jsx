@@ -369,15 +369,15 @@ const RoundStudents = ({ placementId, roundId, selectable = false, onSelectionCh
                 <Tooltip title="Update selected students">
                   <Button 
                     variant="contained" 
-                    onClick={handleUpdateSelected} 
-                    disabled={isUpdating || updatedSelectedStudents.length === 0}
-                    startIcon={isUpdating ? <CircularProgress size={20} /> : <UpdateIcon />}
+                    color="primary" 
+                    onClick={handleUpdateSelected}
+                    disabled={loading}
                     sx={{ 
                       minWidth: 150,
                       textTransform: 'none'
                     }}
                   >
-                    {isUpdating ? "Updating..." : "Update Selected"}
+                    {loading ? "Updating..." : "Update Selected"}
                   </Button>
                 </Tooltip>
               </Box>

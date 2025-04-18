@@ -229,7 +229,7 @@ const JNFForm = ({ open, onClose, jnf, onSubmit }) => {
       <Grid item xs={12} md={6}>
         <TextField
           fullWidth
-          label="CTC (per annum)"
+          label="CTC (per annum in LPA)"
           value={formData.ctc}
           onChange={handleChange('ctc')}
           required

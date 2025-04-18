@@ -36,14 +36,11 @@ const OfferLetterPanel = ({ placementId, companyName, jobProfile }) => {
         setLoading(true);
         // Fetch selected students
         const response = await placementService.getSelectedStudents(placementId);
-        console.log("Selected students response:", response);
         
         if (response && response.selectedStudents && Array.isArray(response.selectedStudents)) {
           // The API already returns full student objects, so we can use them directly
           setSelectedStudents(response.selectedStudents);
-          console.log("Selected students:", response.selectedStudents);
         } else {
-          console.log("No selected students found or invalid format");
           setSelectedStudents([]);
         }
         
@@ -67,7 +64,6 @@ const OfferLetterPanel = ({ placementId, companyName, jobProfile }) => {
           <p>HR Department<br>${companyName || '[COMPANY_NAME]'}</p>
         `);
       } catch (err) {
-        console.error("Error fetching data:", err);
         setError("Failed to load selected students");
       } finally {
         setLoading(false);
@@ -81,11 +77,17 @@ const OfferLetterPanel = ({ placementId, companyName, jobProfile }) => {
     try {
       setLoadingOffers(true);
       const response = await placementService.getOfferLetters(placementId);
-      if (response && response.data) {
+      
+      // Check if response is an array directly or has a data property
+      if (Array.isArray(response)) {
+        setOfferLetters(response);
+      } else if (response && response.data) {
         setOfferLetters(response.data);
+      } else {
+        setOfferLetters([]);
       }
     } catch (err) {
-      console.error("Error fetching offer letters:", err);
+      setOfferLetters([]);
     } finally {
       setLoadingOffers(false);
     }
@@ -115,14 +117,8 @@ const OfferLetterPanel = ({ placementId, companyName, jobProfile }) => {
         throw new Error("No students selected");
       }
       
-      // Log the selected students to verify their structure
-      console.log("Selected students before sending offers:", selectedStudents);
-      
       // Extract IDs, ensuring we handle different possible structures
       const studentIds = selectedStudents.map(student => {
-        // Log each student to see its structure
-        console.log("Processing student:", student);
-        
         // Handle different possible structures
         if (typeof student === 'string') {
           return student; // Already an ID
@@ -131,14 +127,11 @@ const OfferLetterPanel = ({ placementId, companyName, jobProfile }) => {
         } else if (student.id) {
           return student.id; // Object with id property
         } else {
-          console.error("Cannot extract ID from student:", student);
           return null;
         }
       }).filter(id => id !== null); // Remove any null values
       
       // Verify we have IDs to send
-      console.log("Student IDs to send:", studentIds);
-      
       if (studentIds.length === 0) {
         throw new Error("Could not extract valid student IDs");
       }
@@ -150,15 +143,12 @@ const OfferLetterPanel = ({ placementId, companyName, jobProfile }) => {
         expiryDate: new Date(Date.now() + 7*24*60*60*1000) // 7 days from now
       });
       
-      console.log("Send offer letters response:", response);
-      
       await fetchOfferLetters();
       setOpenDialog(false);
       
       // Show success message
       setError({ severity: 'success', message: 'Offer letters sent successfully!' });
     } catch (err) {
-      console.error("Error sending offer letters:", err);
       setError({ severity: 'error', message: err.message || 'Failed to send offer letters' });
     } finally {
       setSending(false);
@@ -239,9 +229,13 @@ const OfferLetterPanel = ({ placementId, companyName, jobProfile }) => {
             </TableHead>
             <TableBody>
               {selectedStudents.map((student) => {
-                const offerLetter = offerLetters.find(
-                  offer => offer.studentId === student._id
-                );
+                // Try different ways to match the student with an offer letter
+                const studentIdStr = student._id?.toString();
+                
+                const offerLetter = offerLetters.find(offer => {
+                  const offerStudentIdStr = offer.studentId?.toString();
+                  return studentIdStr && offerStudentIdStr && studentIdStr === offerStudentIdStr;
+                });
                 
                 return (
                   <TableRow key={student._id}>

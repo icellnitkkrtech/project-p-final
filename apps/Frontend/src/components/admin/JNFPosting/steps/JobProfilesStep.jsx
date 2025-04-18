@@ -288,8 +288,8 @@ const JobProfilesStep = ({ formData, handleJobProfileChange }) => {
                           max: 12,
                           step: 1
                         }}
-                        value={profile.INTERNDuration || ''}
-                        onChange={(e) => handleProfileChange(profileIndex, 'INTERNDuration', e.target.value)}
+                        value={profile.internDuration || ''}
+                        onChange={(e) => handleProfileChange(profileIndex, 'internDuration', e.target.value)}
                         required
                       />
                     </Grid>

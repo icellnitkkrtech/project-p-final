@@ -46,7 +46,8 @@ const currentYear = new Date().getFullYear();
 const years = [
   (currentYear - 2).toString(),
   (currentYear - 1).toString(),
-  currentYear.toString()
+  currentYear.toString(),
+  (currentYear + 1).toString(),
 ];
 
 const StudentReports = () => {
