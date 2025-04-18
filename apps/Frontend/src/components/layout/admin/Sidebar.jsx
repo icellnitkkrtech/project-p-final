@@ -19,6 +19,7 @@ import {
     History,
     Notifications as NotificationsIcon,
     AutoFixHigh,
+    Policy,
 } from '@mui/icons-material';
 import { School } from '@mui/icons-material';
 import ListAltIcon from "@mui/icons-material/ListAlt";
@@ -41,6 +42,7 @@ const menuItems = [
     { title: 'Audit Logs', path: '/admin/audit', icon: <History /> },
     { title: 'Notifications', path: '/admin/notifications', icon: <NotificationsIcon /> },
     { title: 'Automation', path: '/admin/automation', icon: <AutoFixHigh /> },
+    { title: 'Placement Policies', path: '/admin/placement-policies', icon: <Policy /> },
 ];
 
 const Sidebar = ({ open, onClose, variant = 'permanent', mobile, sx }) => {

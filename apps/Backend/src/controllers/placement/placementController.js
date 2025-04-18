@@ -112,13 +112,26 @@ export default class PlacementController {
 
     async updateRound(req, res) {
         try {
-            const response = await this.placementService.updateRound(req.params.id, req.params.round_id, req.body);
-            if (!response) {
-                return res.status(404).json({ message: "Round not found" });
-            }
-            res.status(200).json(response);
+            const { id, round_id } = req.params;
+            const roundData = req.body;
+            
+            console.log("Updating round with ID:", round_id, "in placement:", id);
+            console.log("Round data:", roundData);
+            
+            const result = await this.placementService.updateRound(id, round_id, roundData);
+            
+            return res.status(200).json({
+                success: true,
+                message: "Round updated successfully",
+                data: result
+            });
         } catch (error) {
-            res.status(500).json({ message: "Error updating round", error });
+            console.error("Error updating round:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error updating round",
+                error: error.message
+            });
         }
     }
 

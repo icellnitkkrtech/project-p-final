@@ -217,6 +217,15 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
   const [selectedStudentDetails, setSelectedStudentDetails] = useState({});
   const [appearedStudentDetails, setAppearedStudentDetails] = useState({});
   const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
+  const [roundName, setRoundName] = useState('');
+  const [roundNumber, setRoundNumber] = useState('');
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
+  const [venue, setVenue] = useState('');
+  const [roundDurationHours, setRoundDurationHours] = useState(0);
+  const [roundDurationMinutes, setRoundDurationMinutes] = useState(0);
+  const [editingRound, setEditingRound] = useState(null);
+  const [roundStatus, setRoundStatus] = useState('upcoming');
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -341,23 +350,33 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
 
   const handleOpenEditDialog = () => {
     if (selectedRound) {
-      setEditRound(selectedRound);
+      setEditingRound(selectedRound);
+      setRoundName(selectedRound.roundName || '');
+      setRoundNumber(selectedRound.roundNumber || '');
+      setStartTime(selectedRound.startTime ? new Date(selectedRound.startTime) : null);
+      setEndTime(selectedRound.endTime ? new Date(selectedRound.endTime) : null);
+      setVenue(selectedRound.venue || '');
+      setRoundDurationHours(selectedRound.roundDurationHours || 0);
+      setRoundDurationMinutes(selectedRound.roundDurationMinutes || 0);
+      setRoundStatus(selectedRound.roundStatus || 'upcoming');
       setOpenEditDialog(true);
     }
   };
   
 
   const handleOpenNewRoundDialog = () => {
-    // setNewRound({
-    //   roundNumber: rounds.length + 1,
-    //   roundName: "",
-    //   roundType: "online",
-    //   roundDate:"",
-    //   roundDuration: "",
-    //   venue: "",
-    //   roundStatus: "upcoming",
-    //   details: "",
-    // });
+    // Initialize new round with default values
+    setNewRound({
+      roundNumber: rounds.length + 1,
+      roundName: "",
+      roundType: "online",
+      roundDate: "",
+      roundDurationHours: "",
+      roundDurationMinutes: "",
+      venue: "",
+      roundStatus: "upcoming",
+      details: "",
+    });
     setOpenNewRoundDialog(true);
   };
 
@@ -365,12 +384,25 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Add this constant for round options - matching SelectionProcessSteps.jsx
+  const roundOptions = [
+    { value: 'resumeShortlisting', label: 'Resume Shortlisting', color: '#4caf50' },
+    { value: 'aptitudeTest', label: 'Aptitude Test', color: '#2196f3' },
+    { value: 'technicalTest', label: 'Technical Test', color: '#ff9800' },
+    { value: 'groupDiscussion', label: 'Group Discussion', color: '#9c27b0' },
+    { value: 'technicalInterview', label: 'Technical Interview', color: '#f44336' },
+    { value: 'hrInterview', label: 'HR Interview', color: '#795548' },
+    { value: 'codingTest', label: 'Coding Test', color: '#607d8b' },
+    { value: 'caseStudy', label: 'Case Study', color: '#00bcd4' },
+    { value: 'presentationRound', label: 'Presentation Round', color: '#673ab7' }
+  ];
+
   const handleAddNewRound = async () => {
     if (!newRound.roundName || !newRound.roundDate || !newRound.roundDurationHours) {
-      alert("Please fill all required fields");
+      setSnackbar({ open: true, message: "Please fill all required fields", severity: "error" });
       return;
     }
-  
+
     try {
       const roundData = {
         roundNumber: rounds.length + 1,
@@ -380,70 +412,79 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
         roundDate: new Date(newRound.roundDate).toISOString(),
         roundDuration: `${newRound.roundDurationHours}h ${newRound.roundDurationMinutes || 0}m`,
         roundStatus: "upcoming",
-        venue: newRound.venue ,
+        venue: newRound.venue,
       };
-  
+
       const response = await placementService.addRound(placementId, roundData);
       if (response) {
         setSnackbar({ open: true, message: "New round added successfully!", severity: "success" });
         fetchRoundDetails();
         setOpenNewRoundDialog(false);
-        // setNewRound({
-        //   roundNumber: "",
-        //   roundName: "",
-        //   details: "",
-        //   roundType: "",
-        //   roundDate: "",
-        //   roundDurationHours: "",
-        //   roundDurationMinutes: "",
-        //   roundStatus: "",
-        //   venue: "",
-        // });
+        setNewRound({
+          roundNumber: "",
+          roundName: "",
+          details: "",
+          roundType: "",
+          roundDate: "",
+          roundDurationHours: "",
+          roundDurationMinutes: "",
+          roundStatus: "",
+          venue: "",
+        });
       }
     } catch (error) {
-      // console.error("Add round error:", error);
+      console.error("Add round error:", error);
       setSnackbar({ open: true, message: "Failed to add round", severity: "error" });
     }
   };
   
   const handleUpdateRound = async () => {
-    if (!editRound.roundName   ) {
-      alert("Please fill all required fields");
-      return;
-    }
-  
+    if (!editingRound) return;
+    
+    setLoading(true);
     try {
+      // Only send the necessary round data, not the entire placement object
       const roundData = {
-        round_id: editRound._id,
-        roundNumber: editRound.roundNumber,
-        roundName: editRound.roundName,
-        details: editRound.details,
-        roundType: editRound.roundType,
-        roundDate: new Date(editRound.roundDate).toISOString().split("T")[0],
-        roundDuration: `${editRound.roundDurationHours}h ${editRound.roundDurationMinutes || 0}m`,
-        roundStatus: editRound.roundStatus,
-        venue: editRound.venue,
-        startTime: editRound.startTime,
+        roundName,
+        roundNumber: parseInt(roundNumber),
+        startTime,
+        endTime,
+        venue,
+        roundDurationHours: parseInt(roundDurationHours) || 0,
+        roundDurationMinutes: parseInt(roundDurationMinutes) || 0,
+        // Include the round status
+        roundStatus
       };
-  
-      const response = await placementService.updateRound(placementId, editRound._id, roundData);
-      if (response.status === 200) {
+      
+      console.log("Updating round with data:", roundData);
+      
+      const response = await placementService.updateRound(
+        placementId, 
+        editingRound._id, 
+        roundData
+      );
+      
+      if (response.success) {
         setSnackbar({ open: true, message: "Round updated successfully!", severity: "success" });
         setOpenEditDialog(false);
         fetchRoundDetails();
+      } else {
+        setSnackbar({ open: true, message: response.message || "Failed to update round", severity: "error" });
       }
     } catch (error) {
-      // console.error("Update round error:", error);
-      setSnackbar({ open: true, message: "Failed to update round", severity: "error" });
+      console.error("Error updating round:", error);
+      setSnackbar({ open: true, message: "Error updating round: " + (error.message || "Unknown error"), severity: "error" });
+    } finally {
+      setLoading(false);
     }
-  };  
-
+  };
+  
   const handleNewRoundChange = (event) => {
     setNewRound({ ...newRound, [event.target.name]: event.target.value });
   };
 
   const handleEditRoundChange = (event) => {
-    setEditRound({ ...editRound, [event.target.name]: event.target.value });
+    setEditingRound({ ...editingRound, [event.target.name]: event.target.value });
   };
 
   const handleDeclareResult = async () => {
@@ -940,122 +981,246 @@ const PlacementRounds = ({ placementId, placementTitle }) => {
         </Dialog>
       )}
 
-      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Edit Round</DialogTitle>
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth maxWidth="md">
+        <DialogTitle>
+          Edit Round
+          <IconButton
+            aria-label="close"
+            onClick={() => setOpenEditDialog(false)}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Round Name"
-            name="roundName"
-            value={editRound?.roundName || ""}
-            onChange={handleEditRoundChange}
-            required
-          />
-          
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Start Time"
-            name="startTime"
-            type="datetime-local"
-            value={editRound?.startTime ? new Date(editRound.startTime).toISOString().slice(0, 16) : ""}
-            onChange={handleEditRoundChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-            required
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Venue"
-            name="venue"
-            value={editRound?.venue || ""}
-            onChange={handleEditRoundChange}
-          />
-
-          <FormControl fullWidth margin="dense">
-            <InputLabel>Round Type</InputLabel>
-            <Select
-              name="roundType"
-              value={editRound?.roundType || "online"}
-              onChange={handleEditRoundChange}
-              label="Round Type"
-            >
-              <MenuItem value="online">Online</MenuItem>
-              <MenuItem value="offline">Offline</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* New Round Status Field */}
-          <FormControl fullWidth margin="dense">
-            <InputLabel>Round Status</InputLabel>
-            <Select
-              name="roundStatus"
-              value={editRound?.roundStatus || "upcoming"}
-              onChange={handleEditRoundChange}
-              label="Round Status"
-            >
-              <MenuItem value="upcoming">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Upcoming fontSize="small" sx={{ color: "purple" }} />
-                  Upcoming
-                </Box>
-              </MenuItem>
-              <MenuItem value="ongoing">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Autorenew fontSize="small" sx={{ color: "blue" }} />
-                  Ongoing
-                </Box>
-              </MenuItem>
-              <MenuItem value="completed">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircle fontSize="small" sx={{ color: "green" }} />
-                  Completed
-                </Box>
-              </MenuItem>
-            </Select>
-          </FormControl>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Round Name"
+                value={roundName}
+                onChange={(e) => setRoundName(e.target.value)}
+                fullWidth
+                required
+                margin="normal"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Round Number"
+                type="number"
+                value={roundNumber}
+                onChange={(e) => setRoundNumber(e.target.value)}
+                fullWidth
+                required
+                margin="normal"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Start Time"
+                type="datetime-local"
+                value={startTime ? startTime.toISOString().slice(0, 16) : ''}
+                onChange={(e) => setStartTime(new Date(e.target.value))}
+                fullWidth
+                required
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="End Time"
+                type="datetime-local"
+                value={endTime ? endTime.toISOString().slice(0, 16) : ''}
+                onChange={(e) => setEndTime(new Date(e.target.value))}
+                fullWidth
+                required
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel>Round Status</InputLabel>
+                <Select
+                  value={roundStatus}
+                  onChange={(e) => setRoundStatus(e.target.value)}
+                  label="Round Status"
+                >
+                  <MenuItem value="upcoming">Upcoming</MenuItem>
+                  <MenuItem value="ongoing">Ongoing</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Venue"
+                value={venue}
+                onChange={(e) => setVenue(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Duration (Hours)"
+                type="number"
+                value={roundDurationHours}
+                onChange={(e) => setRoundDurationHours(Number(e.target.value))}
+                fullWidth
+                margin="normal"
+                InputProps={{ inputProps: { min: 0 } }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Duration (Minutes)"
+                type="number"
+                value={roundDurationMinutes}
+                onChange={(e) => setRoundDurationMinutes(Number(e.target.value))}
+                fullWidth
+                margin="normal"
+                InputProps={{ inputProps: { min: 0, max: 59 } }}
+              />
+            </Grid>
+            {roundStatus === 'completed' && (
+              <Grid item xs={12}>
+                <Alert severity="warning">
+                  <strong>Warning:</strong> Changing a round to "completed" status will finalize the selection process for this round. Make sure all student selections are finalized before proceeding.
+                </Alert>
+              </Grid>
+            )}
+          </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-          <Button onClick={handleUpdateRound} variant="contained" color="primary">
-            Update Round
+          <Button 
+            onClick={handleUpdateRound} 
+            variant="contained" 
+            color="primary"
+            disabled={loading || !roundName || !roundNumber || !startTime || !endTime || !roundStatus}
+          >
+            {loading ? <CircularProgress size={24} /> : "Update Round"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openNewRoundDialog} onClose={() => setOpenNewRoundDialog(false)} fullWidth maxWidth="sm">
+      {/* New Round Dialog */}
+      <Dialog open={openNewRoundDialog} onClose={() => setOpenNewRoundDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>Add New Round</DialogTitle>
         <DialogContent>
-          {[
-            { label: "Round Name", name: "roundName", type: "text", value: newRound.roundName },
-            { label: "Round Date", name: "roundDate", type: "date", value: newRound.roundDate },
-            { label: "Venue", name: "venue", type: "text", value: newRound.venue }
-          ].map(({ label, name, type, value }) => (
-            <TextField key={name} fullWidth margin="dense" label={label} name={name} type={type} value={value} onChange={handleNewRoundChange} variant="outlined" InputLabelProps={{ shrink: true }} />
-          ))}
-          
-          <FormControl size="small" fullWidth margin="dense" variant="outlined">
-            <InputLabel>Round Type</InputLabel>
-            <Select name="roundType" value={newRound.roundType} onChange={handleNewRoundChange} label="Round Type">
-              {["online", "offline"].map(type => <MenuItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</MenuItem>)}
-            </Select>
-          </FormControl>
-
           <Grid container spacing={2}>
-            {["Hours", "Minutes"].map((unit, i) => (
-              <Grid key={unit} item xs={6}>
-                <TextField fullWidth margin="dense" type="number" label={`Duration (${unit})`} name={`roundDuration${unit}`} value={newRound[`roundDuration${unit}`]} onChange={handleNewRoundChange} variant="outlined" inputProps={{ min: 0, ...(i ? { max: 59 } : {}) }} />
-              </Grid>
-            ))}
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="round-name-label">Round Name</InputLabel>
+                <Select
+                  labelId="round-name-label"
+                  value={newRound.roundName}
+                  onChange={(e) => setNewRound({ ...newRound, roundName: e.target.value })}
+                  label="Round Name"
+                  required
+                >
+                  {roundOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box 
+                          sx={{ 
+                            width: 12, 
+                            height: 12, 
+                            borderRadius: '50%', 
+                            bgcolor: option.color 
+                          }} 
+                        />
+                        {option.label}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="round-type-label">Round Type</InputLabel>
+                <Select
+                  labelId="round-type-label"
+                  value={newRound.roundType}
+                  onChange={(e) => setNewRound({ ...newRound, roundType: e.target.value })}
+                  label="Round Type"
+                >
+                  <MenuItem value="online">Online</MenuItem>
+                  <MenuItem value="offline">Offline</MenuItem>
+                  <MenuItem value="hybrid">Hybrid</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Round Date"
+                type="date"
+                value={newRound.roundDate}
+                onChange={(e) => setNewRound({ ...newRound, roundDate: e.target.value })}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Venue"
+                value={newRound.venue}
+                onChange={(e) => setNewRound({ ...newRound, venue: e.target.value })}
+                fullWidth
+                margin="normal"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Duration (Hours)"
+                type="number"
+                value={newRound.roundDurationHours}
+                onChange={(e) => setNewRound({ ...newRound, roundDurationHours: e.target.value })}
+                fullWidth
+                margin="normal"
+                InputProps={{ inputProps: { min: 0 } }}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Duration (Minutes)"
+                type="number"
+                value={newRound.roundDurationMinutes}
+                onChange={(e) => setNewRound({ ...newRound, roundDurationMinutes: e.target.value })}
+                fullWidth
+                margin="normal"
+                InputProps={{ inputProps: { min: 0, max: 59 } }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Details (Optional)"
+                multiline
+                rows={3}
+                value={newRound.details}
+                onChange={(e) => setNewRound({ ...newRound, details: e.target.value })}
+                fullWidth
+                margin="normal"
+              />
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenNewRoundDialog(false)} color="secondary">Cancel</Button>
-          <Button onClick={handleAddNewRound} color="primary" variant="contained">Add Round</Button>
+          <Button onClick={() => setOpenNewRoundDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={handleAddNewRound} 
+            variant="contained" 
+            color="primary"
+            disabled={!newRound.roundName || !newRound.roundDate || !newRound.roundDurationHours}
+          >
+            Add Round
+          </Button>
         </DialogActions>
       </Dialog>
 
