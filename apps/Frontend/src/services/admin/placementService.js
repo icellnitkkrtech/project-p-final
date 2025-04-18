@@ -72,24 +72,25 @@ const placementService = {
     },
     
     //7 Update round details
-    updateRound: async (id, roundId, data) => {
-        const response = await axios.put(`${API_BASE_URL}/placement/${id}/rounds/${roundId}/update-round`, data);
-        
-        // Create automatic notification for round update
-        if (response.status === 200) {
-            const subject = `Round Update: ${data.roundName}`;
-            const content = `
-                <h3>Round Details Updated</h3>
-                <p>The details for round "${data.roundName}" have been updated.</p>
-                <p><strong>Start Time:</strong> ${new Date(data.startTime).toLocaleString()}</p>
-                <p><strong>Venue:</strong> ${data.venue || "To be announced"}</p>
-                <p><strong>Status:</strong> ${data.roundStatus}</p>
-                <p>Please check the placement portal for more details.</p>
-            `;
-            await createAutomaticNotification(id, subject, content, "round_update");
+    updateRound: async (placementId, roundId, roundData) => {
+        try {
+            const response = await axios.put(
+                `${API_BASE_URL}/placement/${placementId}/rounds/${roundId}/update-round`,
+                roundData
+            );
+            
+            return {
+                success: true,
+                data: response.data,
+                message: "Round updated successfully"
+            };
+        } catch (error) {
+            console.error("Error updating round:", error);
+            return {
+                success: false,
+                message: error.response?.data?.message || "Failed to update round"
+            };
         }
-        
-        return response;
     },
     
     //8 Get applicant students in a placement drive
@@ -368,6 +369,94 @@ const placementService = {
             return response.data;
         } catch (error) {
             console.error("Error updating offer status:", error);
+            throw error;
+        }
+    },
+
+    // Add this method if it doesn't exist
+    getToken() {
+        return localStorage.getItem('token');
+    },
+
+    // Get all placement policies
+    async getPlacementPolicies() {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/placement-policy`, {
+                headers: {
+                    Authorization: `Bearer ${this.getToken()}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching placement policies:", error);
+            throw error;
+        }
+    },
+
+    // Create a new placement policy
+    async createPlacementPolicy(policyData) {
+        try {
+            // Log the URL and data for debugging
+            console.log("Creating policy at URL:", `${API_BASE_URL}/placement-policy`);
+            console.log("Policy data:", policyData);
+            
+            const response = await axios.post(`${API_BASE_URL}/placement-policy`, policyData, {
+                headers: {
+                    Authorization: `Bearer ${this.getToken()}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error creating placement policy:", error);
+            throw error;
+        }
+    },
+
+    // Update an existing placement policy
+    async updatePlacementPolicy(policyId, policyData) {
+        try {
+            const response = await axios.put(`${API_BASE_URL}/placement-policy/${policyId}`, policyData, {
+                headers: {
+                    Authorization: `Bearer ${this.getToken()}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error updating placement policy:", error);
+            throw error;
+        }
+    },
+
+    // Delete a placement policy
+    async deletePlacementPolicy(policyId) {
+        try {
+            const response = await axios.delete(`${API_BASE_URL}/placement-policy/${policyId}`, {
+                headers: {
+                    Authorization: `Bearer ${this.getToken()}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error deleting placement policy:", error);
+            throw error;
+        }
+    },
+
+    // Check student eligibility based on policies
+    async checkStudentEligibility(studentId, branchId, courseId) {
+        try {
+            const response = await axios.get(
+                `${API_BASE_URL}/placement-policy/student/${studentId}/eligibility`, 
+                {
+                    params: { branchId, courseId },
+                    headers: {
+                        Authorization: `Bearer ${this.getToken()}`
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error("Error checking student eligibility:", error);
             throw error;
         }
     },

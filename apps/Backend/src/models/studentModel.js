@@ -18,6 +18,7 @@ export default class StudentModel {
         !profileData.personalInfo?.name ||
         !profileData.personalInfo?.rollNumber ||
         !profileData.personalInfo?.gender ||
+        !profileData.personalInfo?.course ||
         !profileData.personalInfo?.department ||
         !profileData.personalInfo?.batch
       ) {
@@ -291,15 +292,22 @@ export default class StudentModel {
   async create(data) {
     try {
       // Validate batch format before creating
-      if (data.personalInfo?.batch && !/^\d{4}-\d{4}$/.test(data.personalInfo.batch)) {
-        return new apiResponse(400, null, "Invalid batch format. Use YYYY-YYYY");
+      if (
+        data.personalInfo?.batch &&
+        !/^\d{4}-\d{4}$/.test(data.personalInfo.batch)
+      ) {
+        return new apiResponse(
+          400,
+          null,
+          "Invalid batch format. Use YYYY-YYYY"
+        );
       }
 
       const student = await this.student.create(data);
       return new apiResponse(201, student, "Student created successfully");
     } catch (error) {
-      console.error('Student creation error:', error);
-      if (error.name === 'ValidationError') {
+      console.error("Student creation error:", error);
+      if (error.name === "ValidationError") {
         return new apiResponse(400, null, error.message);
       }
       return new apiResponse(500, null, error.message);
@@ -389,23 +397,23 @@ export default class StudentModel {
     }
   }
   // apps/Backend/src/models/studentModel.js
-// Add this method to the StudentModel class
+  // Add this method to the StudentModel class
 
-async updatePlacementStatus(studentId, isPlaced, companyName) {
-  try {
-    const student = await Student.findByIdAndUpdate(
-      studentId,
-      {
-        isPlaced: isPlaced,
-        placedAt: companyName,
-        placementDate: new Date()
-      },
-      { new: true }
-    );
-    return student;
-  } catch (error) {
-    console.error("Model error:", error);
-    throw error;
+  async updatePlacementStatus(studentId, isPlaced, companyName) {
+    try {
+      const student = await Student.findByIdAndUpdate(
+        studentId,
+        {
+          isPlaced: isPlaced,
+          placedAt: companyName,
+          placementDate: new Date(),
+        },
+        { new: true }
+      );
+      return student;
+    } catch (error) {
+      console.error("Model error:", error);
+      throw error;
+    }
   }
-}
 }

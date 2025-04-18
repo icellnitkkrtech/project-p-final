@@ -427,7 +427,7 @@ import {
           <TextField
             fullWidth
             label="CTC (LPA)"
-            name="ctc"
+            name="ctc(LPA)"
             value={formData.compensation.ctc}
             onChange={(e) => {
               const value = e.target.value;
