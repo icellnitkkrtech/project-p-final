@@ -157,4 +157,6 @@ placementRoutes.patch("/:id/offer-letters/:offer_id", (req, res) => {
     placementController.updateOfferStatus(req, res);
 });
 
+placementRoutes.post('/student-placement', placementController.createStudentPlacement.bind(placementController));
+
 export default placementRoutes;

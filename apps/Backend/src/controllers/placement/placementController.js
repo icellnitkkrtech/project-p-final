@@ -559,4 +559,16 @@ export default class PlacementController {
             });
         }
     }
+
+    async createStudentPlacement(req, res) {
+        try {
+            const response = await this.placementServices.createStudentPlacement(req.body);
+            return res.status(response.statusCode).json(response);
+        } catch (error) {
+            console.error('Controller Error:', error);
+            return res.status(500).json(
+                new apiResponse(500, null, error.message)
+            );
+        }
+    }
 }
