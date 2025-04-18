@@ -115,104 +115,84 @@ dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
 // Placement progress endpoint with filter support
 dashboardRouter.get('/placement-progress', asyncHandler(async (req, res) => {
     try {
-        // Extract filter parameters
-        const { session, educationLevel, driveType, offerType } = req.query;
+        const { session, educationLevel } = req.query;
         
-        // Build filter queries based on actual schema structure
+        // Build filter queries
         const studentQuery = {};
-        const placementQuery = {};
         
-        // Apply placement session filter
+        // Apply session filter
         if (session && session !== 'all') {
-            placementQuery['placementSession'] = session;
+            studentQuery['personalInfo.batch'] = Number(session.split('-')[0]);
         }
         
         // Apply education level filter
         if (educationLevel && educationLevel !== 'all') {
-            // Map educationLevel to department or degree type
             if (educationLevel === 'UG') {
-                studentQuery['personalInfo.department'] = { $in: ['Computer Engineering', 'Information Technology', 'Electronics & Communication Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Production & Industrial Engineering', 'Civil Engineering'] };
+                studentQuery['personalInfo.department'] = {
+                    $in: ['Computer Engineering', 'Information Technology', 
+                          'Electronics & Communication Engineering', 'Electrical Engineering', 
+                          'Mechanical Engineering', 'Production & Industrial Engineering', 
+                          'Civil Engineering']
+                };
             } else if (educationLevel === 'PG') {
-                studentQuery['personalInfo.department'] = { $in: ['M.Tech', 'MBA', 'MCA', 'M.Sc', 'PhD'] };
+                studentQuery['personalInfo.department'] = {
+                    $in: ['M.Tech', 'MBA', 'MCA']
+                };
             }
         }
-        
-        // Apply drive type filter to placement drives
-        if (driveType && driveType !== 'all') {
-            if (driveType === 'placement') {
-                placementQuery['jobProfile.jobType'] = 'fte';
-            } else if (driveType === 'intern') {
-                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
-            }
-        }
-        
-        // Apply offer type filter
-        if (offerType && offerType !== 'all') {
-            if (offerType === 'fte') {
-                placementQuery['jobProfile.jobType'] = 'fte';
-            } else if (offerType === 'intern+ppo') {
-                placementQuery['jobProfile.jobType'] = 'internPpo';
-            } else if (offerType === 'intern+fte') {
-                placementQuery['jobProfile.jobType'] = 'fteIntern';
-            }
-        }
-        
-        // Get total students count
+
+        // Get total students with filters
         const totalStudents = await Student.countDocuments(studentQuery);
+
+        // Get placed students with their placement dates
+        const placedStudents = await Student.find({
+            ...studentQuery,
+            isPlaced: true,
+            placementDate: { $exists: true }
+        }).sort({ placementDate: 1 });
+
+        // Initialize monthly data with academic year order (July to June)
+        const months = ['July', 'August', 'September', 'October', 'November', 'December',
+                       'January', 'February', 'March', 'April', 'May', 'June'];
         
-        // Get placement data
-        const placements = await Placement.find(placementQuery);
-        
-        // Calculate placed students (students who have been selected)
-        let placedStudents = 0;
-        
-        // Process placements to get placed students
-        for (const placement of placements) {
-            if (placement.roundDetails && placement.roundDetails.rounds) {
-                const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
-                if (finalRound && finalRound.selectedStudents) {
-                    placedStudents += finalRound.selectedStudents.length;
-                }
-            }
-        }
-        
-        // Calculate placement percentage
-        const placementPercentage = totalStudents > 0 ? (placedStudents / totalStudents) * 100 : 0;
-        
-        // Group placements by month
-        const monthlyData = [];
-        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        
-        // Initialize monthly data with zeros
-        months.forEach(month => {
-            monthlyData.push({
-                month,
-                placed: 0,
-                target: Math.round(totalStudents * 0.08) // Example target: 8% of total students per month
-            });
-        });
-        
-        // Fill in actual placement data by month
-        placements.forEach(placement => {
-            if (placement.roundDetails && placement.roundDetails.rounds) {
-                const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
-                if (finalRound && finalRound.resultDeclaredAt) {
-                    const month = new Date(finalRound.resultDeclaredAt).getMonth();
-                    if (finalRound.selectedStudents) {
-                        monthlyData[month].placed += finalRound.selectedStudents.length;
+        let monthlyData = months.map(month => ({
+            month,
+            placed: 0,
+            target: Math.round((totalStudents * months.indexOf(month) + 1) / months.length)
+        }));
+
+        // Calculate cumulative placements by month
+        let cumulativePlaced = 0;
+        placedStudents.forEach(student => {
+            if (student.placementDate) {
+                const date = new Date(student.placementDate);
+                const monthName = months[(date.getMonth() + 6) % 12]; // Adjust for academic year
+                const monthIndex = months.indexOf(monthName);
+                
+                if (monthIndex !== -1) {
+                    cumulativePlaced++;
+                    // Update all months from this point forward with cumulative count
+                    for (let i = monthIndex; i < months.length; i++) {
+                        monthlyData[i].placed = cumulativePlaced;
                     }
                 }
             }
         });
-        
+
+        // Calculate overall percentage
+        const placementPercentage = totalStudents > 0 
+            ? Math.round((placedStudents.length / totalStudents) * 100) 
+            : 0;
+
         res.json({
             overall: {
                 total: totalStudents,
-                placed: placedStudents,
+                placed: placedStudents.length,
                 percentage: placementPercentage
             },
             monthly: monthlyData
         });
+
     } catch (error) {
         console.error("Error in placement-progress endpoint:", error);
         res.status(500).json({ 
@@ -337,78 +317,106 @@ dashboardRouter.get('/company-stats', asyncHandler(async (req, res) => {
 // Branch stats endpoint
 dashboardRouter.get('/branch-stats', asyncHandler(async (req, res) => {
     try {
-        // Extract filter parameters
         const { session, educationLevel, driveType, offerType } = req.query;
         
-        // Build filter queries based on actual schema structure
+        // Build filter queries
         const studentQuery = {};
         const placementQuery = {};
         
-        // Apply placement session filter
+        // Apply session filter
         if (session && session !== 'all') {
+            studentQuery['personalInfo.batch'] = Number(session.split('-')[0]);
             placementQuery['placementSession'] = session;
         }
         
         // Apply education level filter
         if (educationLevel && educationLevel !== 'all') {
-            // Map educationLevel to department or degree type
             if (educationLevel === 'UG') {
-                studentQuery['personalInfo.department'] = { $in: ['Computer Engineering', 'Information Technology', 'Electronics & Communication Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Production & Industrial Engineering', 'Civil Engineering'] };
+                studentQuery['personalInfo.department'] = {
+                    $in: ['Computer Engineering', 'Information Technology', 
+                          'Electronics & Communication Engineering', 'Electrical Engineering', 
+                          'Mechanical Engineering', 'Production & Industrial Engineering', 
+                          'Civil Engineering']
+                };
             } else if (educationLevel === 'PG') {
-                studentQuery['personalInfo.department'] = { $in: ['M.Tech', 'MBA', 'MCA', 'M.Sc', 'PhD'] };
+                studentQuery['personalInfo.department'] = {
+                    $in: ['M.Tech', 'MBA', 'MCA']
+                };
             }
         }
-        
-        // Get all students
+
+        // Apply drive type filter
+        if (driveType && driveType !== 'all') {
+            if (driveType === 'placement') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (driveType === 'intern') {
+                placementQuery['jobProfile.jobType'] = { $in: ['fteIntern', 'internPpo'] };
+            }
+        }
+
+        // Apply offer type filter
+        if (offerType && offerType !== 'all') {
+            if (offerType === 'fte') {
+                placementQuery['jobProfile.jobType'] = 'fte';
+            } else if (offerType === 'intern+ppo') {
+                placementQuery['jobProfile.jobType'] = 'internPpo';
+            } else if (offerType === 'intern+fte') {
+                placementQuery['jobProfile.jobType'] = 'fteIntern';
+            }
+        }
+
+        // Get all students with department grouping
         const students = await Student.find(studentQuery);
         
-        // Get all placement drives that match the filters
-        const placements = await Placement.find(placementQuery);
-        
-        // Group students by department
+        // Get placements with selected students
+        const placements = await Placement.find(placementQuery)
+            .populate({
+                path: 'roundDetails.rounds.selectedStudents',
+                select: 'personalInfo.department'
+            });
+
+        // Initialize branch data
         const branchData = {};
         
+        // Count total students per branch
         students.forEach(student => {
-            if (student.personalInfo && student.personalInfo.department) {
+            if (student.personalInfo?.department) {
                 const department = student.personalInfo.department;
-                
                 if (!branchData[department]) {
                     branchData[department] = {
-                        name: department,
+                        branch: department,
                         total: 0,
                         placed: 0
                     };
                 }
-                
                 branchData[department].total++;
             }
         });
-        
-        // Count placed students by branch
+
+        // Count placed students per branch
         placements.forEach(placement => {
-            if (placement.roundDetails && placement.roundDetails.rounds) {
+            if (placement.roundDetails?.rounds) {
                 const finalRound = placement.roundDetails.rounds[placement.roundDetails.rounds.length - 1];
-                if (finalRound && finalRound.selectedStudents) {
-                    finalRound.selectedStudents.forEach(async studentId => {
-                        try {
-                            const student = await Student.findById(studentId);
-                            if (student && student.personalInfo && student.personalInfo.department) {
-                                const department = student.personalInfo.department;
-                                if (branchData[department]) {
-                                    branchData[department].placed++;
-                                }
+                if (finalRound?.selectedStudents) {
+                    finalRound.selectedStudents.forEach(student => {
+                        if (student.personalInfo?.department) {
+                            const department = student.personalInfo.department;
+                            if (branchData[department]) {
+                                branchData[department].placed++;
                             }
-                        } catch (err) {
-                            console.error("Error finding student:", err);
                         }
                     });
                 }
             }
         });
-        
-        res.json({
-            branches: Object.values(branchData)
-        });
+
+        // Convert to array and sort by branch name
+        const branches = Object.values(branchData).sort((a, b) => 
+            a.branch.localeCompare(b.branch)
+        );
+
+        res.json({ branches });
+
     } catch (error) {
         console.error("Error in branch-stats endpoint:", error);
         res.status(500).json({ 
@@ -878,4 +886,4 @@ dashboardRouter.get('/career-preferences', asyncHandler(async (req, res) => {
     }
 }));
 
-export default dashboardRouter; 
+export default dashboardRouter;

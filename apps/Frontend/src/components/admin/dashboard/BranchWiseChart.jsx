@@ -83,8 +83,9 @@ const BranchWiseChart = ({ filters = {} }) => {
               <YAxis />
               <Tooltip formatter={(value, name) => [value, name === 'total' ? 'Total Students' : 'Placed Students']} />
               <Legend />
-              <Bar dataKey="total" name="Total Students" fill="#1976d2" />
-              <Bar dataKey="placed" name="Placed Students" fill="#2e7d32" />
+              {/* <Bar dataKey="total" name="Total Students" fill="#1976d2" /> */}
+              <Bar dataKey="total" fill="#1976d2" />
+              <Bar dataKey="placed" fill="#2e7d32" />
             </BarChart>
           </ResponsiveContainer>
         </Box>
