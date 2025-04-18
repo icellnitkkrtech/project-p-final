@@ -65,6 +65,7 @@ const ProfileView = ({ student, onEdit }) => {
                 {student?.personalInfo?.name}
               </Typography>
               <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                {student?.personalInfo?.course} •{" "}
                 {student?.personalInfo?.department} •{" "}
                 {student?.personalInfo?.batch}
               </Typography>

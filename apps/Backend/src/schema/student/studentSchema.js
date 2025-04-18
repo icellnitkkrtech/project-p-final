@@ -44,11 +44,22 @@ const StudentSchema = new Schema(
         required: true,
         unique: true,
       },
-
-      department: {
-
+      course: {
         type: String,
-        enum: ["Computer Engineering", "Information Technology", "Electronics & Communication Engineering", "Electrical Engineering", "Mechanical Engineering", "Production & Industrial Engineering", "Civil Engineering"],
+        enum: ["btech", "mtech", "mca", "mba", "phd"],
+        required: true,
+      },
+      department: {
+        type: String,
+        enum: [
+          "Computer Engineering",
+          "Information Technology",
+          "Electronics & Communication Engineering",
+          "Electrical Engineering",
+          "Mechanical Engineering",
+          "Production & Industrial Engineering",
+          "Civil Engineering",
+        ],
         required: true,
       },
       batch: {
@@ -62,8 +73,13 @@ const StudentSchema = new Schema(
       category: {
         type: String,
         enum: ["GENERAL", "OBC", "SC", "ST", "EWS"],
-        required: false
+        required: false,
       },
+      // course: {
+      //   type: String,
+      //   enum: ["B.Tech", "M.Tech", "M.Sc", "M.Tech","MCA","MBA"],
+      //   required: false,
+      // },
     },
 
     academics: {
@@ -126,7 +142,7 @@ const StudentSchema = new Schema(
     },
     isPlaced: {
       type: Boolean,
-      default: false
+      default: false,
     },
     placedAt: String,
     placementDate: Date,

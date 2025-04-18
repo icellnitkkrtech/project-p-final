@@ -63,6 +63,7 @@ const PlacementReports = () => {
     
     try {
       const response = await reportService.getFilteredReports('placement', filters);
+      
       setData(response);
     } catch (error) {
       console.error('Error fetching data:', error);

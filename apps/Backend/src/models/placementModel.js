@@ -2,7 +2,7 @@ import placementDrive from "../schema/placement/placementSchema.js";
 import student from "../schema/student/studentSchema.js";
 import {Application} from "../schema/general/applicationSchema.js";
 import mongoose from "mongoose";
-
+import JNF from "../schema/company/jnfSchema.js";
 export default class PlacementModel {
     placement = placementDrive;
     student = student;
@@ -20,26 +20,6 @@ export default class PlacementModel {
     async createPlacement(placementData) {
         console.log("Placement Model: createPlacement called with data:", placementData);
         try {
-            // Initialize roundDetails if not provided
-            if (!placementData.roundDetails) {
-                placementData.roundDetails = { rounds: [] };
-            }
-    
-            // Fetch rounds from selectionProcess and add to roundDetails
-            if (placementData.selectionProcess && Array.isArray(placementData.selectionProcess)) {
-                placementData.selectionProcess.forEach((process) => {
-                    process.rounds.forEach((round, index) => {
-                        placementData.roundDetails.rounds.push({
-                            roundName: round.roundName,
-                            roundNumber: round.roundNumber || index + 1,
-                            startTime: round.startTime || new Date(Date.now() + 24 * 60 * 60 * 1000), // Set to 24 hours in the future
-                            endTime: round.endTime || new Date(Date.now() + 48 * 60 * 60 * 1000),     // Set to 48 hours in the future
-                            roundStatus: "upcoming"
-                        });
-                    });
-                });
-            }
-    
             return await this.placement.create(placementData);
         } catch (error) {
             console.error("Error in createPlacement:", error);
@@ -271,106 +251,168 @@ export default class PlacementModel {
         }
     }
 
-    async updateSelectedStudents(id, roundId, studentId) {
-        console.log("Placement Model: updateSelectedStudents called");
+    async updateSelectedStudents(id, roundId, studentIds) {
+        console.log("Placement Model: updateSelectedStudents called with studentIds:", studentIds);
         try {
-            const result = await this.placement.findOneAndUpdate(
-                { 
-                    _id: id,
-                    "roundDetails.rounds._id": roundId 
-                },
-                { 
-                    $addToSet: { 
-                        "roundDetails.rounds.$.selectedStudents": studentId 
-                    } 
-                },
-                { new: true }
+            // Ensure studentIds is always an array (even if empty)
+            const studentIdsArray = Array.isArray(studentIds) ? studentIds : (studentIds ? [studentIds] : []);
+            
+            // First, get the current round
+            const placement = await this.placement.findOne(
+                { _id: id, "roundDetails.rounds._id": roundId },
+                { "roundDetails.rounds.$": 1 }
             );
-
-            if (!result) {
+            
+            if (!placement || !placement.roundDetails || !placement.roundDetails.rounds || placement.roundDetails.rounds.length === 0) {
                 throw new Error("Round not found");
             }
-
+            
+            const currentRound = placement.roundDetails.rounds[0];
+            
+            // Update the round with the new selected students list (replacing the old one)
+            // This will work even if studentIdsArray is empty
+            const result = await this.placement.findOneAndUpdate(
+                { _id: id, "roundDetails.rounds._id": roundId },
+                { $set: { "roundDetails.rounds.$.selectedStudents": studentIdsArray } },
+                { new: true }
+            );
+            
+            if (!result) {
+                throw new Error("Failed to update selected students");
+            }
+            
             const currentRoundIndex = result.roundDetails.rounds.findIndex(
                 round => round._id.toString() === roundId
             );
-
-            // Add student to next round's applicants if there is a next round
-            if (currentRoundIndex < result.roundDetails.rounds.length - 1) {
+            
+            // Add selected students to next round's applicants if there is a next round
+            if (currentRoundIndex < result.roundDetails.rounds.length - 1 && studentIdsArray.length > 0) {
                 const nextRoundId = result.roundDetails.rounds[currentRoundIndex + 1]._id;
                 await this.placement.findOneAndUpdate(
                     { _id: id, "roundDetails.rounds._id": nextRoundId },
-                    { 
-                        $addToSet: { 
-                            "roundDetails.rounds.$.applicantStudents": studentId 
-                        } 
-                    }
+                    { $set: { "roundDetails.rounds.$.applicantStudents": studentIdsArray } }
                 );
             }
-
-            // Create or update StudentPlacement record
-            const StudentPlacement = mongoose.model('StudentPlacement');
             
-            // Get placement drive details
-            const placementDrive = await this.placement.findById(id);
-            
-            // Check if a record already exists
-            let studentPlacement = await StudentPlacement.findOne({
-                student: studentId,
-                placementDrive: id
-            });
-            
-            if (!studentPlacement) {
-                // Create new record if it doesn't exist
-                studentPlacement = new StudentPlacement({
-                    student: studentId,
-                    company: placementDrive.companyDetails.companyId || null,
-                    placementDrive: id,
-                    selectedProfile: placementDrive.jobProfile._id || null,
-                    status: 'pending',
-                    selectionProgress: []
-                });
-            }
-            
-            // Add or update the round progress
-            const round = result.roundDetails.rounds[currentRoundIndex];
-            
-            // Check if this round already exists in the progress
-            const existingRoundIndex = studentPlacement.selectionProgress.findIndex(
-                progress => progress.roundNumber === round.roundNumber
-            );
-            
-            if (existingRoundIndex >= 0) {
-                // Update existing round progress
-                studentPlacement.selectionProgress[existingRoundIndex].status = 'cleared';
-                studentPlacement.selectionProgress[existingRoundIndex].date = new Date();
-            } else {
-                // Add new round progress
-                studentPlacement.selectionProgress.push({
-                    roundNumber: round.roundNumber,
-                    roundName: round.roundName,
-                    status: 'cleared',
-                    date: new Date()
-                });
-            }
-            
-            // If this is the final round, update the status to offer_accepted
-            if (currentRoundIndex === result.roundDetails.rounds.length - 1) {
-                studentPlacement.status = 'offer_accepted';
+            // Update StudentPlacement records for each student
+            try {
+                const StudentPlacement = mongoose.model('StudentPlacement');
+                const placementDrive = await this.placement.findById(id);
                 
-                // Add offer details if available
-                if (placementDrive.jobProfile && placementDrive.jobProfile.ctcOffered) {
-                    studentPlacement.offerDetails = {
-                        offerDate: new Date(),
-                        finalPackage: placementDrive.jobProfile.ctcOffered,
-                        location: placementDrive.jobProfile.location || ''
-                    };
+                // Get all students who were previously selected in this round
+                const previouslySelected = currentRound.selectedStudents || [];
+                
+                // Process each student who is now selected
+                for (const studentId of studentIdsArray) {
+                    let studentPlacement = await StudentPlacement.findOne({
+                        student: studentId,
+                        placementDrive: id
+                    });
+                    
+                    // Create or update the student placement record
+                    if (!studentPlacement) {
+                        // Create new record if it doesn't exist
+                        const companyId = placementDrive.companyDetails?.companyId || null;
+                        const profileId = placementDrive.jobProfile?._id || null;
+                        
+                        if (companyId && profileId) {
+                            studentPlacement = new StudentPlacement({
+                                student: studentId,
+                                company: companyId,
+                                placementDrive: id,
+                                selectedProfile: profileId,
+                                status: 'pending',
+                                selectionProgress: []
+                            });
+                            
+                            const round = result.roundDetails.rounds[currentRoundIndex];
+                            
+                            studentPlacement.selectionProgress.push({
+                                roundNumber: round.roundNumber,
+                                roundName: round.roundName,
+                                status: 'cleared',
+                                date: new Date()
+                            });
+                            
+                            await studentPlacement.save();
+                        } else {
+                            console.warn("Missing required fields for StudentPlacement. Skipping record creation.");
+                        }
+                    } else {
+                        // Update existing record
+                        const round = result.roundDetails.rounds[currentRoundIndex];
+                        
+                        const existingRoundIndex = studentPlacement.selectionProgress.findIndex(
+                            progress => progress.roundNumber === round.roundNumber
+                        );
+                        
+                        if (existingRoundIndex >= 0) {
+                            studentPlacement.selectionProgress[existingRoundIndex].status = 'cleared';
+                            studentPlacement.selectionProgress[existingRoundIndex].date = new Date();
+                        } else {
+                            studentPlacement.selectionProgress.push({
+                                roundNumber: round.roundNumber,
+                                roundName: round.roundName,
+                                status: 'cleared',
+                                date: new Date()
+                            });
+                        }
+                        
+                        if (currentRoundIndex === result.roundDetails.rounds.length - 1) {
+                            studentPlacement.status = 'offer_accepted';
+                            
+                            if (placementDrive.jobProfile && placementDrive.jobProfile.ctcOffered) {
+                                studentPlacement.offerDetails = {
+                                    offerDate: new Date(),
+                                    finalPackage: placementDrive.jobProfile.ctcOffered,
+                                    location: placementDrive.jobProfile.location || ''
+                                };
+                            }
+                        }
+                        
+                        await studentPlacement.save();
+                    }
                 }
+                
+                // Process students who were previously selected but are now deselected
+                for (const studentId of previouslySelected) {
+                    if (!studentIdsArray.includes(studentId.toString())) {
+                        // This student was deselected
+                        const studentPlacement = await StudentPlacement.findOne({
+                            student: studentId,
+                            placementDrive: id
+                        });
+                        
+                        if (studentPlacement) {
+                            // Update the student's record to show they didn't clear this round
+                            const round = result.roundDetails.rounds[currentRoundIndex];
+                            
+                            const existingRoundIndex = studentPlacement.selectionProgress.findIndex(
+                                progress => progress.roundNumber === round.roundNumber
+                            );
+                            
+                            if (existingRoundIndex >= 0) {
+                                studentPlacement.selectionProgress[existingRoundIndex].status = 'not_cleared';
+                            } else {
+                                studentPlacement.selectionProgress.push({
+                                    roundNumber: round.roundNumber,
+                                    roundName: round.roundName,
+                                    status: 'not_cleared',
+                                    date: new Date()
+                                });
+                            }
+                            
+                            // Update overall status
+                            studentPlacement.status = 'rejected';
+                            
+                            await studentPlacement.save();
+                        }
+                    }
+                }
+            } catch (studentPlacementError) {
+                console.error("Error updating StudentPlacement records:", studentPlacementError);
             }
             
-            // Save the student placement record
-            await studentPlacement.save();
-
             return result;
         } catch (error) {
             console.error("Error in updateSelectedStudents:", error);
@@ -379,15 +421,20 @@ export default class PlacementModel {
     }
 
     async declareResult(id, roundId, resultData) {
-        console.log("Placement Model: declareResult called");
+        console.log("Placement Model: declareResult called with:", { id, roundId, resultData });
         try {
             const { resultMessage, resultDescription } = resultData;
             
+            // Step 1: Find the placement drive
+            console.log("Finding placement drive...");
             const placement = await this.placement.findOne({ _id: id });
             if (!placement) {
                 throw new Error("Placement drive not found");
             }
+            console.log("Placement drive found:", placement._id);
             
+            // Step 2: Find the round
+            console.log("Finding round...");
             const roundIndex = placement.roundDetails.rounds.findIndex(
                 round => round._id.toString() === roundId
             );
@@ -395,14 +442,22 @@ export default class PlacementModel {
             if (roundIndex === -1) {
                 throw new Error("Round not found");
             }
+            console.log("Round found at index:", roundIndex);
             
             const currentRound = placement.roundDetails.rounds[roundIndex];
+            console.log("Current round:", currentRound.roundName);
             
+            // Step 3: Get selected students
+            console.log("Getting selected students...");
             const selectedStudents = [...new Set(currentRound.selectedStudents.map(id => id.toString()))];
+            console.log("Selected students:", selectedStudents.length);
             
             const nextRoundIndex = roundIndex + 1;
             const hasNextRound = nextRoundIndex < placement.roundDetails.rounds.length;
+            console.log("Has next round:", hasNextRound);
             
+            // Step 4: Update the current round status
+            console.log("Updating current round status...");
             await this.placement.findOneAndUpdate(
                 { _id: id, "roundDetails.rounds._id": roundId },
                 { 
@@ -413,9 +468,20 @@ export default class PlacementModel {
                     }
                 }
             );
+            console.log("Current round status updated");
             
+            // Step 5: Get all appeared students
+            console.log("Getting appeared students...");
+            const allAppearedStudents = currentRound.appearedStudents.map(id => id.toString());
+            console.log("Appeared students:", allAppearedStudents.length);
+            
+            // Step 6: Find rejected students
+            const rejectedStudents = allAppearedStudents.filter(id => !selectedStudents.includes(id));
+            console.log("Rejected students:", rejectedStudents.length);
+
+            // Step 7: Update placement drive status if last round
             if (!hasNextRound) {
-                // If it's the last round, update the drive status to "closed"
+                console.log("Last round - updating drive status to closed");
                 await this.placement.findByIdAndUpdate(
                     id,
                     { 
@@ -425,30 +491,59 @@ export default class PlacementModel {
                         }
                     }
                 );
-            } else if (selectedStudents.length > 0) {
+                console.log("Drive status updated to closed");
+            } 
+            // Step 8: Update next round if not last round
+            else if (selectedStudents.length > 0) {
+                console.log("Not last round - updating next round status");
                 const nextRoundId = placement.roundDetails.rounds[nextRoundIndex]._id;
                 
+                // Update placement for next round
+                await this.placement.findOneAndUpdate(
+                    { _id: id, "roundDetails.rounds._id": nextRoundId },
+                    { $set: { "roundDetails.rounds.$.roundStatus": "ongoing" } }
+                );
+                console.log("Next round status updated to ongoing");
+                
+                // Add selected students to next round
                 for (const studentId of selectedStudents) {
+                    console.log(`Adding student ${studentId} to next round`);
                     await this.placement.findOneAndUpdate(
-                        { 
-                            _id: id, 
-                            "roundDetails.rounds._id": nextRoundId,
-                            "roundDetails.rounds.$.applicantStudents": { $ne: studentId }
-                        },
+                        { _id: id, "roundDetails.rounds._id": nextRoundId },
                         {
                             $addToSet: { 
-                                "roundDetails.rounds.$.applicantStudents": studentId ,
-                                 "roundDetails.rounds.$.appearedStudents": studentId
-                            },
-                            $set: { "roundDetails.rounds.$.roundStatus": "ongoing" }
+                                "roundDetails.rounds.$.applicantStudents": studentId,
+                                "roundDetails.rounds.$.appearedStudents": studentId
+                            }
                         }
                     );
                 }
+                console.log("Selected students added to next round");
             }
             
+            // Step 9: Add timeline entry
+            console.log("Adding timeline entry...");
+            await this.placement.findByIdAndUpdate(
+                id,
+                {
+                    $push: {
+                        timeline: {
+                            title: `Round ${currentRound.roundNumber} Results Declared`,
+                            description: `${selectedStudents.length} students selected for ${hasNextRound ? 'next round' : 'final selection'}`,
+                            date: new Date()
+                        }
+                    }
+                }
+            );
+            console.log("Timeline entry added");
+            
+            // Step 10: Return updated placement
+            console.log("Returning updated placement...");
             return await this.placement.findById(id);
         } catch (error) {
             console.error("Error in declareResult:", error);
+            // Log the full error stack
+            console.error(error.stack);
             throw error;
         }
     }

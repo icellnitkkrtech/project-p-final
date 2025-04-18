@@ -6,6 +6,7 @@ import StudentPlacement from "../schema/placement/studentPlacementSchema.js";
 import Company from "../schema/company/companySchema.js";
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
+
 import fs from 'fs';
 import path from 'path';
 
@@ -14,209 +15,143 @@ const reportRouter = Router();
 // Placement reports endpoint
 reportRouter.get('/placement', asyncHandler(async (req, res) => {
   try {
-    // Extract filter parameters
     const { year, branch, startDate, endDate } = req.query;
     
-    // Build filter queries
-    const placementDriveQuery = {};
+    // Build student query
     const studentQuery = {};
+    const placementQuery = {};
     
-    // Apply date range filter if explicitly provided
+    if (branch && branch !== 'all') {
+      studentQuery['personalInfo.department'] = branch;
+    }
+
+    // Apply year filter if provided
+    if (year) {
+      const academicYear = parseInt(year);
+      studentQuery['personalInfo.batch'] = academicYear;
+    }
+
+    // Apply date range filter
     if (startDate && endDate) {
-      placementDriveQuery.createdAt = {
+      placementQuery.createdAt = {
         $gte: new Date(startDate),
         $lte: new Date(endDate)
       };
     }
-    
-    // Get placement drives based on filters
-    const placementDrives = await PlacementDrive.find(placementDriveQuery);
-    const placementDriveIds = placementDrives.map(drive => drive._id);
-    
-    // Get student placements for these drives
-    const studentPlacementQuery = {
-      placementDrive: { $in: placementDriveIds },
-      status: { $in: ['offer_accepted', 'joined'] } // Only count accepted offers
-    };
-    
-    // Apply year filter by academic year
-    // Since year isn't directly on StudentPlacement, we need to join with PlacementDrive
-    // This is handled by the placementDrive filter above and we'll filter by year in memory
-    
-    // Get student placements
-    const studentPlacements = await StudentPlacement.find(studentPlacementQuery)
+
+    // Get all students first
+    const students = await Student.find(studentQuery)
       .populate({
-        path: 'student',
-        select: 'personalInfo academics user'
+        path: 'applications',
+        populate: {
+          path: 'placementDrive',
+          select: 'companyDetails jobProfile'
+        }
       })
-      .populate({
-        path: 'company',
-        select: 'name website companyType domain'
-      })
-      .populate({
-        path: 'placementDrive',
-        select: 'placementDrive_title createdAt'
-      });
-    
-    // Filter by academic year if specified
-    let filteredPlacements = studentPlacements;
-    if (year) {
-      const academicYear = parseInt(year);
-      // Academic year typically runs from July to June
-      const startYearDate = new Date(`${academicYear}-07-01`);
-      const endYearDate = new Date(`${academicYear + 1}-06-30`);
-      
-      filteredPlacements = studentPlacements.filter(placement => {
-        const driveDate = placement.placementDrive?.createdAt || placement.createdAt;
-        return driveDate >= startYearDate && driveDate <= endYearDate;
-      });
-    }
-    
-    // Apply branch filter to students
-    if (branch && branch !== 'all') {
-      studentQuery['personalInfo.department'] = branch;
-      
-      // Filter placements by branch
-      filteredPlacements = filteredPlacements.filter(placement => 
-        placement.student?.personalInfo?.department === branch
-      );
-    }
-    
-    // Get all students matching the branch filter
-    const students = await Student.find(studentQuery);
-    
-    // Process data for report
+      .select('personalInfo academics applications isPlaced')
+      .lean();
+
+    // Get placement drives
+    const drives = await PlacementDrive.find(placementQuery)
+      .populate('selectedStudents')
+      .lean();
+
+    // Calculate statistics
     const totalStudents = students.length;
-    
-    // Count unique students who got placed
-    const placedStudentIds = new Set();
-    filteredPlacements.forEach(placement => {
-      if (placement.student) {
-        placedStudentIds.add(placement.student._id.toString());
-      }
-    });
-    
-    const placedStudents = placedStudentIds.size;
-    const placementPercentage = totalStudents > 0 ? Math.round((placedStudents / totalStudents) * 100 * 10) / 10 : 0;
-    
+    const placedStudents = students.filter(student => student.isPlaced).length;
+    const placementPercentage = totalStudents > 0 ? 
+      Math.round((placedStudents / totalStudents) * 100 * 10) / 10 : 0;
+
     // Calculate CTC statistics
     let totalCTC = 0;
     let ctcCount = 0;
     let highestCTC = 0;
-    
-    filteredPlacements.forEach(placement => {
-      if (placement.offerDetails && placement.offerDetails.finalPackage) {
-        const ctc = placement.offerDetails.finalPackage;
-        totalCTC += ctc;
-        ctcCount++;
+
+    drives.forEach(drive => {
+      if (drive.jobProfile?.ctc) {
+        const ctc = drive.jobProfile.ctc;
+        totalCTC += ctc * (drive.selectedStudents?.length || 0);
+        ctcCount += drive.selectedStudents?.length || 0;
         
         if (ctc > highestCTC) {
           highestCTC = ctc;
         }
       }
     });
-    
-    const averageCTC = ctcCount > 0 ? parseFloat((totalCTC / ctcCount).toFixed(2)) : 0;
-    
+
+    // Calculate average CTC
+    const averageCTC = ctcCount > 0 ? 
+      parseFloat((totalCTC / ctcCount).toFixed(2)) : 0;
+
     // Count unique companies
-    const uniqueCompanies = new Set();
-    filteredPlacements.forEach(placement => {
-      if (placement.company) {
-        uniqueCompanies.add(placement.company._id.toString());
-      }
-    });
-    
+    const uniqueCompanies = new Set(
+      drives.map(drive => drive.companyDetails?.name).filter(Boolean)
+    );
+
     const companiesVisited = uniqueCompanies.size;
-    
-    // Generate monthly data
+
+    // Generate monthly placement trend
     const monthlyData = [];
     const monthCounts = {};
-    
-    filteredPlacements.forEach(placement => {
-      const date = placement.offerDetails?.offerDate || placement.createdAt;
-      if (date) {
-        const month = date.toLocaleString('default', { month: 'short' });
-        
-        if (!monthCounts[month]) {
-          monthCounts[month] = 0;
+
+    // Get all student placements for the selected drives
+    const studentPlacements = await StudentPlacement.find({
+        placementDrive: { $in: drives.map(d => d._id) },
+        status: { $in: ['offer_accepted', 'joined'] }
+    }).populate('placementDrive').lean();
+
+    // Process monthly data
+    studentPlacements.forEach(placement => {
+        if (placement.placementDrive?.createdAt) {
+            const date = new Date(placement.placementDrive.createdAt);
+            const month = date.toLocaleString('default', { month: 'short' });
+            
+            if (!monthCounts[month]) {
+                monthCounts[month] = 0;
+            }
+            monthCounts[month]++;
         }
-        
-        monthCounts[month]++;
-      }
     });
-    
-    // Convert to array and sort by month
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // Convert to array format for frontend
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
     months.forEach(month => {
-      monthlyData.push({
-        month,
-        placements: monthCounts[month] || 0
-      });
+        monthlyData.push({
+            month,
+            placements: monthCounts[month] || 0
+        });
     });
+
+    // Generate branch-wise placement data
+    const branchData = {};
     
-    // Generate branch-wise data
-    const branchData = [];
-    const branchCounts = {};
-    const placedStudentsByBranch = {};
-    
-    // Initialize branch counts with all students
     students.forEach(student => {
-      if (student.personalInfo && student.personalInfo.department) {
-        const branch = student.personalInfo.department;
-        
-        if (!branchCounts[branch]) {
-          branchCounts[branch] = {
-            branch,
-            placed: 0,
-            total: 0
-          };
+        const branch = student.personalInfo?.department;
+        if (branch) {
+            if (!branchData[branch]) {
+                branchData[branch] = {
+                    branch,
+                    total: 0,
+                    placed: 0,
+                    placementPercentage: 0
+                };
+            }
+            branchData[branch].total++;
+            if (student.isPlaced) {
+                branchData[branch].placed++;
+            }
         }
-        
-        branchCounts[branch].total++;
-      }
     });
-    
-    // Count placed students by branch
-    filteredPlacements.forEach(placement => {
-      if (placement.student && 
-          placement.student.personalInfo && 
-          placement.student.personalInfo.department) {
-        
-        const branch = placement.student.personalInfo.department;
-        
-        if (!branchCounts[branch]) {
-          branchCounts[branch] = {
-            branch,
-            placed: 0,
-            total: 0
-          };
-        }
-        
-        // Use a Set to avoid counting the same student twice
-        if (!placedStudentsByBranch[branch]) {
-          placedStudentsByBranch[branch] = new Set();
-        }
-        
-        placedStudentsByBranch[branch].add(placement.student._id.toString());
-      }
+
+    // Calculate placement percentages for each branch
+    Object.values(branchData).forEach(branch => {
+        branch.placementPercentage = branch.total > 0 ? 
+            ((branch.placed / branch.total) * 100).toFixed(2) : 0;
     });
-    
-    // Convert placed students sets to counts
-    Object.keys(branchCounts).forEach(branch => {
-      if (placedStudentsByBranch[branch]) {
-        branchCounts[branch].placed = placedStudentsByBranch[branch].size;
-      }
-    });
-    
-    // Convert to array
-    Object.values(branchCounts).forEach(branchCount => {
-      branchData.push(branchCount);
-    });
-    
-    // Sort by total students
-    branchData.sort((a, b) => b.total - a.total);
-    
+
+    // Return the response
     res.json({
       summary: {
         totalStudents,
@@ -227,8 +162,10 @@ reportRouter.get('/placement', asyncHandler(async (req, res) => {
         companiesVisited
       },
       monthlyData,
-      branchData
+      branchData: Object.values(branchData).sort((a, b) => b.total - a.total),
+      // ... rest of your existing response structure
     });
+
   } catch (error) {
     console.error("Error in placement reports endpoint:", error);
     res.status(500).json({ 
@@ -240,261 +177,238 @@ reportRouter.get('/placement', asyncHandler(async (req, res) => {
 
 // Company reports endpoint
 reportRouter.get('/company', asyncHandler(async (req, res) => {
-  try {
-    // Extract filter parameters
-    const { year, industry, status, startDate, endDate } = req.query;
-    
-    // Build filter queries
-    const companyQuery = {};
-    const placementQuery = {};
-    
-    // Apply industry filter
-    if (industry && industry !== 'all') {
-      companyQuery.industry = industry;
-    }
-    
-    // Apply status filter
-    if (status && status !== 'all') {
-      companyQuery.status = status;
-    }
-    
-    // Apply date range filter
-    if (startDate && endDate) {
-      companyQuery.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-    
-    // Apply year filter to placements
-    if (year) {
-      const academicYear = parseInt(year);
-      placementQuery.academicYear = academicYear;
-    }
-    
-    // Get company data
-    const companies = await Company.find(companyQuery);
-    const placements = await PlacementDrive.find(placementQuery)
-      .populate('placementDrive_title');
-    
-    // Process data for report
-    const totalCompanies = companies.length;
-    
-    // Count new companies (created in the last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const newCompanies = companies.filter(company => 
-      company.createdAt && company.createdAt >= thirtyDaysAgo
-    ).length;
-    
-    // Count active companies (with placements)
-    const activeCompanyIds = new Set();
-    placements.forEach(placement => {
-      if (placement.placementDrive_title) {
-        activeCompanyIds.add(placement.placementDrive_title.toString());
-      }
-    });
-    
-    const activeCompanies = activeCompanyIds.size;
-    
-    // Calculate average package
-    let totalCTC = 0;
-    let ctcCount = 0;
-    
-    placements.forEach(placement => {
-      if (placement.placementDrive_title && placement.placementDrive_title.finalPackage) {
-        totalCTC += placement.placementDrive_title.finalPackage;
-        ctcCount++;
-      }
-    });
-    
-    const averagePackage = ctcCount > 0 ? parseFloat((totalCTC / ctcCount).toFixed(2)) : 0;
-    
-    // Find top industry
-    const industryCounts = {};
-    companies.forEach(company => {
-      if (company.industry) {
-        industryCounts[company.industry] = (industryCounts[company.industry] || 0) + 1;
-      }
-    });
-    
-    let topIndustry = '';
-    let maxCount = 0;
-    
-    Object.entries(industryCounts).forEach(([industry, count]) => {
-      if (count > maxCount) {
-        maxCount = count;
-        topIndustry = industry;
-      }
-    });
-    
-    // Generate industry data
-    const industryData = Object.entries(industryCounts)
-      .map(([industry, count]) => ({ industry, count }))
-      .sort((a, b) => b.count - a.count);
-    
-    // Generate company list with offers and avg CTC
-    const companyStats = {};
-    
-    placements.forEach(placement => {
-      if (placement.placementDrive_title) {
-        const companyId = placement.placementDrive_title._id.toString();
-        const companyName = placement.placementDrive_title.placementDrive_title;
-        const industry = placement.placementDrive_title.industry;
+    try {
+        const { year, industry, status } = req.query;
         
-        if (!companyStats[companyId]) {
-          companyStats[companyId] = {
-            name: companyName,
-            industry: industry || 'Unknown',
-            offers: 0,
-            totalCTC: 0,
-            ctcCount: 0
-          };
+        const driveQuery = {};
+        if (industry && industry !== 'all') {
+            driveQuery['companyDetails.domain'] = industry;
         }
-        
-        companyStats[companyId].offers++;
-        
-        if (placement.placementDrive_title.finalPackage) {
-          companyStats[companyId].totalCTC += placement.placementDrive_title.finalPackage;
-          companyStats[companyId].ctcCount++;
+        if (status && status !== 'all') {
+            driveQuery.driveStatus = status;
         }
-      }
-    });
-    
-    // Calculate average CTC for each company
-    const companyList = Object.values(companyStats).map(company => ({
-      name: company.name,
-      industry: company.industry,
-      offers: company.offers,
-      avgCTC: company.ctcCount > 0 ? parseFloat((company.totalCTC / company.ctcCount).toFixed(2)) : 0
-    })).sort((a, b) => b.offers - a.offers);
-    
-    res.json({
-      summary: {
-        totalCompanies,
-        newCompanies,
-        activeCompanies,
-        topIndustry,
-        averagePackage
-      },
-      industryData,
-      companyList
-    });
-  } catch (error) {
-    console.error("Error in company reports endpoint:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch company report data",
-      message: error.message 
-    });
-  }
+
+        const drives = await PlacementDrive.find(driveQuery)
+            .select('companyDetails jobProfile selectedStudents driveStatus createdAt')
+            .lean();
+
+        const companyStats = {};
+        drives.forEach(drive => {
+            const companyName = drive.companyDetails.name;
+            const domain = drive.companyDetails.domain;
+            
+            if (!companyStats[companyName]) {
+                companyStats[companyName] = {
+                    name: companyName,
+                    industry: domain,
+                    visits: 0,
+                    positions: new Set(),
+                    studentsHired: 0,
+                    totalCTC: 0,
+                    ctcCount: 0
+                };
+            }
+
+            companyStats[companyName].visits++;
+            
+            if (drive.jobProfile?.designation) {
+                companyStats[companyName].positions.add(drive.jobProfile.designation);
+            }
+
+            if (drive.selectedStudents?.length) {
+                companyStats[companyName].studentsHired += drive.selectedStudents.length;
+            }
+
+            if (drive.jobProfile?.ctc) {
+                companyStats[companyName].totalCTC += drive.jobProfile.ctc;
+                companyStats[companyName].ctcCount++;
+            }
+        });
+
+        // Modified: Create detailed companies array for the main table
+        const companies = Object.values(companyStats).map(company => ({
+            name: company.name,
+            visits: company.visits,
+            // Change this line - return positions as array instead of string
+            positions: Array.from(company.positions), // Return as array instead of joining
+            studentsHired: company.studentsHired,
+            averagePackage: company.ctcCount > 0 ? 
+                parseFloat((company.totalCTC / company.ctcCount).toFixed(2)) : 0
+        }));
+
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        // Replace the industryData reduction
+        const industryData = Object.values(companyStats).reduce((acc, company) => {
+            if (!acc[company.industry]) {
+                acc[company.industry] = { industry: company.industry, count: 0 };
+            }
+            acc[company.industry].count++;
+            return acc;
+        }, {});
+
+        // Convert industryData object to array before sending
+        res.json({
+            summary: {
+                totalCompanies: Object.keys(companyStats).length,
+                newCompanies: drives.filter(drive => 
+                    drive.createdAt && drive.createdAt >= thirtyDaysAgo
+                ).length,
+                activeCompanies: Object.values(companyStats)
+                    .filter(c => c.studentsHired > 0).length,
+                topIndustry: Object.values(companyStats)
+                    .reduce((acc, curr) => {
+                        if (!acc[curr.industry]) acc[curr.industry] = 0;
+                        acc[curr.industry]++;
+                        return acc;
+                    }, {}),
+                averagePackage: parseFloat((Object.values(companyStats)
+                    .reduce((sum, c) => sum + (c.totalCTC / c.ctcCount || 0), 0) / 
+                    Object.keys(companyStats).length).toFixed(2)) || 0
+            },
+            // Convert to array here
+            industryData: Object.values(industryData),
+            companies: companies, // Added: Detailed company data for main table
+            companyList: companies.map(c => ({
+                name: c.name,
+                industry: companyStats[c.name].industry,
+                offers: c.studentsHired,
+                avgCTC: c.averagePackage
+            }))
+        });
+
+    } catch (error) {
+        console.error("Error in company reports:", error);
+        res.status(500).json({ 
+            error: "Failed to fetch company report data",
+            message: error.message 
+        });
+    }
 }));
 
 // Student reports endpoint
 reportRouter.get('/student', asyncHandler(async (req, res) => {
   try {
-    // Extract filter parameters
-    const { department, batch, category, placementStatus, startDate, endDate } = req.query;
-    
-    // Build filter queries
+    const { department, batch, category, placementStatus } = req.query;
+    console.log("Received filters:", { department, batch, category, placementStatus });
+
+    // Build student query
     const studentQuery = {};
     
-    // Apply department filter
     if (department && department !== 'all') {
       studentQuery['personalInfo.department'] = department;
     }
     
-    // Apply batch filter
-    if (batch) {
+    if (batch && batch !== 'all') {
       studentQuery['personalInfo.batch'] = parseInt(batch);
     }
     
-    // Apply category filter
     if (category && category !== 'all') {
       studentQuery['personalInfo.category'] = category;
     }
-    
-    // Apply placement status filter
-    if (placementStatus && placementStatus !== 'all') {
-      studentQuery.isPlaced = placementStatus === 'placed';
-    }
-    
-    // Apply date range filter
-    if (startDate && endDate) {
-      studentQuery.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
+
+    // Get students with populated placements
+    const students = await Student.find(studentQuery)
+      .populate({
+        path: 'applications',
+        populate: {
+          path: 'placementDrive',
+          select: 'companyDetails status '
+        }
+      })
+      .select('personalInfo academics applications isPlaced')
+      .lean();
+
+    console.log(`Found ${students.length} students`);
+
+    // Process students
+    const processedStudents = students.map(student => {
+      // Use the isPlaced field directly from the student document
+      return {
+        ...student,
+        isPlaced: student.isPlaced || false, // Use the schema field directly
+        cgpa: student.academics?.cgpa || 0
       };
-    }
-    
-    // Get student data
-    const students = await Student.find(studentQuery);
-    
-    // Process data for report
-    const totalStudents = students.length;
+    });
+
+    // Calculate statistics using the isPlaced field
+    const totalStudents = processedStudents.length;
     const placedStudents = students.filter(student => student.isPlaced).length;
     const unplacedStudents = totalStudents - placedStudents;
-    
+
     // Calculate CGPA statistics
     let totalCGPA = 0;
     let cgpaCount = 0;
     let highestCGPA = 0;
-    
-    students.forEach(student => {
-      if (student.academicInfo && student.academicInfo.cgpa) {
-        const cgpa = student.academicInfo.cgpa;
-        totalCGPA += cgpa;
-        cgpaCount++;
-        
-        if (cgpa > highestCGPA) {
-          highestCGPA = cgpa;
+
+    processedStudents.forEach(student => {
+      if (student.academics?.cgpa) {
+        const cgpa = parseFloat(student.academics.cgpa);
+        if (!isNaN(cgpa) && cgpa > 0) {
+          totalCGPA += cgpa;
+          cgpaCount++;
+          if (cgpa > highestCGPA) {
+            highestCGPA = cgpa;
+          }
         }
       }
     });
-    
-    const averageCGPA = cgpaCount > 0 ? parseFloat((totalCGPA / cgpaCount).toFixed(2)) : 0;
-    
-    // Generate department data
-    const departmentCounts = {};
-    
-    students.forEach(student => {
-      if (student.personalInfo && student.personalInfo.department) {
-        const department = student.personalInfo.department;
-        departmentCounts[department] = (departmentCounts[department] || 0) + 1;
+
+    const averageCGPA = cgpaCount > 0 ? 
+      parseFloat((totalCGPA / cgpaCount).toFixed(2)) : 0;
+
+    // Generate department data using isPlaced field
+    const departmentData = processedStudents.reduce((acc, student) => {
+      const dept = student.personalInfo?.department;
+      if (dept) {
+        if (!acc[dept]) {
+          acc[dept] = { department: dept, count: 0, placed: 0 };
+        }
+        acc[dept].count++;
+        if (student.isPlaced) { // Use isPlaced field
+          acc[dept].placed++;
+        }
       }
-    });
-    
-    const departmentData = Object.entries(departmentCounts)
-      .map(([department, count]) => ({ department, count }))
-      .sort((a, b) => b.count - a.count);
-    
-    // Generate placement status data
-    const placementData = [
-      { status: 'Placed', count: placedStudents },
-      { status: 'Unplaced', count: unplacedStudents }
-    ];
-    
-    // Generate student list
-    const studentList = students.slice(0, 5).map(student => ({
-      name: student.personalInfo ? `${student.personalInfo.firstName} ${student.personalInfo.lastName}` : 'Unknown',
-      department: student.personalInfo ? student.personalInfo.department : 'Unknown',
-      cgpa: student.academicInfo ? student.academicInfo.cgpa : 'N/A',
-      status: student.isPlaced ? 'Placed' : 'Unplaced',
-      company: student.placementInfo && student.placementInfo.company ? student.placementInfo.company : null
-    }));
-    
-    res.json({
+      return acc;
+    }, {});
+
+    // Generate student list with isPlaced field
+    const studentList = processedStudents
+      .slice(0, 10)
+      .map(student => ({
+        id: student._id,
+        name: student.personalInfo?.name || 'N/A',
+        rollNumber: student.personalInfo?.rollNumber || 'N/A',
+        department: student.personalInfo?.department || 'N/A',
+        batch: student.personalInfo?.batch || 'N/A',
+        cgpa: student.academics?.cgpa || 'N/A',
+        status: student.isPlaced ? 'Placed' : 'Not Placed', // Use isPlaced field
+        placedAt: student.placedAt || 'N/A', // Add placement company if available
+        placementDate: student.placementDate || 'N/A' // Add placement date if available
+      }));
+
+    const response = {
       summary: {
         totalStudents,
         placedStudents,
         unplacedStudents,
-        highestCGPA,
+        placementPercentage: totalStudents > 0 ? 
+          ((placedStudents / totalStudents) * 100).toFixed(2) : '0',
+        highestCGPA: parseFloat(highestCGPA.toFixed(2)),
         averageCGPA
       },
-      departmentData,
-      placementData,
+      departmentData: Object.values(departmentData),
+      placementData: [
+        { status: 'Placed', count: placedStudents },
+        { status: 'Not Placed', count: unplacedStudents }
+      ],
       studentList
-    });
+    };
+
+    console.log("Sending response:", response);
+    res.json(response);
+
   } catch (error) {
     console.error("Error in student reports endpoint:", error);
     res.status(500).json({ 
@@ -715,96 +629,63 @@ reportRouter.get('/placement/download', asyncHandler(async (req, res) => {
       // Finalize the PDF
       doc.end();
     } else if (format === 'excel') {
-      // Create an Excel workbook
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Placement Report');
+      const worksheet = workbook.addWorksheet('Students');
       
-      // Add title
-      worksheet.mergeCells('A1:E1');
-      const titleCell = worksheet.getCell('A1');
-      titleCell.value = 'Placement Report';
-      titleCell.font = {
-        size: 16,
-        bold: true
+      // Add headers directly (without title and filters)
+      const headers = ['Name', 'Roll Number', 'Department', 'CGPA', 'Status'];
+      
+      // Add header row
+      worksheet.addRow(headers);
+  
+      // Style the header row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
       };
-      titleCell.alignment = { horizontal: 'center' };
-      
-      // Add filters section
-      worksheet.getCell('A3').value = 'Filters Applied:';
-      worksheet.getCell('A3').font = { bold: true };
-      
-      worksheet.getCell('A4').value = 'Year:';
-      worksheet.getCell('B4').value = year || 'All';
-      
-      worksheet.getCell('A5').value = 'Branch:';
-      worksheet.getCell('B5').value = branch || 'All';
-      
-      worksheet.getCell('A6').value = 'Date Range:';
-      worksheet.getCell('B6').value = `${startDate || 'Any'} to ${endDate || 'Any'}`;
-      
-      // Add summary section
-      worksheet.getCell('A8').value = 'Summary:';
-      worksheet.getCell('A8').font = { bold: true };
-      
-      worksheet.getCell('A9').value = 'Total Students:';
-      worksheet.getCell('B9').value = totalStudents;
-      
-      worksheet.getCell('A10').value = 'Placed Students:';
-      worksheet.getCell('B10').value = placedStudents;
-      
-      worksheet.getCell('A11').value = 'Placement Percentage:';
-      worksheet.getCell('B11').value = `${placementPercentage}%`;
-      
-      worksheet.getCell('A12').value = 'Average CTC:';
-      worksheet.getCell('B12').value = `₹${averageCTC} LPA`;
-      
-      worksheet.getCell('A13').value = 'Highest CTC:';
-      worksheet.getCell('B13').value = `₹${highestCTC} LPA`;
-      
-      worksheet.getCell('A14').value = 'Companies Visited:';
-      worksheet.getCell('B14').value = companiesVisited;
-      
-      // Add placement details
-      worksheet.getCell('A16').value = 'Placement Details:';
-      worksheet.getCell('A16').font = { bold: true };
-      
-      // Add headers
-      const headers = ['Student Name', 'Roll Number', 'Branch', 'Company', 'Package (LPA)', 'Offer Date', 'Location'];
-      worksheet.getRow(17).values = headers;
-      worksheet.getRow(17).font = { bold: true };
-      
-      // Add data
-      let rowIndex = 18;
-      filteredPlacements.forEach(placement => {
-        const studentName = placement.student?.personalInfo?.name || 'N/A';
-        const rollNumber = placement.student?.personalInfo?.rollNumber || 'N/A';
-        const branch = placement.student?.personalInfo?.department || 'N/A';
-        const company = placement.company?.name || 'N/A';
-        const ctc = placement.offerDetails?.finalPackage || 'N/A';
-        const offerDate = placement.offerDetails?.offerDate ? 
-          new Date(placement.offerDetails.offerDate).toLocaleDateString() : 'N/A';
-        const location = placement.offerDetails?.location || 'N/A';
-        
-        worksheet.getRow(rowIndex).values = [studentName, rollNumber, branch, company, ctc, offerDate, location];
-        rowIndex++;
+  
+      // Process and add student data
+      const studentData = students.map(student => ({
+          name: student.personalInfo?.name || 'N/A',
+          rollNumber: student.personalInfo?.rollNumber || 'N/A',
+          department: student.personalInfo?.department || 'N/A',
+          cgpa: student.academics?.cgpa || 'N/A',
+          status: student.applications?.some(app => 
+              app.status === 'offer_accepted' || app.status === 'joined'
+          ) ? 'Placed' : 'Not Placed'
+      }));
+  
+      // Add data rows
+      worksheet.addRows(studentData);
+  
+      // Set column widths
+      worksheet.columns = [
+          { key: 'name', width: 30 },
+          { key: 'rollNumber', width: 15 },
+          { key: 'department', width: 25 },
+          { key: 'cgpa', width: 10 },
+          { key: 'status', width: 15 }
+      ];
+  
+      // Apply borders to all cells
+      worksheet.eachRow((row) => {
+          row.eachCell((cell) => {
+              cell.border = {
+                  top: { style: 'thin' },
+                  left: { style: 'thin' },
+                  bottom: { style: 'thin' },
+                  right: { style: 'thin' }
+              };
+          });
       });
-      
-      // Auto-fit columns
-      worksheet.columns.forEach(column => {
-        let maxLength = 0;
-        column.eachCell({ includeEmpty: true }, cell => {
-          const columnLength = cell.value ? cell.value.toString().length : 10;
-          if (columnLength > maxLength) {
-            maxLength = columnLength;
-          }
-        });
-        column.width = maxLength < 10 ? 10 : maxLength + 2;
-      });
-      
+  
       // Set response headers
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=placement_report_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
+      res.setHeader('Content-Disposition', 'attachment; filename=student_report.xlsx');
+  
       // Write to response
       await workbook.xlsx.write(res);
       res.end();
@@ -895,76 +776,110 @@ reportRouter.get('/company/download', asyncHandler(async (req, res) => {
 
 // Student report download endpoint
 reportRouter.get('/student/download', asyncHandler(async (req, res) => {
-  try {
-    // Extract filter parameters
-    const { department, batch, category, placementStatus, startDate, endDate, format } = req.query;
+    try {
+        const { department, batch, category, placementStatus, format } = req.query;
+        
+        // Build student query
+        const studentQuery = {};
     
-    // Implement similar logic as placement report download
-    // For brevity, I'm not repeating all the data fetching code
-    
-    // Generate the report in the requested format
-    if (format === 'pdf') {
-      // Create a PDF document
-      const doc = new PDFDocument();
-      
-      // Set response headers
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=student_report_${new Date().toISOString().split('T')[0]}.pdf`);
-      
-      // Pipe the PDF to the response
-      doc.pipe(res);
-      
-      // Add content to the PDF
-      doc.fontSize(25).text('Student Report', { align: 'center' });
-      doc.moveDown();
-      
-      // Add filters section
-      doc.fontSize(14).text('Filters Applied:', { underline: true });
-      doc.fontSize(12).text(`Department: ${department || 'All'}`);
-      doc.text(`Batch: ${batch || 'All'}`);
-      doc.text(`Category: ${category || 'All'}`);
-      doc.text(`Placement Status: ${placementStatus || 'All'}`);
-      doc.text(`Date Range: ${startDate || 'Any'} to ${endDate || 'Any'}`);
-      doc.moveDown();
-      
-      // Add more content as needed
-      
-      // Finalize the PDF
-      doc.end();
-    } else if (format === 'excel') {
-      // Create an Excel workbook
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Student Report');
-      
-      // Add title
-      worksheet.mergeCells('A1:E1');
-      const titleCell = worksheet.getCell('A1');
-      titleCell.value = 'Student Report';
-      titleCell.font = {
-        size: 16,
-        bold: true
-      };
-      titleCell.alignment = { horizontal: 'center' };
-      
-      // Add more content as needed
-      
-      // Set response headers
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=student_report_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
-      // Write to response
-      await workbook.xlsx.write(res);
-      res.end();
-    } else {
-      res.status(400).json({ error: 'Invalid format. Supported formats: pdf, excel' });
+        if (department && department !== 'all') {
+            studentQuery['personalInfo.department'] = department;
+        }
+        
+        if (batch && batch !== 'all') {
+            studentQuery['personalInfo.batch'] = parseInt(batch); // Fixed: Changed from academics.batch to personalInfo.batch
+        }
+        
+        if (category && category !== 'all') {
+            studentQuery['personalInfo.category'] = category;
+        }
+
+        // Get students with populated data
+        const students = await Student.find(studentQuery)
+            .populate({
+                path: 'applications',
+                populate: {
+                    path: 'placementDrive',
+                    select: 'companyDetails status'
+                }
+            })
+            .select('personalInfo academics applications')
+            .lean();
+
+        if (format === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Students');
+            
+            // Define headers
+            const headers = ['Name', 'Roll Number', 'Department', 'CGPA', 'Status'];
+            
+            // Add header row
+            worksheet.addRow(headers);
+            
+            // Style header row
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = { bold: true };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFE0E0E0' }
+                };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            });
+
+            // Process and add student data
+            const studentRows = students.map(student => [
+                student.personalInfo?.name || 'N/A',
+                student.personalInfo?.rollNumber || 'N/A',
+                student.personalInfo?.department || 'N/A',
+                student.academics?.cgpa || 'N/A',
+                student.applications?.some(app => 
+                    app.status === 'offer_accepted' || app.status === 'joined'
+                ) ? 'Placed' : 'Not Placed'
+            ]);
+
+            // Add data rows
+            worksheet.addRows(studentRows);
+
+            // Set column widths
+            worksheet.columns = [
+                { width: 30 }, // Name
+                { width: 15 }, // Roll Number
+                { width: 25 }, // Department
+                { width: 10 }, // CGPA
+                { width: 15 }  // Status
+            ];
+
+            // Apply borders and alignment to all cells
+            worksheet.eachRow((row) => {
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                });
+            });
+
+            // Set response headers
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', 'attachment; filename=student_report.xlsx');
+
+            // Write to response
+            await workbook.xlsx.write(res);
+            res.end();
+        } else {
+            res.status(400).json({ error: 'Invalid format. Supported format: excel' });
+        }
+    } catch (error) {
+        console.error("Error generating Excel report:", error);
+        res.status(500).json({ 
+            error: "Failed to generate Excel report",
+            message: error.message 
+        });
     }
-  } catch (error) {
-    console.error("Error generating student report:", error);
-    res.status(500).json({ 
-      error: "Failed to generate report",
-      message: error.message 
-    });
-  }
 }));
 
 // Report templates endpoints
@@ -1082,4 +997,4 @@ reportRouter.post('/generate', asyncHandler(async (req, res) => {
   }
 }));
 
-export default reportRouter; 
+export default reportRouter;

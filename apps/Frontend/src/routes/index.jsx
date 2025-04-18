@@ -29,6 +29,7 @@ import Dashboard from "../pages/admin/Dashboard";
 import Profile from "../pages/admin/Profile";
 import Placements from "../pages/admin/Placements";
 import DriveManagement from "../pages/admin/DriveManagement";
+import PlacementPolicyManager from "../components/admin/placements/PlacementPolicyManager";
 // const Placements = lazy(() => import("../pages/admin/Placements"));
 // const DriveManagement = lazy(() => import("../pages/admin/DriveManagement"));
 
@@ -104,6 +105,7 @@ const AppRoutes = () => {
             path="/admin/placements/:placementId"
             element={<DriveManagement />}
           />
+             <Route path="placement-policies" element={<PlacementPolicyManager />} />
         </Route>
       </Route>
 

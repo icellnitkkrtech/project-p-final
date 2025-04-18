@@ -162,6 +162,60 @@ const reportService = {
     }
   },
 
+  async downloadReport(type, filters, format) {
+    try {
+        console.log(`Downloading ${type} report in ${format} format`);
+        
+        // Only include necessary parameters
+        const params = new URLSearchParams({
+            department: filters.department || 'all',
+            batch: filters.batch || 'all',
+            category: filters.category || 'all',
+            placementStatus: filters.placementStatus || 'all',
+            format: format
+        });
+
+        // Define content types for different formats
+        const contentTypes = {
+            'excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xls': 'application/vnd.ms-excel',
+            'pdf': 'application/pdf'
+        };
+
+        // Fix the URL to match the working backend route
+        const response = await axios.get(
+            `${API_BASE_URL}/reports/${type}/download?${params}`,
+            {
+                responseType: 'blob',
+                headers: {
+                    'Accept': contentTypes[format] || contentTypes['excel']
+                }
+            }
+        );
+
+        // Create and handle download
+        const blob = new Blob([response.data], {
+            type: contentTypes[format] || contentTypes['excel']
+        });
+        
+        // Define file extensions
+        const fileExtensions = {
+            'excel': 'xlsx',
+            'xls': 'xls',
+            'pdf': 'pdf'
+        };
+
+        // Use file-saver for reliable download
+        const fileName = `${type}_report.${fileExtensions[format] || 'xlsx'}`;
+        saveAs(blob, fileName);
+
+        return true;
+    } catch (error) {
+        console.error('Error downloading report:', error);
+        throw error;
+    }
+},
+
   // Delete a report
   deleteReport: async (id) => {
     try {
@@ -456,4 +510,4 @@ function getMockTemplates() {
   ];
 }
 
-export default reportService; 
+export default reportService;

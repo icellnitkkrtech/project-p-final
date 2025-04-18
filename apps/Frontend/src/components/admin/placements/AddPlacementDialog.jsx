@@ -296,32 +296,33 @@ const AddPlacementDialog = ({ open, handleClose }) => {
     if (!validateStep()) return;
 
     try {
-      await placementService.createPlacementDrive(formData);
-      handleClose();
-      setConfirmDialog(false);
-      setNotification({
-        open: true,
-        message: "Placement drive created successfully!",
-        severity: "success"
-      });
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      let errorMessage = "Error creating placement drive. ";
-      
-      // Handle specific error cases
-      if (error.response?.data?.message) {
-        errorMessage += error.response.data.message;
-      } else {
-        errorMessage += "Please try again.";
-      }
+        // Add selectedJNF to the form data
+        const submissionData = {
+            ...formData,
+            selectedJNF: jnfs.find(jnf => 
+                jnf.jobProfiles?.some(profile => 
+                    profile._id === formData.jobProfile.profileId
+                )
+            )?._id
+        };
 
-      setNotification({
-        open: true,
-        message: errorMessage,
-        severity: "error"
-      });
+        await placementService.createPlacementDrive(submissionData);
+        handleClose();
+        setConfirmDialog(false);
+        setNotification({
+            open: true,
+            message: "Placement drive created successfully!",
+            severity: "success"
+        });
+    } catch (error) {
+        console.error("Error submitting form:", error);
+        setNotification({
+            open: true,
+            message: "Error creating placement drive. Please try again.",
+            severity: "error"
+        });
     }
-  };
+};
 
   const handleSubmit =  ()=> {
       setConfirmDialog(true);

@@ -114,6 +114,21 @@ const companyService = {
       throw error;
     }
   },
+
+  getDriveApplications: async (driveId) => {
+    try {
+      console.log("Fetching applications for drive:", driveId);
+      const response = await axiosInstance.get(`${API_BASE_URL}/company/${driveId}/applications`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching drive applications:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
+  },
 };
 
 export default companyService;

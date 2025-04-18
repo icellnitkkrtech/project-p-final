@@ -57,7 +57,7 @@ companyRouter.get("/:id/visits", authVerify, (req, res) => {
 
 companyRouter.get("/:id/placed-students", authVerify, companyController.getPlacedStudents);
 
-companyRouter.get("/:id/job-profiles", authVerify, companyController.getJobProfiles);
+companyRouter.get("/:id/job-profiles",  companyController.getJobProfiles);
 
 // Add new placement
 companyRouter.post("/:id/placements", authVerify, (req, res) => {
@@ -75,11 +75,11 @@ companyRouter.get("/:id/placement-stats", authVerify, (req, res) => {
 });
 
 // Add these new routes for placement management
-companyRouter.post("/:driveId/applications", authVerify, (req, res) => {
-  companyController.submitApplication(req, res);
-});
+// companyRouter.post("/:driveId/applications",  (req, res) => {
+//   companyController.submitApplication(req, res);
+// });
 
-companyRouter.get("/:driveId/applications", authVerify, (req, res) => {
+companyRouter.get("/:driveId/applications",  (req, res) => {
   companyController.getDriveApplications(req, res);
 });
 

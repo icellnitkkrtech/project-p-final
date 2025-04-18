@@ -13,6 +13,7 @@ import auditRouter from './auditRoutes.js';
 import reportRouter from './reportRoutes.js';
 import placementSessionRoutes from './placementSessionRoutes.js';
 // import auditRoutes from './auditRoutes.js';
+import placementPolicyRoutes from './placementPolicyRoutes.js';
 const router = Router();
 
 router.get('/', (req, res) => {
@@ -32,4 +33,5 @@ router.use("/placement", placementRoutes);
 router.use("/audit", auditRouter);
 router.use("/reports", reportRouter);
 router.use("/placement-sessions", placementSessionRoutes);
+router.use("/placement-policy", placementPolicyRoutes);
 export default router;
