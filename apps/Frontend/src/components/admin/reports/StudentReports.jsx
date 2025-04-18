@@ -231,19 +231,19 @@ const StudentReports = () => {
                   >
                     {loading ? 'Loading...' : 'Apply Filters'}
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outlined"
                     onClick={() => handleDownload('pdf')}
                     disabled={loading || !data}
                   >
                     Download PDF
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="outlined"
                     onClick={() => handleDownload('excel')}
                     disabled={loading || !data}
                   >
-                    Download Excel
+                    Download report
                   </Button>
                 </Box>
               </Grid>
