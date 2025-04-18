@@ -127,4 +127,6 @@ placementRoutes.get("/:id/rounds/all", (req, res) => {
     placementController.getAllRounds(req, res);
 });
 
+placementRoutes.post('/student-placement', placementController.createStudentPlacement.bind(placementController));
+
 export default placementRoutes;

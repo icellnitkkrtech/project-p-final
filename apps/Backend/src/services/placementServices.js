@@ -181,4 +181,53 @@ export default class PlacementService {
             throw new Error("Error fetching rounds: " + error.message);
         }
     }
+
+    async createStudentPlacement(placementData) {
+        try {
+            const {
+                studentId,
+                companyId,
+                placementDriveId,
+                selectedProfileId,
+                offerDetails,
+                status = 'offer_accepted'
+            } = placementData;
+
+            // Validate required fields
+            if (!studentId || !companyId || !placementDriveId || !selectedProfileId) {
+                throw new Error('Missing required fields');
+            }
+
+            // Create new student placement
+            const studentPlacement = new StudentPlacement({
+                student: studentId,
+                company: companyId,
+                placementDrive: placementDriveId,
+                selectedProfile: selectedProfileId,
+                status,
+                offerDetails: {
+                    offerDate: offerDetails?.offerDate || new Date(),
+                    joiningDate: offerDetails?.joiningDate,
+                    offerLetterUrl: offerDetails?.offerLetterUrl,
+                    finalPackage: offerDetails?.finalPackage,
+                    location: offerDetails?.location
+                },
+                selectionProgress: [{
+                    roundNumber: 1,
+                    roundName: 'Final Selection',
+                    status: 'cleared',
+                    date: new Date(),
+                    remarks: 'Offer accepted'
+                }]
+            });
+
+            const savedPlacement = await studentPlacement.save();
+            console.log('Student placement created:', savedPlacement);
+
+            return new apiResponse(201, savedPlacement, 'Student placement created successfully');
+        } catch (error) {
+            console.error('Error creating student placement:', error);
+            throw error;
+        }
+    }
 }

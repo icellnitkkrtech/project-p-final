@@ -234,7 +234,11 @@ const CompanyReports = () => {
                           {company.name}
                         </TableCell>
                         <TableCell align="right">{company.visits}</TableCell>
-                        <TableCell>{company.positions?.join(', ')}</TableCell>
+                        <TableCell>
+                          {Array.isArray(company.positions) ? 
+                            company.positions.join(', ') : 
+                            company.positions || 'N/A'}
+                        </TableCell>
                         <TableCell align="right">{company.studentsHired}</TableCell>
                         <TableCell align="right">{company.averagePackage}</TableCell>
                       </TableRow>
@@ -255,7 +259,7 @@ const CompanyReports = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={data.industryData || []}
+                          data={Array.isArray(data.industryData) ? data.industryData : []}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
@@ -265,8 +269,11 @@ const CompanyReports = () => {
                           nameKey="industry"
                           label={({ industry, count }) => `${industry}: ${count}`}
                         >
-                          {data.industryData && data.industryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          {Array.isArray(data.industryData) && data.industryData.map((entry, index) => (
+                            <Cell 
+                                key={`cell-${index}`} 
+                                fill={COLORS[index % COLORS.length]} 
+                            />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -314,4 +321,4 @@ const CompanyReports = () => {
   );
 };
 
-export default CompanyReports; 
+export default CompanyReports;

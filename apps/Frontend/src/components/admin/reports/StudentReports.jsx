@@ -46,7 +46,9 @@ const currentYear = new Date().getFullYear();
 const years = [
   (currentYear - 2).toString(),
   (currentYear - 1).toString(),
-  currentYear.toString()
+  currentYear.toString(),
+
+  (currentYear + 1).toString()
 ];
 
 const StudentReports = () => {
@@ -101,15 +103,25 @@ const StudentReports = () => {
 
   const handleDownload = async (format) => {
     try {
-      setLoading(true);
-      await reportService.downloadReport('student', filters, format);
+        setLoading(true);
+        setError(null);
+
+        // Since we're using table data, we'll send only the necessary data
+        const downloadFilters = {
+            department: filters.department,
+            batch: filters.batch,
+            category: filters.category,
+            placementStatus: filters.placementStatus
+        };
+
+        await reportService.downloadReport('student', downloadFilters, format);
     } catch (error) {
-      console.error('Error downloading report:', error);
-      setError(`Failed to download ${format.toUpperCase()} report. Please try again.`);
+        console.error('Error downloading report:', error);
+        setError(`Failed to download ${format.toUpperCase()} report. Please try again.`);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>

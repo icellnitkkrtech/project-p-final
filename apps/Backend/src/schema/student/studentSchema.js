@@ -124,6 +124,13 @@ const StudentSchema = new Schema(
         type: String,
       },
     },
+    isPlaced: {
+      type: Boolean,
+      default: false,
+    },
+    placedAt: String,
+    placementDate : Date,
+
     // Verification metadata
     verificationStatus: {
       type: String,
