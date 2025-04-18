@@ -293,6 +293,7 @@ export default class ApplicationModel {
         status: "inProgress",
         "eligibleBranchesForProfiles.branches.btech.name":
           student.personalInfo.department,
+        "jobProfile.course": student.personalInfo.course,
       });
 
       return new apiResponse(

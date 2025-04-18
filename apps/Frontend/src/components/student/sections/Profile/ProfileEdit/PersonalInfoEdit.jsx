@@ -24,6 +24,7 @@ const DEPARTMENT_OPTIONS = [
   "Civil Engineering",
 ];
 
+const COURSE_OPTIONS = ["btech", "mtech", "mca", "mba", "phd"];
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
 
 const PersonalInfoEdit = ({ data, isLocked, onChange }) => {
@@ -110,6 +111,28 @@ const PersonalInfoEdit = ({ data, isLocked, onChange }) => {
                   ))}
                 </TextField>
               </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  select
+                  fullWidth
+                  required
+                  label="Course"
+                  name="course"
+                  value={data.course || ""}
+                  onChange={handleChange}
+                  disabled={isLocked}
+                  error={!data.course}
+                  helperText={!data.course && "Course is required"}
+                >
+                  <MenuItem value="">Select Course</MenuItem>
+                  {COURSE_OPTIONS.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
               <Grid item xs={12} md={6}>
                 <TextField
                   select

@@ -13,6 +13,7 @@ const Signup = () => {
       department: "",
       batch: "",
       gender: "",
+      course: "",
       category: "",
       course: "",
     },
@@ -134,6 +135,22 @@ const Signup = () => {
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <select
+                  name="personalInfo.course"
+                  required
+                  value={formData.personalInfo.course}
+                  onChange={handleChange}
+                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select course</option>
+                  <option value="btech">btech</option>
+                  <option value="mtech">mtech</option>
+                  <option value="mca">mca</option>
+                  <option value="mba">mba</option>
+                  <option value="phd">phd</option>
                 </select>
               </div>
               <div>
