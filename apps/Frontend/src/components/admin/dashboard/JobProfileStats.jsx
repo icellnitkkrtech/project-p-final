@@ -16,7 +16,6 @@ const JobProfileStats = ({ filters = {} }) => {
     const fetchJobProfileData = async () => {
       setLoading(true);
       try {
-        // Convert filters object to query string
         const queryParams = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== 'all') {
@@ -36,23 +35,28 @@ const JobProfileStats = ({ filters = {} }) => {
             setSectorData(data.sectors);
           }
           
-          // Set profile analysis data
+          // Transform profile data to use designation instead of profileId
           if (data.profiles && Array.isArray(data.profiles)) {
-            setProfileData(data.profiles);
+            const transformedProfiles = data.profiles.map(profile => ({
+              profile: profile.jobProfile?.designation || 'Unknown Role', // Use designation from jobProfile
+              count: profile.count,
+              avgCTC: profile.avgCTC
+            }));
+            setProfileData(transformedProfiles);
           }
         }
         
         setError(null);
       } catch (error) {
         console.error("Error fetching job profile data:", error);
-        setError("Failed to load job profile analysis data. Please try again later.");
+        setError("Failed to load job profile analysis data");
       } finally {
         setLoading(false);
       }
     };
 
     fetchJobProfileData();
-  }, [filters]); // Re-fetch when filters change
+  }, [filters]);
 
   if (loading) {
     return (
@@ -115,13 +119,38 @@ const JobProfileStats = ({ filters = {} }) => {
             ) : (
               <BarChart data={displayProfileData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="profile" angle={-45} textAnchor="end" height={100} />
+                <XAxis 
+                  dataKey="profile" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={100}
+                  interval={0}
+                  tickFormatter={(value) => 
+                    value.length > 20 ? `${value.substring(0, 20)}...` : value
+                  }
+                />
                 <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
                 <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value, name) => [
+                    name === "Number of Students" ? value : `${value} LPA`,
+                    name
+                  ]}
+                  labelFormatter={(label) => `Role: ${label}`}
+                />
                 <Legend />
-                <Bar yAxisId="left" dataKey="count" fill="#8884d8" name="Number of Students" />
-                <Bar yAxisId="right" dataKey="avgCTC" fill="#82ca9d" name="Average CTC (LPA)" />
+                <Bar 
+                  yAxisId="left" 
+                  dataKey="count" 
+                  fill="#8884d8" 
+                  name="Number of Students"
+                />
+                <Bar 
+                  yAxisId="right" 
+                  dataKey="avgCTC" 
+                  fill="#82ca9d" 
+                  name="Average CTC (LPA)"
+                />
               </BarChart>
             )}
           </ResponsiveContainer>
@@ -131,4 +160,4 @@ const JobProfileStats = ({ filters = {} }) => {
   );
 };
 
-export default JobProfileStats; 
+export default JobProfileStats;
