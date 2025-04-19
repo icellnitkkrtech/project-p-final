@@ -15,7 +15,8 @@ const Signup = () => {
       gender: "",
       course: "",
       category: "",
-      course: "",
+
+      
     },
     academics: {
       cgpa: "",
