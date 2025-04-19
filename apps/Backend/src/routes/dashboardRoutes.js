@@ -3,7 +3,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import Student from "../schema/student/studentSchema.js";
 import Company from "../schema/company/companySchema.js";
 import Placement from "../schema/placement/placementSchema.js";
-
+import placementSession from "../schema/placement/placementSessionSchema.js";
 const dashboardRouter = Router();
 
 // Analytics endpoint with filter support
@@ -11,7 +11,9 @@ dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
     try {
         // Extract filter parameters
         const { session, educationLevel, driveType, offerType } = req.query;
-        
+//actually the session is coming as a id so extract the session name from placement session schema 
+        const placementSessionData = await placementSession.findById(session);
+
         // Build filter queries based on actual schema structure
         const studentQuery = {};
         const companyQuery = {};
@@ -19,16 +21,20 @@ dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
         
         // Apply placement session filter
         if (session && session !== 'all') {
-            placementQuery['placementSession'] = session;
+            placementQuery['placementSession'] = Number(placementSessionData.name);
+            console.log("Session:", session, "placementQuery:", placementQuery);
+            studentQuery['personalInfo.batch'] = Number(placementSessionData.name.split('-')[1]);
+
         }
         
         // Apply education level filter
         if (educationLevel && educationLevel !== 'all') {
             // Map educationLevel to department or degree type
             if (educationLevel === 'UG') {
-                studentQuery['personalInfo.department'] = { $in: ['Computer Engineering', 'Information Technology', 'Electronics & Communication Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Production & Industrial Engineering', 'Civil Engineering'] };
-            } else if (educationLevel === 'PG') {
-                studentQuery['personalInfo.department'] = { $in: ['M.Tech', 'MBA', 'MCA', 'M.Sc', 'PhD'] };
+                studentQuery['personalInfo.course'] = { $in: ['btech'] };
+            } 
+            else if (educationLevel === 'PG') {
+                studentQuery['personalInfo.course'] = { $in: ['mtech','mca','mba'] };
             }
         }
         
@@ -115,28 +121,31 @@ dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
 // Placement progress endpoint with filter support
 dashboardRouter.get('/placement-progress', asyncHandler(async (req, res) => {
     try {
-        const { session, educationLevel } = req.query;
+        const { session, educationLevel,driveType,offerType } = req.query;
         
         // Build filter queries
         const studentQuery = {};
+        const placementQuery = {};
+
         
         // Apply session filter
         if (session && session !== 'all') {
-            studentQuery['personalInfo.batch'] = Number(session.split('-')[0]);
+            // studentQuery['personalInfo.batch'] = Number(session.split('-')[0]);
+            placementQuery['placementSession'] = session;
+            studentQuery['personalInfo.batch'] = Number(session.split('-')[1]);
         }
         
         // Apply education level filter
         if (educationLevel && educationLevel !== 'all') {
             if (educationLevel === 'UG') {
-                studentQuery['personalInfo.department'] = {
-                    $in: ['Computer Engineering', 'Information Technology', 
-                          'Electronics & Communication Engineering', 'Electrical Engineering', 
-                          'Mechanical Engineering', 'Production & Industrial Engineering', 
-                          'Civil Engineering']
+                
+                studentQuery['personalInfo.course'] = {
+                    $in: ['btech']
                 };
+
             } else if (educationLevel === 'PG') {
-                studentQuery['personalInfo.department'] = {
-                    $in: ['M.Tech', 'MBA', 'MCA']
+                studentQuery['personalInfo.course'] = {
+                    $in: ['mtech', 'mba', 'mca']
                 };
             }
         }
