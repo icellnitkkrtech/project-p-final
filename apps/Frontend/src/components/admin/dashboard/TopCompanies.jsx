@@ -100,7 +100,7 @@ const TopCompanies = ({ filters = {} }) => {
   ];
 
   const displayTopHiring = topHiringCompanies.length > 0 ? topHiringCompanies : [
-    { name: 'No Data Available', hired: 0, avgCTC: 0 }
+    { name: 'No Data Available', ctc: 0, hired: 0 }
   ];
 
   const displayLeastPaying = leastPayingCompanies.length > 0 ? leastPayingCompanies : [
@@ -136,21 +136,21 @@ const TopCompanies = ({ filters = {} }) => {
                 <Legend />
                 <Bar 
                   yAxisId="left" 
-                  dataKey="ctc" 
-                  fill={COLORS.topPaying[0]} 
-                  name="CTC (LPA)"
-                  radius={[8, 8, 0, 0]}
-                >
-                  <LabelList dataKey="ctc" position="top" />
-                </Bar>
-                <Bar 
-                  yAxisId="right" 
                   dataKey="hired" 
-                  fill={COLORS.topPaying[1]} 
+                  fill={COLORS.topPaying[0]} 
                   name="Students Hired"
                   radius={[8, 8, 0, 0]}
                 >
                   <LabelList dataKey="hired" position="top" />
+                </Bar>
+                <Bar 
+                  yAxisId="right" 
+                  dataKey="ctc" 
+                  fill={COLORS.topPaying[1]} 
+                  name="CTC (LPA)"
+                  radius={[8, 8, 0, 0]}
+                >
+                  <LabelList dataKey="ctc" position="top" />
                 </Bar>
               </BarChart>
             ) : view === 1 ? (
@@ -172,12 +172,12 @@ const TopCompanies = ({ filters = {} }) => {
                 </Bar>
                 <Bar 
                   yAxisId="right" 
-                  dataKey="avgCTC" 
+                  dataKey="ctc" 
                   fill={COLORS.topHiring[1]} 
-                  name="Avg CTC (LPA)"
+                  name="CTC (LPA)"
                   radius={[8, 8, 0, 0]}
                 >
-                  <LabelList dataKey="avgCTC" position="top" />
+                  <LabelList dataKey="ctc" position="top" />
                 </Bar>
               </BarChart>
             ) : (
@@ -190,21 +190,21 @@ const TopCompanies = ({ filters = {} }) => {
                 <Legend />
                 <Bar 
                   yAxisId="left" 
-                  dataKey="ctc" 
-                  fill={COLORS.lowPaying[0]} 
-                  name="CTC (LPA)"
-                  radius={[8, 8, 0, 0]}
-                >
-                  <LabelList dataKey="ctc" position="top" />
-                </Bar>
-                <Bar 
-                  yAxisId="right" 
                   dataKey="hired" 
-                  fill={COLORS.lowPaying[1]} 
+                  fill={COLORS.lowPaying[0]} 
                   name="Students Hired"
                   radius={[8, 8, 0, 0]}
                 >
                   <LabelList dataKey="hired" position="top" />
+                </Bar>
+                <Bar 
+                  yAxisId="right" 
+                  dataKey="ctc" 
+                  fill={COLORS.lowPaying[1]} 
+                  name="CTC (LPA)"
+                  radius={[8, 8, 0, 0]}
+                >
+                  <LabelList dataKey="ctc" position="top" />
                 </Bar>
               </BarChart>
             )}
@@ -215,4 +215,4 @@ const TopCompanies = ({ filters = {} }) => {
   );
 };
 
-export default TopCompanies; 
+export default TopCompanies;

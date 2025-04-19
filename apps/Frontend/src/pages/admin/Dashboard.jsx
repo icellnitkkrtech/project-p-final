@@ -150,36 +150,42 @@ const Dashboard = () => {
         <AnalyticsCards filters={filters} />
       </Grid>
 
-      {/* Charts Row 1 */}
-      <Grid item xs={12} md={8}>
+      {/* PlacementProgress - Full Width */}
+      <Grid item xs={12}>
         <PlacementProgress filters={filters} />
       </Grid>
-      <Grid item xs={12} md={4}>
+
+      {/* CompanyStats - Full Width */}
+      <Grid item xs={12}>
         <CompanyStats filters={filters} />
       </Grid>
 
-      {/* Charts Row 2 */}
-      <Grid item xs={12} md={6}>
+      {/* BranchWiseChart - Full Width */}
+      <Grid item xs={12}>
         <BranchWiseChart filters={filters} />
       </Grid>
-      <Grid item xs={12} md={6}>
+
+      {/* CTCAnalysis - Full Width */}
+      <Grid item xs={12}>
         <CTCAnalysis filters={filters} />
       </Grid>
 
-      {/* Charts Row 3 */}
-      <Grid item xs={12} md={6}>
+      {/* JobProfileStats - Full Width */}
+      <Grid item xs={12}>
         <JobProfileStats filters={filters} />
       </Grid>
-      <Grid item xs={12} md={6}>
+
+      {/* CareerPreferences - Full Width */}
+      <Grid item xs={12}>
         <CareerPreferences filters={filters} />
       </Grid>
 
-      {/* Charts Row 4 */}
+      {/* TopCompanies - Full Width */}
       <Grid item xs={12}>
         <TopCompanies filters={filters} />
       </Grid>
 
-      {/* Recent Activities */}
+      {/* Recent Activities - Full Width */}
       <Grid item xs={12}>
         <RecentActivities />
       </Grid>
@@ -187,4 +193,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
