@@ -20,6 +20,26 @@ export default class PlacementModel {
     async createPlacement(placementData) {
         console.log("Placement Model: createPlacement called with data:", placementData);
         try {
+            // Initialize roundDetails if not provided
+            if (!placementData.roundDetails) {
+                placementData.roundDetails = { rounds: [] };
+            }
+    
+            // Fetch rounds from selectionProcess and add to roundDetails
+            if (placementData.selectionProcess && Array.isArray(placementData.selectionProcess)) {
+                placementData.selectionProcess.forEach((process) => {
+                    process.rounds.forEach((round, index) => {
+                        placementData.roundDetails.rounds.push({
+                            roundName: round.roundName,
+                            roundNumber: round.roundNumber || index + 1,
+                            startTime: round.startTime || new Date(Date.now() + 24 * 60 * 60 * 1000), // Set to 24 hours in the future
+                            endTime: round.endTime || new Date(Date.now() + 48 * 60 * 60 * 1000),     // Set to 48 hours in the future
+                            roundStatus: "upcoming"
+                        });
+                    });
+                });
+            }
+    
             return await this.placement.create(placementData);
         } catch (error) {
             console.error("Error in createPlacement:", error);
