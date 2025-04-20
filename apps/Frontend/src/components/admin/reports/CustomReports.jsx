@@ -23,6 +23,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import {
@@ -44,16 +50,37 @@ const MenuProps = {
   },
 };
 
-const availableMetrics = [
-  'Total Students',
-  'Placed Students',
-  'Average Package',
-  'Highest Package',
-  'Department-wise Stats',
-  'Company-wise Stats',
-  'Placement Timeline',
-  'Package Distribution',
-];
+const availableMetrics = {
+  student: [
+    'Name',
+    'Department',
+    'CGPA',
+    'Status',
+    'Company',
+    'Package (CTC)',
+    'Batch',
+    'Category'
+  ],
+  placement: [
+    'Programme',
+    'No. of Eligible Students',
+    'No. of Placement offers',
+    'Range of Package (in lakh)',
+    'Avg. Package (in lakh)',
+    'No. of Students Placed',
+    '% of Students Placed',
+    'Median Package (in lakh)'
+  ],
+  company: [
+    'Company Name',
+    'Visits',
+    'Positions',
+    'Students Hired',
+    'Average Package',
+    'Industry',
+    'Job Profiles'
+  ]
+};
 
 const CustomReports = () => {
   const [loading, setLoading] = useState(false);
@@ -137,7 +164,17 @@ const CustomReports = () => {
   const handleGenerateReport = async (template) => {
     try {
       setLoading(true);
-      await reportService.generateReport(template);
+      const reportData = await reportService.generateReport({
+        ...template,
+        format: 'csv'  // Changed from 'excel' to 'csv'
+      });
+
+      if (reportData) {
+        setSelectedTemplate({
+          ...template,
+          data: reportData
+        });
+      }
     } catch (error) {
       console.error('Error generating report:', error);
       setError('Failed to generate report. Please try again.');
@@ -148,12 +185,21 @@ const CustomReports = () => {
 
   const handleDeleteTemplate = async (templateId) => {
     try {
-      setLoading(true);
+      // Add confirmation dialog
+      if (!window.confirm('Are you sure you want to delete this template?')) {
+        return;
+      }
+
       await reportService.deleteReportTemplate(templateId);
-      setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+      // Refresh templates list after successful deletion
+      const response = await reportService.getReportTemplates();
+      setTemplates(response || []);
+      // Show success message
+      alert('Template deleted successfully');
     } catch (error) {
       console.error('Error deleting template:', error);
-      setError('Failed to delete template. Please try again.');
+      // Show error message to user
+      alert(error.response?.data?.message || 'Failed to delete template');
     } finally {
       setLoading(false);
     }
@@ -196,14 +242,14 @@ const CustomReports = () => {
         <Grid container spacing={2}>
           {templates && templates.length > 0 ? (
             templates.map((template) => (
-              <Grid item xs={12} md={6} lg={4} key={template.id}>
+              <Grid item xs={12} md={6} lg={4} key={template._id}>
                 <Card>
                   <CardContent>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="h6">{template.name}</Typography>
                       <IconButton
                         size="small"
-                        onClick={() => handleDeleteTemplate(template.id)}
+                        onClick={() => handleDeleteTemplate(template._id)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -293,7 +339,7 @@ const CustomReports = () => {
                 )}
                 MenuProps={MenuProps}
               >
-                {availableMetrics.map((metric) => (
+                {availableMetrics[newTemplate.type].map((metric) => (
                   <MenuItem key={metric} value={metric}>
                     <Checkbox checked={newTemplate.metrics.indexOf(metric) > -1} />
                     <ListItemText primary={metric} />
@@ -332,6 +378,64 @@ const CustomReports = () => {
         >
           <CircularProgress />
         </Box>
+      )}
+
+      {/* Report Preview */}
+      {selectedTemplate?.data && (
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, mt: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Report Preview: {selectedTemplate.name}
+            </Typography>
+            
+            {/* Summary Section */}
+            {selectedTemplate.data.summary && (
+              <Box mb={3}>
+                <Typography variant="subtitle1" gutterBottom>Summary</Typography>
+                <Grid container spacing={2}>
+                  {Object.entries(selectedTemplate.data.summary).map(([key, value]) => (
+                    <Grid item xs={12} sm={4} key={key}>
+                      <Paper sx={{ p: 2 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          {key.replace(/([A-Z])/g, ' $1').trim()}
+                        </Typography>
+                        <Typography variant="h6">
+                          {typeof value === 'number' ? value.toLocaleString() : value}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            )}
+
+            {/* Department Stats Table */}
+            {selectedTemplate.data.departmentStats && (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Department</TableCell>
+                      <TableCell align="right">Total Students</TableCell>
+                      <TableCell align="right">Placed</TableCell>
+                      <TableCell align="right">Percentage</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selectedTemplate.data.departmentStats.map((dept, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{dept.department}</TableCell>
+                        <TableCell align="right">{dept.total}</TableCell>
+                        <TableCell align="right">{dept.placed}</TableCell>
+                        <TableCell align="right">{dept.percentage}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Paper>
+        </Grid>
       )}
     </Grid>
   );
