@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, Typography, Box, Divider, LinearProgress, CircularProgress, Alert } from '@mui/material';
+import { Card, CardContent, Typography, Box, Divider, LinearProgress, CircularProgress, Alert, Grid } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import axios from '../../../config/axios';
 
@@ -127,59 +127,66 @@ const CompanyStats = ({ filters = {} }) => {
           </Box>
         </Box>
 
-        <Box height={200} mb={3}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={companyData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {companyData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => [`${value} companies`, 'Count']} />
-            </PieChart>
-          </ResponsiveContainer>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Typography variant="subtitle2" gutterBottom>
-          Package Distribution
-        </Typography>
-        
-        {packageStats.map((stat, index) => (
-          <Box key={index} mb={2}>
-            <Box display="flex" justifyContent="space-between" mb={1}>
-              <Typography variant="body2">{stat.range}</Typography>
-              <Typography variant="body2" color="textSecondary">
-                {stat.count} companies
-              </Typography>
+        {/* New layout with Grid */}
+        <Grid container spacing={2}>
+          {/* Left side - Pie Chart */}
+          <Grid item xs={12} md={6}>
+            <Box height={300}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={companyData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {companyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} companies`, 'Count']} />
+                </PieChart>
+              </ResponsiveContainer>
             </Box>
-            <LinearProgress
-              variant="determinate"
-              value={totalPackageCompanies > 0 ? (stat.count / totalPackageCompanies) * 100 : 0}
-              sx={{ 
-                height: 8, 
-                borderRadius: 5,
-                backgroundColor: `${stat.color}22`,
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: stat.color
-                }
-              }}
-            />
-          </Box>
-        ))}
+          </Grid>
+
+          {/* Right side - Package Distribution */}
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle2" gutterBottom>
+              Package Distribution
+            </Typography>
+            
+            {packageStats.map((stat, index) => (
+              <Box key={index} mb={2}>
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                  <Typography variant="body2">{stat.range}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {stat.count} companies
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={totalPackageCompanies > 0 ? (stat.count / totalPackageCompanies) * 100 : 0}
+                  sx={{ 
+                    height: 8, 
+                    borderRadius: 5,
+                    backgroundColor: `${stat.color}22`,
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: stat.color
+                    }
+                  }}
+                />
+              </Box>
+            ))}
+          </Grid>
+        </Grid>
       </CardContent>
     </Card>
   );
 };
 
-export default CompanyStats; 
+export default CompanyStats;
