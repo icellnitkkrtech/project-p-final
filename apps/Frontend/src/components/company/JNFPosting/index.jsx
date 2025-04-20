@@ -3,6 +3,7 @@ import axios from '../axios';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import { 
     Snackbar, 
     Alert, 
@@ -53,6 +54,7 @@ const steps = [
 const index = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { company, setCompany } = useOutletContext();
     const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -65,9 +67,9 @@ const index = () => {
     const [formData, setFormData] = useState({
         // Company Details - structure mostly the same
         companyDetails: {
-            name: '',
-            email: '',
-            website: '',
+            name: company?.companyName || '',
+            email: company?.email || '',
+            website: company?.website || '',
             companyType: '',
             domain: '',
             description: ''
@@ -429,13 +431,15 @@ const index = () => {
 
     const validateJNF = () => {
         const errors = [];
-    
-        // Check company details (required fields)
+        
+        // ==================== COMPANY DETAILS VALIDATION ====================
         if (!formData.companyDetails?.name) {
             errors.push("Company Name is required");
         }
         if (!formData.companyDetails?.email) {
             errors.push("Company Email is required");
+        } else if (!/^\S+@\S+\.\S+$/.test(formData.companyDetails.email)) {
+            errors.push("Company Email format is invalid");
         }
         if (!formData.companyDetails?.companyType) {
             errors.push("Company Type is required");
@@ -443,85 +447,197 @@ const index = () => {
         if (!formData.companyDetails?.domain) {
             errors.push("Company Domain is required");
         }
-    
-        // Check job profiles
+        if (!formData.companyDetails?.description || formData.companyDetails.description.trim().length < 10) {
+            errors.push("Company Description is required (minimum 10 characters)");
+        }
+        
+        // ==================== JOB PROFILES VALIDATION ====================
         if (!formData.jobProfiles || formData.jobProfiles.length === 0) {
             errors.push("At least one job profile is required");
         } else {
             formData.jobProfiles.forEach((profile, index) => {
+                const profileNum = index + 1;
+                
                 if (!profile.profileId) {
-                    errors.push(`Job Profile ${index + 1}: Profile ID is required`);
+                    errors.push(`Job Profile ${profileNum}: Profile ID is required`);
                 }
                 
-                // Check required fields for job type
-                if (profile.jobType === "fte+intern" || profile.jobType === "intern+ppo") {
-                    if (!profile.stipend) {
-                        errors.push(`Job Profile ${index + 1}: Intern Stipend is required for ${profile.jobType}`);
+                if (!profile.designation || profile.designation.trim() === '') {
+                    errors.push(`Job Profile ${profileNum}: Designation is required`);
+                }
+                
+                // CTC validation for full-time positions
+                if (profile.jobType === "fte" || profile.jobType === "fte+intern" || profile.jobType === "intern+ppo") {
+                    if (!profile.ctc || profile.ctc.trim() === '') {
+                        errors.push(`Job Profile ${profileNum}: CTC is required`);
                     }
-                    if (!profile.internDuration) {
-                        errors.push(`Job Profile ${index + 1}: Internship Duration is required for ${profile.jobType}`);
+                    if (!profile.takeHome || profile.takeHome.trim() === '') {
+                        errors.push(`Job Profile ${profileNum}: Take home salary is required`);
                     }
                 }
                 
-                // Check if job description file is required
+                // Validation for internship details
+                if (profile.jobType === "fte+intern" || profile.jobType === "intern" || profile.jobType === "intern+ppo") {
+                    if (!profile.stipend || profile.stipend.trim() === '') {
+                        errors.push(`Job Profile ${profileNum}: Internship stipend is required`);
+                    }
+                    if (!profile.internDuration || profile.internDuration.trim() === '') {
+                        errors.push(`Job Profile ${profileNum}: Internship duration is required`);
+                    }
+                }
+                
+                // Job description validation
+                if (!profile.jobDescription?.description || profile.jobDescription.description.trim() === '') {
+                    errors.push(`Job Profile ${profileNum}: Job description is required`);
+                }
+                
+                // File attachment validation
                 if (profile.jobDescription?.attachFile && !profile.jobDescription?.file) {
-                    errors.push(`Job Profile ${index + 1}: Job Description file is required when attachment is enabled`);
+                    errors.push(`Job Profile ${profileNum}: Job Description file is required when attachment is enabled`);
+                }
+                
+                // Place of posting validation
+                if (!profile.placeOfPosting || profile.placeOfPosting.trim() === '') {
+                    errors.push(`Job Profile ${profileNum}: Place of posting is required`);
                 }
             });
         }
-    
-        // Check eligibleBranchesForProfiles
+        
+        // ==================== ELIGIBLE BRANCHES VALIDATION ====================
         if (!formData.eligibleBranchesForProfiles || formData.eligibleBranchesForProfiles.length === 0) {
             errors.push("Eligible branches information is required");
         } else {
             formData.eligibleBranchesForProfiles.forEach((profileBranches, index) => {
+                const profileNum = index + 1;
+                
                 if (!profileBranches.profileId) {
-                    errors.push(`Eligible Branches for Profile ${index + 1}: Profile ID is required`);
+                    errors.push(`Eligible Branches for Profile ${profileNum}: Profile ID is required`);
+                }
+                
+                // Check if at least one branch is selected
+                let hasSelectedBranch = false;
+                
+                // Check B.Tech branches
+                if (profileBranches.branches?.btech && Array.isArray(profileBranches.branches.btech)) {
+                    if (profileBranches.branches.btech.some(branch => branch.eligible)) {
+                        hasSelectedBranch = true;
+                    }
+                }
+                
+                // Check M.Tech branches if B.Tech branches aren't selected
+                if (!hasSelectedBranch && profileBranches.branches?.mtech && Array.isArray(profileBranches.branches.mtech)) {
+                    if (profileBranches.branches.mtech.some(branch => branch.eligible)) {
+                        hasSelectedBranch = true;
+                    }
+                }
+                
+                // Check PhD branches if neither B.Tech nor M.Tech branches are selected
+                if (!hasSelectedBranch && profileBranches.branches?.phd && Array.isArray(profileBranches.branches.phd)) {
+                    if (profileBranches.branches.phd.some(branch => branch.eligible)) {
+                        hasSelectedBranch = true;
+                    }
+                }
+                
+                if (!hasSelectedBranch) {
+                    errors.push(`Eligible Branches for Profile ${profileNum}: At least one branch must be selected`);
                 }
             });
         }
-    
-        // Check selectionProcessForProfiles
+        
+        // ==================== ELIGIBILITY CRITERIA VALIDATION ====================
+        // Validate CGPA
+        if (typeof formData.eligibilityCriteria === 'object') {
+            if (!formData.eligibilityCriteria.minCgpa || formData.eligibilityCriteria.minCgpa === '') {
+                errors.push("Minimum CGPA requirement is required");
+            } else {
+                const cgpa = parseFloat(formData.eligibilityCriteria.minCgpa);
+                if (isNaN(cgpa) || cgpa < 0 || cgpa > 10) {
+                    errors.push("Minimum CGPA must be a number between 0 and 10");
+                }
+            }
+            
+            // Convert to string after validation
+            formData.eligibilityCriteria = JSON.stringify(formData.eligibilityCriteria);
+        }
+        
+        // ==================== SELECTION PROCESS VALIDATION ====================
         if (!formData.selectionProcessForProfiles || formData.selectionProcessForProfiles.length === 0) {
             errors.push("Selection process information is required");
         } else {
             formData.selectionProcessForProfiles.forEach((profileSelection, index) => {
+                const profileNum = index + 1;
+                
                 if (!profileSelection.profileId) {
-                    errors.push(`Selection Process for Profile ${index + 1}: Profile ID is required`);
+                    errors.push(`Selection Process for Profile ${profileNum}: Profile ID is required`);
                 }
                 
-                if (profileSelection.rounds && profileSelection.rounds.length > 0) {
+                // Check if rounds are specified
+                if (!profileSelection.rounds || profileSelection.rounds.length === 0) {
+                    errors.push(`Selection Process for Profile ${profileNum}: At least one selection round is required`);
+                } else {
                     profileSelection.rounds.forEach((round, roundIndex) => {
                         if (!round.type) {
-                            errors.push(`Selection Process for Profile ${index + 1}, Round ${roundIndex + 1}: Round type is required`);
+                            errors.push(`Selection Process for Profile ${profileNum}, Round ${roundIndex + 1}: Round type is required`);
+                        }
+                        // Check if other rounds has proper details
+                        if (round.type === 'otherRounds' && (!round.details || round.details.trim() === '')) {
+                            errors.push(`Selection Process for Profile ${profileNum}, Other Round: Details for other round are required`);
                         }
                     });
                 }
+                
+                // Validate expected recruits
+                if (!profileSelection.expectedRecruits || profileSelection.expectedRecruits.trim() === '') {
+                    errors.push(`Selection Process for Profile ${profileNum}: Expected number of recruits is required`);
+                }
+                
+                // Validate tentative date
+                if (!profileSelection.tentativeDate || profileSelection.tentativeDate.trim() === '') {
+                    errors.push(`Selection Process for Profile ${profileNum}: Tentative date is required`);
+                }
             });
         }
-    
-        // Check eligibilityCriteria - should be a string
-        if (typeof formData.eligibilityCriteria === 'object') {
-            // Convert to string if it's an object
-            formData.eligibilityCriteria = JSON.stringify(formData.eligibilityCriteria);
-        }
-    
-        // Check bond details
-        if (formData.bondDetails) {
+        
+        // ==================== BOND DETAILS VALIDATION ====================
+        if (!formData.bondDetails) {
+            errors.push("Bond information is required");
+        } else {
             if (formData.bondDetails.hasBond === undefined || formData.bondDetails.hasBond === null) {
                 errors.push("Bond information (Yes/No) is required");
             }
             
-            if (formData.bondDetails.hasBond && !formData.bondDetails.details) {
+            if (formData.bondDetails.hasBond && (!formData.bondDetails.details || formData.bondDetails.details.trim() === '')) {
                 errors.push("Bond details are required when bond is set to Yes");
             }
-        } else {
-            errors.push("Bond information is required");
         }
-    
-        // Check point of contact
+        
+        // ==================== POINT OF CONTACT VALIDATION ====================
         if (!formData.pointOfContact || formData.pointOfContact.length === 0) {
             errors.push("At least one point of contact is required");
+        } else {
+            formData.pointOfContact.forEach((contact, index) => {
+                const contactNum = index + 1;
+                
+                if (!contact.name || contact.name.trim() === '') {
+                    errors.push(`Point of Contact ${contactNum}: Name is required`);
+                }
+                
+                if (!contact.designation || contact.designation.trim() === '') {
+                    errors.push(`Point of Contact ${contactNum}: Designation is required`);
+                }
+                
+                if (!contact.email || contact.email.trim() === '') {
+                    errors.push(`Point of Contact ${contactNum}: Email is required`);
+                } else if (!/^\S+@\S+\.\S+$/.test(contact.email)) {
+                    errors.push(`Point of Contact ${contactNum}: Email format is invalid`);
+                }
+                
+                if (!contact.mobile || contact.mobile.trim() === '') {
+                    errors.push(`Point of Contact ${contactNum}: Mobile number is required`);
+                } else if (!/^\d{10}$/.test(contact.mobile.replace(/\D/g, ''))) {
+                    errors.push(`Point of Contact ${contactNum}: Mobile number should be 10 digits`);
+                }
+            });
         }
     
         return {
