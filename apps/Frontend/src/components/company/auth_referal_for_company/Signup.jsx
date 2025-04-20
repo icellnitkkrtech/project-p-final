@@ -42,10 +42,11 @@ const CompanySignup = () => {
         password: formData.password,
       });
 
-      if (response.data.statusCode === 201) {
+      // if (response.data.statusCode === 201) {
         // Registration successful, navigate to login
+        // console.log("SDFSDFSDFsdf");
         navigate("/auth/recruiter/login");
-      }
+      // }
     } catch (err) {
       console.error("Registration error:", err);
       setError(err.response?.data?.message || "Registration failed");
