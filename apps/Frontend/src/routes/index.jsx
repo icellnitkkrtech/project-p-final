@@ -110,11 +110,10 @@ const AppRoutes = () => {
       </Route>
 
       <Route path="/company" element={<CompanyLayout />}>
-        <Route path=":id" element={<CompanyDashboard />}>
-          <Route index element={<Navigate to="post-jnf" replace />} />
+          {/* <Route index element={<Navigate to="post-jnf" replace />} /> */}
+          {/* <Route index element={<Navigate to="/company/profile" replace />} /> */}
           <Route path="profile" element={<CompanyProfile />} />
           <Route path="post-jnf" element={<JNFPosting />} />
-        </Route>
       </Route>
 
       <Route path="/student" element={<StudentDashboard />}>

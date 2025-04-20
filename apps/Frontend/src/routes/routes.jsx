@@ -286,22 +286,24 @@ const routes = [
   },
   {
     path: "/company",
+    element: lazy(() => import("../components/company/CompanyDashboard")), // Main element for /company
     children: [
+      // {
+      //   path: "", // Default child route (optional, could render a welcome page or redirect)
+      //   // element: lazy(() => import("../components/company/CompanyWelcome")), // Example default
+      //   index: true, // Or use index route if CompanyDashboard should render something by default
+      //   // If CompanyDashboard itself should render the default view, you might not need an index route here.
+      //   // If the first navigation should always go to profile or post-jnf, you might redirect in CompanyDashboard's useEffect.
+      // },
       {
-        path: ":id",
-        element: lazy(() => import("../components/company/CompanyDashboard")),
-        children: [
-          {
-            path: "profile",
-            element: lazy(() => import("../components/company/CompanyProfile")),
-          },
-          {
-            path: "post-jnf",
-            element: lazy(
-              () => import("../components/company/JNFPosting/index")
-            ),
-          },
-        ],
+        path: "profile",
+        element: lazy(() => import("../components/company/CompanyProfile")),
+      },
+      {
+        path: "post-jnf",
+        element: lazy(
+          () => import("../components/company/JNFPosting/index")
+        ),
       },
     ],
   },

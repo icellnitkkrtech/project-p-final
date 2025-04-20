@@ -57,8 +57,8 @@ const Login = () => {
           localStorage.setItem("authToken", loginResponse.data.data.authToken);
           localStorage.setItem("companyId", companyData._id);
 
-          // Navigate to company dashboard
-          navigate(`/company/${companyData._id}`);
+          // Navigate to company dashboard (base path)
+          navigate(`/company/profile`); // Changed from /company/${companyData._id}
         } else {
           setError("Company profile not found");
         }
