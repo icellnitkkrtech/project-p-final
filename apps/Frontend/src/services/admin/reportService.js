@@ -318,7 +318,7 @@ const reportService = {
   // Save custom report template
   saveReportTemplate: async (template) => {
     try {
-      const response = await axios.post(`/api/v1/reports/templates`, {
+      const response = await axios.post(`reports/templates`, {
         ...template,
         filters: {
           ...template.filters,
@@ -346,14 +346,10 @@ const reportService = {
   // Get saved report templates
   getReportTemplates: async () => {
     try {
-      const response = await axios.get(`/reports/templates`);
+      const response = await axios.get('/reports/templates');
       return response.data;
     } catch (error) {
       console.error('Error fetching report templates:', error);
-      // Return mock templates for development
-      if (error.response && error.response.status === 404) {
-        return getMockTemplates();
-      }
       throw error;
     }
   },
@@ -361,16 +357,83 @@ const reportService = {
   // Delete report template
   deleteReportTemplate: async (templateId) => {
     try {
-      await axios.delete(`/reports/templates/${templateId}`);
-      return true;
+      const response = await axios.delete(`/reports/templates/${templateId}`);
+      return response.data;
     } catch (error) {
       console.error('Error deleting report template:', error);
-      // For development
-      if (error.response && error.response.status === 404) {
-        alert(`Mock template with ID ${templateId} deleted successfully`);
-        return true;
-      }
       throw error;
+    }
+
+  },
+
+  async generateReport(template) {
+    try {
+      console.log('Generating report with template:', template);
+
+      // Validate template fields
+      if (!template || !template.type) {
+        throw new Error('Invalid template: Missing required fields');
+      }
+
+      // Ensure metrics are provided
+      const metrics = template.metrics || [
+        'Company Name',
+        'Industry',
+        'Visits',
+        'Positions',
+        'Students Hired',
+        'Average Package',
+        'Job Profiles'
+      ];
+
+      // Create request payload
+      const payload = {
+        ...template,
+        metrics,
+        filters: {
+          startDate: template.filters?.startDate || new Date().toISOString(),
+          endDate: template.filters?.endDate || new Date().toISOString(),
+          industry: template.filters?.industry || 'all',
+          year: template.filters?.year || new Date().getFullYear().toString()
+        }
+      };
+
+      console.log('Sending request with payload:', payload);
+
+      // Make API request
+      const response = await axios.post('reports/generate', payload, {
+        responseType: 'blob',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
+      });
+
+      // Handle the response
+      if (response.data) {
+        // Create Excel file download
+        const url = window.URL.createObjectURL(
+          new Blob([response.data], { 
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          })
+        );
+        
+        const link = document.createElement('a');
+        link.href = url;
+        const fileName = `${template.type}_report_${new Date().toISOString().split('T')[0]}.xlsx`;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        return null;
+      } else {
+        throw new Error('No data received from server');
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      throw new Error(error.response?.data?.message || 'Failed to generate report');
     }
   }
 };
