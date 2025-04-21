@@ -5,12 +5,20 @@ import PlacementDrive from "../schema/placement/placementSchema.js";
 import StudentPlacement from "../schema/placement/studentPlacementSchema.js";
 import Company from "../schema/company/companySchema.js";
 import PDFDocument from 'pdfkit';
+
 import ExcelJS from 'exceljs';
 
 import fs from 'fs';
 import path from 'path';
 import { addStandardHeaders } from '../utils/excelHelpers.js';
 import ReportTemplate from '../schema/report/reportTemplateSchema.js';
+import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const reportRouter = Router();
 
@@ -186,23 +194,21 @@ reportRouter.get('/company', asyncHandler(async (req, res) => {
         if (industry && industry !== 'all') {
             driveQuery['companyDetails.domain'] = industry;
         }
-        if (status && status !== 'all') {
-            driveQuery.driveStatus = status;
-        }
 
         const drives = await PlacementDrive.find(driveQuery)
+            .populate('selectedStudents')
             .select('companyDetails jobProfile selectedStudents driveStatus createdAt')
             .lean();
 
         const companyStats = {};
         drives.forEach(drive => {
-            const companyName = drive.companyDetails.name;
-            const domain = drive.companyDetails.domain;
-            
+            const companyName = drive.companyDetails?.name;
+            if (!companyName) return;
+
             if (!companyStats[companyName]) {
                 companyStats[companyName] = {
                     name: companyName,
-                    industry: domain,
+                    industry: drive.companyDetails?.domain || 'N/A',
                     visits: 0,
                     positions: new Set(),
                     studentsHired: 0,
@@ -213,71 +219,54 @@ reportRouter.get('/company', asyncHandler(async (req, res) => {
 
             companyStats[companyName].visits++;
             
-            if (drive.jobProfile?.designation) {
-                companyStats[companyName].positions.add(drive.jobProfile.designation);
-            }
-
             if (drive.selectedStudents?.length) {
                 companyStats[companyName].studentsHired += drive.selectedStudents.length;
-            }
-
-            if (drive.jobProfile?.ctc) {
-                companyStats[companyName].totalCTC += drive.jobProfile.ctc;
-                companyStats[companyName].ctcCount++;
+                if (drive.jobProfile?.ctc) {
+                    companyStats[companyName].totalCTC += drive.jobProfile.ctc * drive.selectedStudents.length;
+                    companyStats[companyName].ctcCount += drive.selectedStudents.length;
+                }
             }
         });
 
-        // Modified: Create detailed companies array for the main table
+        // Calculate total visits and students hired
+        const totalVisits = Object.values(companyStats).reduce((sum, company) => sum + company.visits, 0);
+        const totalStudentsHired = Object.values(companyStats).reduce((sum, company) => sum + company.studentsHired, 0);
+
+        // Find top hiring company
+        const topHiringCompany = Object.values(companyStats)
+            .reduce((max, company) => 
+                company.studentsHired > (max?.studentsHired || 0) ? company : max, null)?.name || 'N/A';
+
         const companies = Object.values(companyStats).map(company => ({
             name: company.name,
+            industry: company.industry,
             visits: company.visits,
-            // Change this line - return positions as array instead of string
-            positions: Array.from(company.positions), // Return as array instead of joining
             studentsHired: company.studentsHired,
             averagePackage: company.ctcCount > 0 ? 
-                parseFloat((company.totalCTC / company.ctcCount).toFixed(2)) : 0
+                (company.totalCTC / company.ctcCount).toFixed(2) : 0
         }));
 
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        // Replace the industryData reduction
+        // Calculate industry distribution
         const industryData = Object.values(companyStats).reduce((acc, company) => {
-            if (!acc[company.industry]) {
-                acc[company.industry] = { industry: company.industry, count: 0 };
+            const industry = company.industry || 'Other';
+            if (!acc[industry]) {
+                acc[industry] = { industry, count: 0 };
             }
-            acc[company.industry].count++;
+            acc[industry].count++;
             return acc;
         }, {});
 
-        // Convert industryData object to array before sending
         res.json({
             summary: {
                 totalCompanies: Object.keys(companyStats).length,
-                newCompanies: drives.filter(drive => 
-                    drive.createdAt && drive.createdAt >= thirtyDaysAgo
-                ).length,
-                activeCompanies: Object.values(companyStats)
-                    .filter(c => c.studentsHired > 0).length,
-                topIndustry: Object.values(companyStats)
-                    .reduce((acc, curr) => {
-                        if (!acc[curr.industry]) acc[curr.industry] = 0;
-                        acc[curr.industry]++;
-                        return acc;
-                    }, {}),
-                averagePackage: parseFloat((Object.values(companyStats)
-                    .reduce((sum, c) => sum + (c.totalCTC / c.ctcCount || 0), 0) / 
-                    Object.keys(companyStats).length).toFixed(2)) || 0
+                totalVisits,
+                totalStudentsHired,
+                averagePackage: companies.reduce((sum, company) => 
+                    sum + parseFloat(company.averagePackage), 0) / companies.length,
+                topHiringCompany
             },
-            // Convert to array here
-            industryData: Object.values(industryData),
-            companies: companies, // Added: Detailed company data for main table
-            companyList: companies.map(c => ({
-                name: c.name,
-                industry: companyStats[c.name].industry,
-                offers: c.studentsHired,
-                avgCTC: c.averagePackage
-            }))
+            companies,
+            industryData: Object.values(industryData)
         });
 
     } catch (error) {
@@ -329,6 +318,7 @@ reportRouter.get('/student', asyncHandler(async (req, res) => {
       // Use the isPlaced field directly from the student document
       return {
         ...student,
+        rollNumber: student.personalInfo?.rollNumber || 'N/A',
         isPlaced: student.isPlaced || false, // Use the schema field directly
         cgpa: student.academics?.cgpa || 0
       };
@@ -381,7 +371,7 @@ reportRouter.get('/student', asyncHandler(async (req, res) => {
       .map(student => ({
         id: student._id,
         name: student.personalInfo?.name || 'N/A',
-        rollNumber: student.personalInfo?.rollNumber || 'N/A',
+        rollNumber: student.personalInfo.rollNumber || 'N/A',
         department: student.personalInfo?.department || 'N/A',
         batch: student.personalInfo?.batch || 'N/A',
         cgpa: student.academics?.cgpa || 'N/A',
@@ -814,8 +804,7 @@ reportRouter.get('/company/download', asyncHandler(async (req, res) => {
         row.positions.split(', ').filter(Boolean))).size}`,
       studentsHired: formattedData.reduce((sum, row) => sum + row.studentsHired, 0),
       averagePackage: (
-        formattedData.reduce((sum, row) => sum + parseFloat(row.averagePackage || 0), 0) /
-        formattedData.length
+        formattedData.reduce((sum, row) => sum + parseFloat(row.averagePackage || 0), 0) / formattedData.length
       ).toFixed(2),
       jobProfiles: `Unique: ${new Set(formattedData.flatMap(row => 
         row.jobProfiles.split(', ').filter(Boolean))).size}`
@@ -1625,6 +1614,646 @@ reportRouter.post('/generate', asyncHandler(async (req, res) => {
       error: 'Failed to generate report',
       message: error.message
     });
+  }
+}));
+
+// reportRouter.get('/company/charts/download', asyncHandler(async (req, res) => {
+//   try {
+//     // Set proper headers
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', 'attachment; filename=company_charts.pdf');
+    
+//     // Generate PDF using your PDF generation logic
+//     const doc = new PDFDocument();
+    
+//     // Pipe the PDF directly to the response
+//     doc.pipe(res);
+    
+//     // Add your PDF content here
+//     // ... your PDF generation code ...
+    
+//     // End the PDF
+//     doc.end();
+    
+//   } catch (error) {
+//     console.error('Error generating PDF:', error);
+//     res.status(500).json({ 
+//       error: 'Failed to generate PDF',
+//       message: error.message 
+//     });
+//   }
+// }));
+
+// Add this endpoint to handle chart downloads
+// reportRouter.get('/company/charts/download', async (req, res) => {
+//   try {
+//     const doc = new PDFDocument();
+    
+//     // Set response headers
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', 'attachment; filename=company_charts.pdf');
+    
+//     // Pipe the PDF to the response
+//     doc.pipe(res);
+    
+//     // Add your chart generation logic here
+//     // ...
+
+//     // End the PDF document
+//     doc.end();
+    
+//   } catch (error) {
+//     console.error('Error generating PDF:', error);
+//     res.status(500).json({ 
+//       error: 'Failed to generate PDF',
+//       message: error.message 
+//     });
+//   }
+// });
+
+// Helper functions
+function processCompanyData(drives) {
+  const stats = {};
+  drives.forEach(drive => {
+    const name = drive.companyDetails?.name;
+    if (!name) return;
+
+    if (!stats[name]) {
+      stats[name] = {
+        name,
+        industry: drive.companyDetails?.domain || 'Other',
+        studentsHired: 0,
+        totalPackage: 0,
+        offerCount: 0,
+      };
+    }
+
+    const hired = drive.selectedStudents?.length || 0;
+    stats[name].studentsHired += hired;
+    if (drive.jobProfile?.ctc) {
+      stats[name].totalPackage += drive.jobProfile.ctc * hired;
+      stats[name].offerCount += hired;
+    }
+  });
+
+  return Object.values(stats).map(c => ({
+    ...c,
+    averagePackage: c.offerCount > 0 ? (c.totalPackage / c.offerCount) : 0
+  }));
+}
+
+function calculateIndustryDistribution(companies) {
+  const industryStats = {};
+  companies.forEach(c => {
+    const industry = c.industry || 'Other';
+    industryStats[industry] = industryStats[industry] || { industry, count: 0 };
+    industryStats[industry].count++;
+  });
+  return Object.values(industryStats);
+}
+
+// Charts download endpoint
+// reportRouter.get('/company/charts/download', asyncHandler(async (req, res) => {
+//   const { year, industry } = req.query;
+
+//   const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 500, height: 300 });
+//   const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+//   // Set headers first
+//   res.setHeader('Content-Type', 'application/pdf');
+//   res.setHeader('Content-Disposition', 'attachment; filename=company_charts.pdf');
+//   doc.pipe(res); // Stream PDF
+
+//   try {
+//     // Add title and metadata
+//     doc.info.Title = 'Company Analytics Report';
+//     doc.info.Author = 'Training and Placement Cell';
+    
+//     // Add title
+//     doc.font('Helvetica-Bold')
+//        .fontSize(18)
+//        .text('Company Analytics Report', { align: 'center' });
+//     doc.moveDown();
+    
+//     // Add subtitle with date
+//     doc.fontSize(12)
+//        .text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+//     doc.moveDown(2);
+
+//     const drives = await PlacementDrive.find()
+//       .populate('selectedStudents')
+//       .select('companyDetails jobProfile selectedStudents driveStatus createdAt')
+//       .lean();
+
+//     const companyStats = processCompanyData(drives);
+
+//     // Render charts
+//     const [topHiringChart, topPayingChart, industryChart] = await Promise.all([
+//       generateTopHiringChart(chartJSNodeCanvas, companyStats),
+//       generateTopPayingChart(chartJSNodeCanvas, companyStats),
+//       generateIndustryChart(chartJSNodeCanvas, companyStats),
+//     ]);
+
+//     // Add charts to PDF with titles and descriptions
+//     // Top Hiring Companies
+//     doc.fontSize(14).text('Top Hiring Companies', { align: 'center' });
+//     doc.moveDown();
+//     doc.image(topHiringChart, { width: 500, align: 'center' });
+//     doc.moveDown(2);
+
+//     // Add new page for Top Paying Companies
+//     doc.addPage();
+//     doc.fontSize(14).text('Top Paying Companies', { align: 'center' });
+//     doc.moveDown();
+//     doc.image(topPayingChart, { width: 500, align: 'center' });
+//     doc.moveDown(2);
+
+//     // Add new page for Industry Distribution
+//     doc.addPage();
+//     doc.fontSize(14).text('Industry Distribution', { align: 'center' });
+//     doc.moveDown();
+//     doc.image(industryChart, { width: 500, align: 'center' });
+
+//     // End the document
+//     doc.end();
+
+//   } catch (error) {
+//     console.error('Chart generation error:', error);
+//     if (!res.headersSent) {
+//       res.status(500).json({ error: 'Failed to generate charts PDF' });
+//     }
+//   }
+// }));
+
+// Helper functions for chart generation
+async function generateTopHiringChart(canvas, stats) {
+  const data = stats.sort((a, b) => b.studentsHired - a.studentsHired).slice(0, 5);
+  return canvas.renderToBuffer({
+    type: 'bar',
+    data: {
+      labels: data.map(c => c.name),
+      datasets: [{
+        label: 'Students Hired',
+        data: data.map(c => c.studentsHired),
+        backgroundColor: '#82ca9d'
+      }]
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: 'Top Hiring Companies' }
+      }
+    }
+  });
+}
+
+async function generateTopPayingChart(canvas, stats) {
+  const data = stats.sort((a, b) => b.averagePackage - a.averagePackage).slice(0, 5);
+  return canvas.renderToBuffer({
+    type: 'bar',
+    data: {
+      labels: data.map(c => c.name),
+      datasets: [{
+        label: 'Average Package (LPA)',
+        data: data.map(c => c.averagePackage),
+        backgroundColor: '#8884d8'
+      }]
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: 'Top Paying Companies' }
+      }
+    }
+  });
+}
+
+async function generateIndustryChart(canvas, stats) {
+  const data = calculateIndustryDistribution(stats);
+  const COLORS = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#f67019'];
+  return canvas.renderToBuffer({
+    type: 'pie',
+    data: {
+      labels: data.map(i => i.industry),
+      datasets: [{
+        data: data.map(i => i.count),
+        backgroundColor: COLORS
+      }]
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: 'Industry Distribution' }
+      }
+    }
+  });
+}
+
+function truncate(str, maxLen) {
+  return str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : str;
+}
+
+reportRouter.get('/company/charts/download', asyncHandler(async (req, res) => {
+  const { year, industry } = req.query;
+
+  try {
+    // Set headers first
+    res.status(200);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=company_charts.pdf');
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 800, height: 400 });
+    
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Add headers
+    doc.fontSize(16).font('Helvetica-Bold')
+      .text('TRAINING AND PLACEMENT CELL', { align: 'center' });
+    doc.fontSize(14)
+      .text('NATIONAL INSTITUTE OF TECHNOLOGY KURUKSHETRA', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12)
+      .text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+    doc.moveDown(2);
+
+    // Build query based on filters
+    const driveQuery = {};
+    if (industry && industry !== 'all') {
+      driveQuery['companyDetails.domain'] = industry;
+    }
+    if (year) {
+      driveQuery.createdAt = {
+        $gte: new Date(`${year}-01-01`),
+        $lte: new Date(`${year}-12-31`)
+      };
+    }
+
+    // Fetch drives with proper query
+    const drives = await PlacementDrive.find(driveQuery)
+      .populate('selectedStudents')
+      .select('companyDetails jobProfile selectedStudents driveStatus createdAt')
+      .lean();
+
+    // Process company data similar to Excel report
+    const companyStats = {};
+    drives.forEach(drive => {
+      const companyName = drive.companyDetails?.name;
+      if (!companyName) return;
+
+      if (!companyStats[companyName]) {
+        companyStats[companyName] = {
+          name: companyName,
+          industry: drive.companyDetails?.domain || 'N/A',
+          visits: 0,
+          positions: new Set(),
+          studentsHired: 0,
+          totalCTC: 0,
+          ctcCount: 0
+        };
+      }
+
+      companyStats[companyName].visits++;
+      if (drive.jobProfile?.designation) {
+        companyStats[companyName].positions.add(drive.jobProfile.designation);
+      }
+      
+      if (drive.selectedStudents?.length) {
+        companyStats[companyName].studentsHired += drive.selectedStudents.length;
+        if (drive.jobProfile?.ctc) {
+          companyStats[companyName].totalCTC += drive.jobProfile.ctc * drive.selectedStudents.length;
+          companyStats[companyName].ctcCount += drive.selectedStudents.length;
+        }
+      }
+    });
+
+    // Convert to array and calculate averages
+    const companiesData = Object.values(companyStats).map(company => ({
+      name: company.name,
+      industry: company.industry,
+      studentsHired: company.studentsHired,
+      averagePackage: company.ctcCount > 0 ? 
+        (company.totalCTC / company.ctcCount) : 0
+    }));
+
+    // Add company data table
+    doc.fontSize(14).font('Helvetica-Bold')
+      .text('Company Details', { align: 'center' });
+    doc.moveDown();
+
+ 
+doc.fontSize(9).font('Helvetica');
+
+// Optional: Draw header row
+const headerRowHeight = 30;
+const headers = ['Company Name', 'Industry', 'Students Hired', 'Avg Package (LPA)'];
+const colWidths = [150, 150, 90, 130]; // updated to give avg package more space
+
+let xPos = doc.x;
+let yPos = doc.y;
+
+let s= xPos;
+// Header Row
+headers.forEach((header, index) => {
+  doc
+    .rect(xPos, yPos, colWidths[index], headerRowHeight)
+    .fillAndStroke('#F0F0F0', 'black');
+
+  doc
+    .fillColor('black')
+    .font('Helvetica-Bold')
+    .fontSize(10)
+    .text(header, xPos + 2, yPos + 10, {
+      width: colWidths[index] - 4,
+      align: 'center',
+      lineBreak: false,
+      ellipsis: true
+    });
+
+  xPos += colWidths[index];
+});
+
+yPos += headerRowHeight; // move down for data rows
+
+doc.font('Helvetica'); // Reset font
+xPos = doc.x; // Reset xPos for data rows
+
+// Draw company rows
+companiesData.forEach(company => {
+  const columns = [
+    { text: company.name, width: colWidths[0] },
+    { text: company.industry, width: colWidths[1] },
+    { text: company.studentsHired.toString(), width: colWidths[2] },
+    { text: company.averagePackage.toFixed(2), width: colWidths[3] }
+  ];
+
+  // Calculate row height dynamically
+  const heights = columns.map(col =>
+    doc.heightOfString(col.text, { width: col.width - 4 })
+  );
+  const rowHeight = Math.max(...heights) + 10;
+
+  // Check for page break
+  if (yPos + rowHeight > doc.page.height - 50) {
+    doc.addPage();
+    yPos = doc.page.margins.top;
+  }
+
+  xPos = s
+  console.log(xPos)
+
+  columns.forEach((col, index) => {
+    // Draw border box
+    doc
+      .rect(xPos, yPos, col.width, rowHeight)
+      .stroke();
+
+    // Draw text inside cell with padding
+    doc.text(col.text, xPos + 2, yPos + 5, {
+      width: col.width - 4,
+      align: 'center',
+      lineBreak: false,
+      ellipsis: true
+    });
+
+    xPos += col.width;
+  });
+ 
+  yPos += rowHeight;
+});
+
+    
+    doc.moveDown(3);
+
+    // Generate and add charts
+    const [topHiringChart, topPayingChart, industryChart] = await Promise.all([
+      generateTopHiringChart(chartJSNodeCanvas, companiesData),
+      generateTopPayingChart(chartJSNodeCanvas, companiesData),
+      generateIndustryChart(chartJSNodeCanvas, companiesData)
+    ]);
+
+    // Add charts with proper spacing
+    doc.addPage();
+    doc.fontSize(14).font('Helvetica-Bold')
+      .text('Top Hiring Companies', { align: 'center' });
+    doc.image(topHiringChart, { width: 500, align: 'center' });
+
+    doc.addPage();
+    doc.fontSize(14).text('Top Paying Companies', { align: 'center' });
+    doc.image(topPayingChart, { width: 500, align: 'center' });
+
+    doc.addPage();
+    doc.fontSize(14).text('Industry Distribution', { align: 'center' });
+    doc.image(industryChart, { width: 500, align: 'center' });
+
+    doc.end();
+
+  } catch (error) {
+    console.error('Chart generation error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to generate charts PDF',
+        message: error.message 
+      });
+    }
+  }
+}));
+
+// Add this new endpoint for placement PDF download
+reportRouter.get('/placement/charts/download', asyncHandler(async (req, res) => {
+  try {
+    // Set headers
+    res.status(200);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=placement_report.pdf');
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    doc.pipe(res);
+
+    // Add headers
+    doc.fontSize(16).font('Helvetica-Bold')
+      .text('TRAINING AND PLACEMENT CELL', { align: 'center' });
+    doc.fontSize(14)
+      .text('NATIONAL INSTITUTE OF TECHNOLOGY KURUKSHETRA', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12)
+      .text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+    doc.moveDown(2);
+
+    // Fetch placement data by department
+    const departments = [
+      'Civil Engineering',
+      'Computer Engineering',
+      'Information Technology', 
+      'Electronics & Communication Engineering',
+      'Electrical Engineering',
+      'Mechanical Engineering',
+      'Production & Industrial Engineering'
+    ];
+
+    const placementData = await Promise.all(departments.map(async (dept) => {
+      const deptStudents = await Student.find({
+        'personalInfo.department': dept
+      }).select('isPlaced applications personalInfo').populate({
+        path: 'applications',
+        populate: {
+          path: 'placementDrive',
+          select: 'jobProfile companyDetails'
+        }
+      }).lean();
+
+      const eligibleStudents = deptStudents.length;
+      const placedStudents = deptStudents.filter(s => s.isPlaced).length;
+      const validOffers = deptStudents
+        .flatMap(student => student.applications || [])
+        .filter(app => app?.placementDrive?.jobProfile?.ctc > 0);
+
+      const packages = validOffers.map(offer => offer.placementDrive.jobProfile.ctc);
+      const sortedPackages = [...packages].sort((a, b) => a - b);
+      
+      return {
+        department: dept,
+        eligible: eligibleStudents,
+        offers: validOffers.length,
+        placed: placedStudents,
+        placementPercentage: eligibleStudents > 0 ? 
+          ((placedStudents / eligibleStudents) * 100).toFixed(2) : '0',
+        packageRange: packages.length ? 
+          `${Math.min(...packages).toFixed(2)}-${Math.max(...packages).toFixed(2)}` : 'N/A',
+        medianPackage: packages.length ? 
+          (packages.length % 2 === 0 ? 
+            ((sortedPackages[packages.length/2 - 1] + sortedPackages[packages.length/2]) / 2) : 
+            sortedPackages[Math.floor(packages.length/2)]).toFixed(2) : 'N/A',
+        averagePackage: packages.length ? 
+          (packages.reduce((sum, pkg) => sum + pkg, 0) / packages.length).toFixed(2) : 'N/A'
+      };
+    }));
+
+    // Draw table
+    const headers = [
+      'Department', 'Eligible', 'Offers', 'Placed', '% Placed', 
+      'Package Range', 'Median Package', 'Avg Package'
+    ];
+    const colWidths = [120, 50, 50, 50, 60, 80, 60, 60];
+    const headerHeight = 30;
+    
+    let xPos = doc.x;
+    let yPos = doc.y;
+    let s1= xPos;
+    // Draw header row
+    headers.forEach((header, index) => {
+      doc.rect(xPos, yPos, colWidths[index], headerHeight)
+         .fillAndStroke('#F0F0F0', 'black');
+      
+      doc.fillColor('black')
+         .font('Helvetica-Bold')
+         .fontSize(8)
+         .text(header, xPos + 2, yPos + 10, {
+           width: colWidths[index] - 4,
+           align: 'center',
+           lineBreak: false
+         });
+
+      xPos += colWidths[index];
+    });
+   // Reset xPos for data rows
+    // Draw data rows
+    yPos += headerHeight;
+    placementData.forEach(data => {
+      xPos = doc.x;
+      const rowHeight = 25;
+
+      if (yPos + rowHeight > doc.page.height - 50) {
+        doc.addPage();
+        yPos = doc.page.margins.top;
+      }
+      xPos = s1;
+      // Draw row cells
+      const cells = [
+        data.department,
+        data.eligible.toString(),
+        data.offers.toString(),
+        data.placed.toString(),
+        data.placementPercentage,
+        data.packageRange,
+        data.medianPackage,
+        data.averagePackage
+      ];
+
+      cells.forEach((text, index) => {
+        doc.rect(xPos, yPos, colWidths[index], rowHeight).stroke();
+        doc.font('Helvetica')
+           .fontSize(8)
+           .text(text, xPos + 2, yPos + 8, {
+             width: colWidths[index] - 4,
+             align: 'center',
+             lineBreak: false
+           });
+        xPos += colWidths[index];
+      });
+
+      yPos += rowHeight;
+    });
+
+    // Add summary row
+    const summary = {
+      department: 'Total',
+      eligible: placementData.reduce((sum, dept) => sum + dept.eligible, 0),
+      offers: placementData.reduce((sum, dept) => sum + dept.offers, 0),
+      placed: placementData.reduce((sum, dept) => sum + dept.placed, 0),
+      placementPercentage: (
+        placementData.reduce((sum, dept) => sum + dept.placed, 0) / 
+        placementData.reduce((sum, dept) => sum + dept.eligible, 0) * 100
+      ).toFixed(2),
+      packageRange: `${
+        Math.min(...placementData.map(dept => 
+          parseFloat(dept.packageRange.split('-')[0])
+        )).toFixed(2)
+      }-${
+        Math.max(...placementData.map(dept => 
+          parseFloat(dept.packageRange.split('-')[1])
+        )).toFixed(2)
+      }`,
+      medianPackage: (
+        placementData.reduce((sum, dept) => sum + parseFloat(dept.medianPackage), 0) / 
+        placementData.length
+      ).toFixed(2),
+      averagePackage: (
+        placementData.reduce((sum, dept) => sum + parseFloat(dept.averagePackage), 0) / 
+        placementData.length
+      ).toFixed(2)
+    };
+
+    // Draw summary row
+    xPos = s1;
+    doc.font('Helvetica-Bold').fillColor('black');
+    [
+      summary.department,
+      summary.eligible,
+      summary.offers,
+      summary.placed,
+      summary.placementPercentage,
+      summary.packageRange,
+      summary.medianPackage,
+      summary.averagePackage
+    ].forEach((text, index) => {
+      doc.rect(xPos, yPos, colWidths[index], 30)
+         .fillAndStroke('#F0F0F0', 'black');
+      doc.text(text.toString(), xPos + 2, yPos + 10, {
+        width: colWidths[index] - 4,
+        align: 'center'
+      });
+      xPos += colWidths[index];
+    });
+
+    doc.end();
+
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to generate placement PDF',
+        message: error.message 
+      });
+    }
   }
 }));
 

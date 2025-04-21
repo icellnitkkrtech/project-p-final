@@ -19,9 +19,10 @@ import {
   Alert,
   Card,
   CardContent,
+  InputAdornment,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { Download, FilterList } from '@mui/icons-material';
+import { Download, FilterList, Search } from '@mui/icons-material';
 import {
   BarChart,
   Bar,
@@ -42,6 +43,22 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
+const THEME_COLORS = {
+  primary: {
+    light: '#f5f5f5',
+    main: '#757575',
+    dark: '#424242',
+  },
+  success: {
+    light: '#ebf5eb',
+    main: '#66bb6a',
+  },
+  warning: {
+    light: '#fff8e1',
+    main: '#ffa726',
+  },
+};
+
 const CompanyReports = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
@@ -54,6 +71,9 @@ const CompanyReports = () => {
     startDate: dayjs().subtract(1, 'year'),
     endDate: dayjs(),
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const fetchData = async () => {
     setLoading(true);
@@ -119,6 +139,36 @@ const CompanyReports = () => {
     } catch (error) {
       console.error('Error downloading company report:', error);
       setError('Failed to download report. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChartDownload = async () => {
+    try {
+      setLoading(true);
+      const response = await reportService.downloadCharts('company', filters);
+      
+      // Create blob and download
+      const url = window.URL.createObjectURL(
+        new Blob([response], { type: 'application/pdf' })
+      );
+
+      // Create and trigger download
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `company_charts_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (error) {
+      console.error('Error downloading charts:', error);
+      setError('Failed to download charts. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -209,6 +259,15 @@ const CompanyReports = () => {
                   >
                     {loading ? 'Downloading...' : 'Download Report'}
                   </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<Download />}
+                    onClick={handleChartDownload}
+                    disabled={loading}
+                    sx={{ ml: 1 }}
+                  >
+                    Download Charts
+                  </Button>
                 </Grid>
               </Grid>
                           </Grid>
@@ -221,6 +280,26 @@ const CompanyReports = () => {
               </Typography>
             )}
           </Paper>
+        </Grid>
+
+        {/* Add a search field above the table */}
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            margin="normal"
+            variant="outlined"
+            label="Search Companies"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              )
+            }}
+          />
         </Grid>
 
         {/* Loading State */}
@@ -237,32 +316,95 @@ const CompanyReports = () => {
           <>
             <Grid item xs={12}>
               <TableContainer component={Paper}>
-                <Table>
+                <Table sx={{ minWidth: 650 }}>
                   <TableHead>
-                    <TableRow>
-                      <TableCell>Company Name</TableCell>
-                      <TableCell align="right">Visits</TableCell>
-                      <TableCell>Positions</TableCell>
-                      <TableCell align="right">Students Hired</TableCell>
-                      <TableCell align="right">Average Package</TableCell>
+                    <TableRow sx={{ backgroundColor: 'grey.100' }}>
+                      <TableCell sx={{ 
+                        fontWeight: 600, 
+                        color: 'grey.900',
+                        borderBottom: '2px solid #e0e0e0'
+                      }}>Company Name</TableCell>
+                      <TableCell sx={{ 
+                        fontWeight: 600, 
+                        color: 'grey.900',
+                        borderBottom: '2px solid #e0e0e0'
+                      }}>Industry</TableCell>
+                      <TableCell sx={{ 
+                        fontWeight: 600, 
+                        color: 'grey.900',
+                        borderBottom: '2px solid #e0e0e0'
+                      }} align="right">Visits</TableCell>
+                      <TableCell sx={{ 
+                        fontWeight: 600, 
+                        color: 'grey.900',
+                        borderBottom: '2px solid #e0e0e0'
+                      }} align="right">Students Hired</TableCell>
+                      <TableCell sx={{ 
+                        fontWeight: 600, 
+                        color: 'grey.900',
+                        borderBottom: '2px solid #e0e0e0'
+                      }} align="right">Average Package (LPA)</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {data.companies?.map((company) => (
-                      <TableRow key={company.name}>
-                        <TableCell component="th" scope="row">
-                          {company.name}
-                        </TableCell>
-                        <TableCell align="right">{company.visits}</TableCell>
-                        <TableCell>
-                          {Array.isArray(company.positions) ? 
-                            company.positions.join(', ') : 
-                            company.positions || 'N/A'}
-                        </TableCell>
-                        <TableCell align="right">{company.studentsHired}</TableCell>
-                        <TableCell align="right">{company.averagePackage}</TableCell>
-                      </TableRow>
-                    ))}
+                    {data.companies
+                      ?.filter(company => {
+                        if (!searchQuery) return true;
+                        const searchTermLower = searchQuery.toLowerCase();
+                        const companyName = company?.name?.toLowerCase() || '';
+                        const companyIndustry = company?.industry?.toLowerCase() || '';
+                        return companyName.includes(searchTermLower) || 
+                               companyIndustry.includes(searchTermLower);
+                      })
+                      ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      ?.map((company, index) => (
+                        <TableRow 
+                          key={company.name || index}
+                          sx={{ 
+                            '&:nth-of-type(odd)': { backgroundColor: 'grey.50' },
+                            '&:hover': { backgroundColor: '#fafafa' },
+                            borderBottom: '1px solid #e0e0e0'
+                          }}
+                        >
+                          <TableCell sx={{ fontWeight: 500, color: 'grey.900' }}>
+                            {company.name || 'N/A'}
+                          </TableCell>
+                          <TableCell sx={{ color: 'grey.800' }}>
+                            {company.industry || 'N/A'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ color: 'grey.800' }}>
+                            {company.visits || 0}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Box sx={{ 
+                              display: 'inline-block',
+                              backgroundColor: company.studentsHired > 0 ? '#f0f7f0' : '#fff3e0',
+                              color: company.studentsHired > 0 ? '#2e7d32' : '#ed6c02',
+                              px: 2,
+                              py: 0.5,
+                              borderRadius: 1,
+                              border: '1px solid',
+                              borderColor: company.studentsHired > 0 ? '#a5d6a7' : '#ffe0b2'
+                            }}>
+                              {company.studentsHired || 0}
+                            </Box>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography
+                              sx={{
+                                color: theme => {
+                                  const value = parseFloat(company.averagePackage);
+                                  if (value >= 20) return '#2e7d32';
+                                  if (value >= 10) return '#1976d2';
+                                  return 'grey.800';
+                                }
+                              }}
+                            >
+                              {parseFloat(company.averagePackage || 0).toFixed(2)}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -305,35 +447,111 @@ const CompanyReports = () => {
               </Card>
             </Grid>
 
-            <Card sx={{ mt: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Company List
-                </Typography>
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Industry</TableCell>
-                        <TableCell>Offers</TableCell>
-                        <TableCell>Avg. CTC (LPA)</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {data.companyList && data.companyList.map((company, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{company.name}</TableCell>
-                          <TableCell>{company.industry}</TableCell>
-                          <TableCell>{company.offers}</TableCell>
-                          <TableCell>{company.avgCTC}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
+            {/* Top Paying Companies Chart */}
+            <Grid item xs={12} md={6}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Top Paying Companies
+                  </Typography>
+                  <Box height={300}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={data.companies
+                          ?.sort((a, b) => parseFloat(b.averagePackage) - parseFloat(a.averagePackage))
+                          ?.slice(0, 5)}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis label={{ value: 'Package (LPA)', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip />
+                        <Bar dataKey="averagePackage" fill="#8884d8" name="Average Package">
+                          {data.companies?.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Top Hiring Companies Chart */}
+            <Grid item xs={12} md={6}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Top Hiring Companies
+                  </Typography>
+                  <Box height={300}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={data.companies
+                          ?.sort((a, b) => b.studentsHired - a.studentsHired)
+                          ?.slice(0, 5)}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis label={{ value: 'Students Hired', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip />
+                        <Bar dataKey="studentsHired" fill="#82ca9d" name="Students Hired">
+                          {data.companies?.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Replace the Lowest Hiring Companies Chart with Industry-wise Package Chart */}
+            <Grid item xs={12} md={6}>
+              <Card sx={{ height: '100%', mt: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Average Package by Industry
+                  </Typography>
+                  <Box height={300}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={Object.values(data.companies.reduce((acc, company) => {
+                          const industry = company.industry || 'Other';
+                          if (!acc[industry]) {
+                            acc[industry] = {
+                              industry,
+                              averagePackage: 0,
+                              count: 0
+                            };
+                          }
+                          acc[industry].averagePackage += parseFloat(company.averagePackage || 0);
+                          acc[industry].count += 1;
+                          return acc;
+                        }, {})).map(item => ({
+                          industry: item.industry,
+                          averagePackage: (item.averagePackage / item.count).toFixed(2)
+                        }))}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="industry" />
+                        <YAxis label={{ value: 'Average Package (LPA)', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip />
+                        <Bar dataKey="averagePackage" fill="#8884d8" name="Average Package">
+                          {data.companies?.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
           </>
         )}
       </Grid>

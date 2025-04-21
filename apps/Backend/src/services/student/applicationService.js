@@ -110,7 +110,7 @@ async respondToOffer(applicationId, response) {
       await this.studentService.updatePlacementStatus(
         application.student, 
         true, 
-        application.placementDrive.company.name
+        application.placementDrive.companyDetails.name
       );
     }
     

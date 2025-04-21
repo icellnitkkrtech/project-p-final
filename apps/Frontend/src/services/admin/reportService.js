@@ -82,7 +82,7 @@ const mockTemplates = [
 // Local storage key for templates
 const TEMPLATES_STORAGE_KEY = 'report_templates';
 
-const reportService = {
+export const reportService = {
   // Get all reports with filters
   getReports: async (filters, pagination) => {
     try {
@@ -435,7 +435,24 @@ const reportService = {
       console.error('Error generating report:', error);
       throw new Error(error.response?.data?.message || 'Failed to generate report');
     }
-  }
+  },
+
+  // Add this method to your reportService object
+  downloadCharts: async (type, filters) => {
+    try {
+      const response = await axios.get(`reports/${type}/charts/download`, {
+        params: filters,
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/pdf'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error downloading charts:', error);
+      throw error;
+    }
+      }
 };
 
 // Mock data functions for development
