@@ -99,7 +99,7 @@ const authService = {
 
   logout: async () => {
     try {
-      const response = await axiosInstance.post('/api/v1/user/logout');
+      const response = await axiosInstance.post('/user/logout');
       localStorage.clear();
       return response.data;
     } catch (error) {

@@ -2,38 +2,75 @@ import User from '../schema/userSchema.js';
 import apiResponse from '../utils/apiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import jsonwebtoken from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 const { verify } = jsonwebtoken;
 
-const authVerify = asyncHandler(async (req, res, next) => {
+const authVerify = async (req, res, next) => {
   try {
-    const token = req.cookies?.authToken || req.header("Authorization")?.replace("Bearer ", "");
+    // Get token from headers or query params
+    const token = 
+      (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') 
+        ? req.headers.authorization.split(' ')[1] 
+        : null) ||
+      (req.cookies && req.cookies.token) ||
+      req.query.token;
     
     if (!token) {
-      return res.status(401).json(new apiResponse(401, null, "Unauthorized request"));
+      console.log("No token found in request");
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: No token provided"
+      });
     }
-
-    const decodedToken = verify(token, process.env.ACCESS_TOKEN_SECRET);
-    console.log("Decoded token:", { 
-      userId: decodedToken?._id, 
-      role: decodedToken?.role,
-      email: decodedToken?.email
-    });
-    const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
+    
+    console.log("Token received in middleware:", token.substring(0, 20) + "...");
+    console.log("Using secret key:", process.env.ACCESS_TOKEN_SECRET ? "Secret exists" : "Secret missing");
+    
+    // Verify token using the correct secret
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    
+    if (!decoded || !decoded._id) {
+      console.log("Invalid token payload:", decoded);
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Invalid token"
+      });
+    }
+    
+    // Find user by ID
+    const user = await User.findById(decoded._id);
     
     if (!user) {
-      return res.status(401).json(new apiResponse(401, null, "Invalid token"));
+      console.log("No user found for ID:", decoded._id);
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: User not found"
+      });
     }
-
+    
+    // Attach user to request
     req.user = user;
-    req.token = token;
+    console.log("User authenticated:", user._id);
+    
     next();
   } catch (error) {
-    console.error("Auth Error:", error);
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json(new apiResponse(401, null, "Token expired"));
+    console.error("Auth middleware error:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    
+    if (error.name === 'JsonWebTokenError' && error.message === 'secret or public key must be provided') {
+      console.error("Environment variables:", {
+        ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET ? "exists" : "missing",
+        REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET ? "exists" : "missing",
+        NODE_ENV: process.env.NODE_ENV
+      });
     }
-    return res.status(401).json(new apiResponse(401, null, "Invalid token"));
+    
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: " + error.message
+    });
   }
-});
+};
 
 export default authVerify;
