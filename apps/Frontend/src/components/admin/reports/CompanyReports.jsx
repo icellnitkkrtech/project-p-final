@@ -95,9 +95,29 @@ const CompanyReports = () => {
   const handleDownload = async () => {
     try {
       setLoading(true);
-      await reportService.downloadReport('company', filters);
+      setError(null);
+      const response = await reportService.generateReport({
+        type: 'company',
+        format: 'xls',
+        title: 'Company Placement Report',
+        headers: [
+          { header: 'Company Name', key: 'companyName', width: 30 },
+          { header: 'Industry', key: 'industry', width: 20 },
+          { header: 'Visits', key: 'visits', width: 15 },
+          { header: 'Positions', key: 'positions', width: 25 },
+          { header: 'Students Hired', key: 'studentsHired', width: 20 },
+          { header: 'Average Package', key: 'averagePackage', width: 20 },
+          { header: 'Job Profiles', key: 'jobProfiles', width: 30 }
+        ],
+        filters: {
+          startDate: filters.startDate.toISOString(),
+          endDate: filters.endDate.toISOString(),
+          industry: filters.industry,
+          year: filters.year
+        }
+      });
     } catch (error) {
-      console.error('Error downloading report:', error);
+      console.error('Error downloading company report:', error);
       setError('Failed to download report. Please try again.');
     } finally {
       setLoading(false);
@@ -191,7 +211,7 @@ const CompanyReports = () => {
                   </Button>
                 </Grid>
               </Grid>
-            </Grid>
+                          </Grid>
 
             {showDebug && <FilterDebug filters={filters} />}
             

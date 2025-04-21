@@ -41,7 +41,7 @@ import {
   Email,
   Phone
 } from '@mui/icons-material';
-import { Outlet, useParams, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom"; // Removed useParams import
 import axios from "./axios";
 import { styled, alpha } from '@mui/material/styles';
 import CompanyProfile from './CompanyProfile';
@@ -102,7 +102,7 @@ const itemVariants = {
 };
 
 const CompanyDashboard = () => {
-  const { id } = useParams();
+  // const { id } = useParams(); // Ensure id is removed if not used elsewhere, which it isn't now
   const theme = useTheme();
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
@@ -115,16 +115,29 @@ const CompanyDashboard = () => {
 
   useEffect(() => {
     const fetchCompany = async () => {
+      const companyId = localStorage.getItem('companyId'); // Get ID from local storage
+      if (!companyId) {
+        console.error("Company ID not found in local storage.");
+        navigate('/company/login'); // Redirect to login if no ID
+        return;
+      }
       try {
-        const response = await axios.get(`/company/getone/${id}`);
+        const response = await axios.get(`/company/getone/${companyId}`); // Use companyId from local storage
         console.log(response.data.data.data);
         setCompany(response.data.data.data);
       } catch (error) {
           console.log(error.response?.data?.message || "Failed to fetch company data");
+          // Handle fetch error, maybe redirect to login or show error message
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            navigate('/company/login'); // Redirect if unauthorized
+          } else {
+            // Optionally show an error message to the user
+            console.error("An unexpected error occurred while fetching company data.");
+          }
       }
     };
     fetchCompany();
-  }, [id]);
+  }, [navigate]); // Add navigate to dependency array
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -168,7 +181,7 @@ const CompanyDashboard = () => {
         color: 'white'
       }}>
         <Typography variant="h6" noWrap component="div">
-          Tech Corp
+          {company?.companyName || 'Company Portal'} {/* Use fetched company name */}
         </Typography>
       </Toolbar>
       <Divider />
@@ -179,8 +192,15 @@ const CompanyDashboard = () => {
             key={item.text}
             selected={activeTab === item.index}
             onClick={() => {
-              setActiveTab(item.index);
-              navigate(`/company/${id}/${item.path}`);
+              const companyId = localStorage.getItem('companyId'); // Check if ID exists for context
+              if (companyId) {
+                setActiveTab(item.index);
+                navigate(`/company/${item.path}`); // Navigate without ID in URL
+                // console.log("HIIIII" , item.path);
+              } else {
+                 console.error("Company ID not found for navigation.");
+                 navigate('/company/login'); // Redirect if ID missing
+              }
             }}
             sx={{
               cursor: 'pointer',
@@ -247,7 +267,7 @@ const CompanyDashboard = () => {
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Email fontSize="small" />
-              <Typography variant="body2">support@techcorp.com</Typography>
+              <Typography variant="body2">{company?.email || 'support@example.com'}</Typography> {/* Use fetched email */}
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Phone fontSize="small" />
@@ -274,9 +294,9 @@ const CompanyDashboard = () => {
               </Badge>
             </IconButton>
 
-            <IconButton color="inherit">
+            {/* <IconButton color="inherit">
               <SettingsIcon />
-            </IconButton>
+            </IconButton> */}
 
             <Avatar
               onClick={handleProfileMenuOpen}
@@ -286,7 +306,7 @@ const CompanyDashboard = () => {
                 '&:hover': { bgcolor: alpha(theme.palette.common.white, 0.3) }
               }}
             >
-              TC
+              {company?.companyName?.charAt(0).toUpperCase() || 'C'} {/* Use first letter of company name */}
             </Avatar>
           </Stack>
         </Toolbar>
@@ -340,16 +360,30 @@ const CompanyDashboard = () => {
         onClose={handleProfileMenuClose}
         sx={{ mt: 2 }}
       >
-        <MenuItem onClick={handleProfileMenuClose}>
+        <MenuItem onClick={() => {
+            const companyId = localStorage.getItem('companyId'); // Check if ID exists
+            if (companyId) {
+                navigate(`/company/profile`); // Navigate to profile without ID in URL
+                setActiveTab(1); // Set profile tab active (assuming index 1)
+            } else {
+                navigate('/company/login'); // Redirect if ID missing
+            }
+            handleProfileMenuClose();
+        }}>
           <PersonIcon sx={{ mr: 1 }} /> Profile
         </MenuItem>
-        <MenuItem onClick={handleProfileMenuClose}>
+        {/* <MenuItem onClick={handleProfileMenuClose}>
           <SettingsIcon sx={{ mr: 1 }} /> Settings
-        </MenuItem>
+        </MenuItem> */}
         <Divider />
-        <MenuItem onClick={handleProfileMenuClose}>
+        {/* <MenuItem onClick={() => {
+            localStorage.removeItem('companyId'); // Clear companyId on logout
+            localStorage.removeItem('authToken'); // Clear token on logout
+            navigate('/company/login'); // Redirect to login page
+            handleProfileMenuClose();
+        }}>
           <LogoutIcon sx={{ mr: 1 }} /> Logout
-        </MenuItem>
+        </MenuItem> */}
       </Menu>
 
       <Menu

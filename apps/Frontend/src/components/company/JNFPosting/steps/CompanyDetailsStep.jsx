@@ -73,6 +73,7 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
             onChange={handleCompanyInputChange}
             variant="outlined"
             required
+            disabled
           />
 
           {/* Email Address */}
@@ -85,6 +86,7 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
             onChange={handleCompanyInputChange}
             variant="outlined"
             required
+            disabled
           />
 
           {/* Website */}
@@ -96,6 +98,7 @@ const CompanyDetailsStep = ({ formData, handleCompanyInputChange }) => {
             value={companyDetails.website || ''}
             onChange={handleCompanyInputChange}
             variant="outlined"
+            disabled
           />
 
           {/* Company Type */}
