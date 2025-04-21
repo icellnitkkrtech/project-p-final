@@ -375,33 +375,100 @@ const StudentReports = () => {
 
             <Card sx={{ mt: 3 }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Student List
-                </Typography>
-                <TableContainer component={Paper}>
-                  <Table>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    Student Details
+                  </Typography>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total Records: {data.studentList?.length || 0}
+                  </Typography>
+                </Box>
+                <TableContainer 
+                  component={Paper} 
+                  sx={{ 
+                    boxShadow: 2,
+                    "& .MuiTableCell-head": {
+                      backgroundColor: "#f5f5f5",
+                      fontWeight: 'bold'
+                    },
+                    "& .MuiTableRow-root:nth-of-type(even)": {
+                      backgroundColor: "#fafafa"
+                    },
+                    "& .MuiTableRow-root:hover": {
+                      backgroundColor: "#f5f5f5"
+                    }
+                  }}
+                >
+                  <Table sx={{ minWidth: 800 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Department</TableCell>
-                        <TableCell>CGPA</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Company</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Roll No.</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Department</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>CGPA</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Placement Status</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Company</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Package (LPA)</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {data.studentList && data.studentList.map((student, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{student.name}</TableCell>
+                        <TableRow 
+                          key={student.rollNo || index}
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell>{student.rollNumber}</TableCell>
+                         
+                          <TableCell sx={{ fontWeight: 500 }}>{student.name}</TableCell>
                           <TableCell>{student.department}</TableCell>
-                          <TableCell>{student.cgpa}</TableCell>
-                          <TableCell>{student.status}</TableCell>
-                          <TableCell>{student.company || 'N/A'}</TableCell>
+                          <TableCell>{student.cgpa?.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Box
+                              sx={{
+                                backgroundColor: student.status === 'Placed' ? '#e8f5e9' : '#ffebee',
+                                color: student.status === 'Placed' ? '#2e7d32' : '#c62828',
+                                py: 0.5,
+                                px: 1.5,
+                                borderRadius: 1,
+                                display: 'inline-block',
+                                fontSize: '0.875rem',
+                                fontWeight: 500
+                              }}
+                            >
+                              {student.status}
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            {student.company || (
+                              <Typography variant="body2" color="text.secondary">
+                                Not Placed
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {student.package ? (
+                              `₹${student.package.toFixed(2)}`
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                -
+                              </Typography>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
+                {data.studentList?.length === 0 && (
+                  <Box sx={{ py: 3, textAlign: 'center' }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      No student records found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Try adjusting your filters to see more results
+                    </Typography>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           </>

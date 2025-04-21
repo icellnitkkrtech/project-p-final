@@ -108,6 +108,35 @@ const PlacementReports = () => {
       setLoading(false);
     }
   };
+  const handleChartDownload = async () => {
+      try {
+        setLoading(true);
+        const response = await reportService.downloadCharts('placement', filters);
+        
+        // Create blob and download
+        const url = window.URL.createObjectURL(
+          new Blob([response], { type: 'application/pdf' })
+        );
+  
+        // Create and trigger download
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `placement_charts_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+  
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+  
+      } catch (error) {
+        console.error('Error downloading charts:', error);
+        setError('Failed to download charts. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -211,7 +240,7 @@ const PlacementReports = () => {
                   <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                     <Button 
                       variant="outlined" 
-                      onClick={() => handleDownload('pdf')}
+                      onClick={() => handleChartDownload()}
                       disabled={loading}
                       startIcon={<DownloadIcon />}
                     >
