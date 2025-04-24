@@ -108,6 +108,21 @@ dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
         
         // Calculate placed students (students who have been selected)
         // Using the same logic as in placement-progress endpoint
+
+        // Create a copy of the student query and add isPlaced=true to find placed students
+        const placedStudentQuery = { ...studentQuery, isPlaced: true };
+
+        // Count placed students directly from the Student collection
+        const placedStudents = await Student.countDocuments(placedStudentQuery);
+        console.log(`Placed students (with isPlaced=true): ${placedStudents}`);
+
+        // Get all placed students with their placement dates
+        const placedStudentDetails = await Student.find(placedStudentQuery)
+            .select('_id placementDate')
+            .lean();
+
+        console.log(`Placed students with details: ${placedStudentDetails.length}`);
+
         const placedStudentIds = new Set(); // To avoid counting duplicates
         let totalPackage = 0;
         
@@ -153,8 +168,6 @@ dashboardRouter.get('/analytics', asyncHandler(async (req, res) => {
             }
         }
         
-        const placedStudents = placedStudentIds.size;
-        console.log(`Placed students (unique): ${placedStudents}`);
         console.log(`Total package sum: ${totalPackage}`);
         
         // Calculate placement rate and average package
