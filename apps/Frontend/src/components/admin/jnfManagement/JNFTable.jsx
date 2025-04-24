@@ -15,6 +15,22 @@ import ActionButtons from './ActionButtons';
 import { Delete } from '@mui/icons-material';
 import jnfService from '../../../services/admin/jnfService';
 
+const encodeJnfId = (id) => {
+    // Create a hash from the MongoDB ID
+    const hash = btoa(id)
+      // Keep only alphanumeric characters
+      .replace(/[^a-zA-Z0-9]/g, '')
+      // Convert to uppercase
+      .toUpperCase();
+    
+    // Take first 2 letters and 3 numbers, or pad if needed
+    const letters = (hash.match(/[A-Z]/g) || ['A', 'A']).slice(0, 2);
+    const numbers = (hash.match(/[0-9]/g) || ['0', '0', '0']).slice(0, 3);
+    
+    // Combine to create 5-char code
+    return `${letters.join('')}${numbers.join('')}`;
+};
+
 const JNFTable = ({ jnfs, onView, onDelete, onReview, isLoading }) => {
     const [expanded, setExpanded] = useState(null);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -122,7 +138,20 @@ const JNFTable = ({ jnfs, onView, onDelete, onReview, isLoading }) => {
                             {jnfs.map((job) => (
                                 <React.Fragment key={job._id}>
                                     <TableRow hover>
-                                        <TableCell>{job._id}</TableCell>
+                                        <TableCell>
+                                            <Tooltip title={job._id} arrow placement="top">
+                                                <Box sx={{ 
+                                                    fontFamily: 'monospace',
+                                                    fontWeight: 'medium',
+                                                    bgcolor: 'grey.100',
+                                                    p: 0.5,
+                                                    borderRadius: 1,
+                                                    display: 'inline-block'
+                                                }}>
+                                                    JNF-{encodeJnfId(job._id)}
+                                                </Box>
+                                            </Tooltip>
+                                        </TableCell>
                                         <TableCell>{job.companyDetails.name}</TableCell>
                                         <TableCell>{job.companyDetails.domain}</TableCell>
                                         <TableCell align="center">
