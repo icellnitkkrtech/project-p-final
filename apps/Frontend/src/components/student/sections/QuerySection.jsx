@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   QuestionAnswer,
@@ -30,10 +30,19 @@ import {
   Chip,
   IconButton,
   DialogContentText,
+  CircularProgress,
 } from "@mui/material";
+import { useSnackbar } from 'notistack';
+import { queryService } from '../../../services/queryService';
+import { setupWebSocket } from '../../../utils/websocket';
+import  {useAuthContext } from '../../../contexts/AuthContext';
 
 const QuerySection = () => {
-  const [queries, setQueries] = useState(dummyQueries);
+  const { user, isAuthenticated } = useAuthContext();
+  const { enqueueSnackbar } = useSnackbar();
+  
+  const [loading, setLoading] = useState(false);
+  const [queries, setQueries] = useState([]);
   const [openNew, setOpenNew] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
@@ -41,23 +50,107 @@ const QuerySection = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedQuery, setSelectedQuery] = useState(null);
   const [newQuery, setNewQuery] = useState({
-    subject: "",
-    description: "",
-    category: "",
-    priority: "medium",
+    subject: '',
+    description: '',
+    category: 'technical',
+    priority: 'medium',
+    updates: [] // Add this line
   });
 
-  const handleSubmitQuery = () => {
-    const query = {
-      id: Date.now().toString(),
-      ...newQuery,
-      status: "pending",
-      createdAt: new Date(),
-      updates: [],
+  // Add useMemo for filtered queries
+  const filteredQueries = useMemo(() => {
+    if (!queries) return [];
+    
+    return queries.filter(query => {
+      const matchesSearch = query.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        query.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [queries, searchTerm, statusFilter]);
+
+  // Fetch queries on component mount
+  useEffect(() => {
+    const initializeQueries = async () => {
+      if (!isAuthenticated || !user?._id) {
+        console.log('Waiting for authentication...', { isAuthenticated, userId: user?._id });
+        return;
+      }
+      
+      console.log('User authenticated, fetching queries...', user._id);
+      await fetchQueries();
     };
-    setQueries([query, ...queries]);
-    setOpenNew(false);
-    resetForm();
+
+    initializeQueries();
+  }, [user, isAuthenticated]);
+
+  const fetchQueries = async () => {
+    if (!user?._id) {
+      console.log('No user ID found, aborting fetch');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await queryService.getStudentQueries();
+      console.log('Query response:', response);
+
+      if (response?.data) {
+        // Transform the data to ensure responses array exists
+        const transformedData = response.data.map(query => ({
+          ...query,
+          responses: query.responses || [],
+          updates: query.updates || []
+        }));
+        setQueries(transformedData);
+      } else {
+        console.warn('No queries found in response');
+        setQueries([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch queries:', error);
+      enqueueSnackbar('Failed to fetch queries: ' + (error.message || 'Unknown error'), {
+        variant: 'error'
+      });
+      setQueries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user?._id) return; // Add check for user existence
+
+    // Setup WebSocket notifications
+    const cleanup = setupWebSocket(user._id, (notification) => {
+      enqueueSnackbar(notification.message, { 
+        variant: 'info',
+        autoHideDuration: 3000
+      });
+      // Refresh queries
+      fetchQueries();
+    });
+
+    return () => {
+      if (typeof cleanup === 'function') {
+        cleanup();
+      }
+    };
+  }, [user, enqueueSnackbar]);
+
+  const handleSubmitQuery = async () => {
+    try {
+      setLoading(true);
+      await queryService.submitQuery(newQuery);
+      enqueueSnackbar('Query submitted successfully!', { variant: 'success' });
+      setOpenNew(false);
+      resetForm();
+      fetchQueries();
+    } catch (error) {
+      enqueueSnackbar(error.message, { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditClick = (query) => {
@@ -71,30 +164,53 @@ const QuerySection = () => {
     setOpenEdit(true);
   };
 
-  const handleUpdateQuery = () => {
-    setQueries(
-      queries.map((q) =>
-        q.id === selectedQuery.id
-          ? {
-              ...q,
-              subject: newQuery.subject,
-              description: newQuery.description,
-              category: newQuery.category,
-              priority: newQuery.priority,
-              updates: [
-                ...q.updates,
-                {
-                  from: "Student",
-                  message: "Query updated",
-                  timestamp: new Date(),
-                },
-              ],
-            }
-          : q
-      )
-    );
-    setOpenEdit(false);
-    resetForm();
+  const handleUpdateQuery = async () => {
+    if (!selectedQuery?._id) {
+      enqueueSnackbar('No query selected for update', { variant: 'error' });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const updatedData = {
+        subject: newQuery.subject,
+        description: newQuery.description,
+        category: newQuery.category,
+        priority: newQuery.priority
+      };
+
+      const response = await queryService.updateQuery(selectedQuery._id, updatedData);
+
+      if (response.success) {
+        const currentTime = new Date().toISOString();
+        // Update local state with properly formatted timestamp
+        setQueries(queries.map((q) =>
+          q._id === selectedQuery._id
+            ? {
+                ...q,
+                ...updatedData,
+                updates: [
+                  ...(Array.isArray(q.updates) ? q.updates : []),
+                  {
+                    from: "Student",
+                    message: "Query updated",
+                    timestamp: currentTime
+                  }
+                ]
+              }
+            : q
+        ));
+
+        enqueueSnackbar('Query updated successfully', { variant: 'success' });
+        setOpenEdit(false);
+        resetForm();
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      enqueueSnackbar(error.message || 'Failed to update query', { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteClick = (query) => {
@@ -144,13 +260,14 @@ const QuerySection = () => {
     }
   };
 
-  const filteredQueries = queries
-    .filter((query) => statusFilter === "all" || query.status === statusFilter)
-    .filter(
-      (query) =>
-        query.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        query.description.toLowerCase().includes(searchTerm.toLowerCase())
+  // Add a loading state for authentication
+  if (!isAuthenticated || !user) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
     );
+  }
 
   return (
     <Box className="max-w-7xl mx-auto p-6">
@@ -215,10 +332,14 @@ const QuerySection = () => {
 
         {/* Queries List */}
         <Box className="divide-y divide-gray-100">
-          {filteredQueries.length > 0 ? (
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : filteredQueries &&filteredQueries.length > 0 ? (
             filteredQueries.map((query) => (
               <motion.div
-                key={query.id}
+                key={query._id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="p-6 hover:bg-gray-50 transition-colors"
@@ -228,28 +349,28 @@ const QuerySection = () => {
                     <Box className="flex items-center gap-3 mb-2 justify-between">
                       <Box className="flex items-center gap-3">
                         <Typography variant="h6" className="font-medium">
-                          {query.subject}
+                          {query.subject || 'No Subject'}
                         </Typography>
                         <Chip
                           size="small"
                           label={
-                            query.status.charAt(0).toUpperCase() +
-                            query.status.slice(1)
+                            (query.status || 'pending').charAt(0).toUpperCase() +
+                            (query.status || 'pending').slice(1)
                           }
-                          color={getStatusColor(query.status)}
+                          color={getStatusColor(query.status || 'pending')}
                           sx={{ borderRadius: "6px" }}
                         />
-                        <Tooltip title={`Priority: ${query.priority}`}>
+                        <Tooltip title={`Priority: ${query.priority || 'medium'}`}>
                           <Flag
                             sx={{
                               fontSize: 18,
-                              color: getPriorityColor(query.priority),
+                              color: getPriorityColor(query.priority || 'medium'),
                             }}
                           />
                         </Tooltip>
                       </Box>
                       {/* Action Buttons */}
-                      <Box>
+<Box>
                         <IconButton
                           size="small"
                           onClick={() => handleEditClick(query)}
@@ -266,12 +387,8 @@ const QuerySection = () => {
                         </IconButton>
                       </Box>
                     </Box>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      className="mb-3"
-                    >
-                      {query.description}
+                    <Typography variant="body2" color="text.secondary" className="mb-3">
+                      {query.description || 'No description provided'}
                     </Typography>
                     <Box className="flex items-center gap-3 text-sm">
                       <Chip
@@ -292,19 +409,57 @@ const QuerySection = () => {
                   </Box>
                 </Box>
 
-                {/* Updates Section */}
-                {query.updates.length > 0 && (
+                {/* Updates Section with proper timestamp formatting */}
+                {Array.isArray(query.updates) && query.updates.length > 0 && (
                   <Box className="mt-4 pl-4 border-l-2 border-blue-100">
                     {query.updates.map((update, index) => (
                       <Box key={index} className="mb-2 last:mb-0">
                         <Typography variant="body2" className="text-gray-600">
                           <span className="font-medium text-blue-600">
-                            {update.from}:
+                            {update?.from || 'System'}:
                           </span>{" "}
-                          {update.message}
+                          {update?.message || 'No message'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {new Date(update.timestamp).toLocaleString()}
+                          {update?.timestamp ? new Date(update.timestamp).toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                          }) : 'Unknown time'}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+
+                {/* Responses Section */}
+                {Array.isArray(query.responses) && query.responses.length > 0 && (
+                  <Box className="mt-4 pl-4 border-l-2 border-green-100">
+                    <Typography variant="subtitle2" className="mb-2 text-gray-700">
+                      Responses:
+                    </Typography>
+                    {query.responses.map((response, index) => (
+                      <Box key={index} className="mb-3 last:mb-0">
+                        <Typography variant="body2" className="text-gray-600">
+                          <span className="font-medium text-green-600">
+                            Admin:
+                          </span>{" "}
+                          {response.message}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {response.createdAt ? new Date(response.createdAt).toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                          }) : 'Unknown time'}
                         </Typography>
                       </Box>
                     ))}
@@ -315,7 +470,9 @@ const QuerySection = () => {
           ) : (
             <Box className="p-8 text-center">
               <Typography color="text.secondary">
-                No queries found matching your filters
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'No queries found matching your filters'
+                  : 'No queries yet. Create your first query!'}
               </Typography>
             </Box>
           )}
@@ -537,55 +694,5 @@ const QuerySection = () => {
     </Box>
   );
 };
-
-const dummyQueries = [
-  {
-    id: "1",
-    subject: "Unable to Update Academic Details",
-    description:
-      "I am trying to update my CGPA in the profile section but getting an error.",
-    category: "technical",
-    priority: "high",
-    status: "pending",
-    createdAt: new Date("2025-04-15"),
-    updates: [],
-  },
-  {
-    id: "2",
-    subject: "Placement Drive Registration Issue",
-    description:
-      "The system is not allowing me to register for the upcoming Microsoft placement drive.",
-    category: "placement",
-    priority: "high",
-    status: "in-progress",
-    createdAt: new Date("2025-04-14"),
-    updates: [
-      {
-        from: "Support Team",
-        message:
-          "We are looking into this issue. Please provide your student ID.",
-        timestamp: new Date("2025-04-14T10:30:00"),
-      },
-    ],
-  },
-  {
-    id: "3",
-    subject: "Certificate Verification Request",
-    description:
-      "Need verification of my internship certificate for the placement process.",
-    category: "academic",
-    priority: "medium",
-    status: "resolved",
-    createdAt: new Date("2025-04-13"),
-    updates: [
-      {
-        from: "Academic Department",
-        message:
-          "Your certificate has been verified and updated in the system.",
-        timestamp: new Date("2025-04-13T15:20:00"),
-      },
-    ],
-  },
-];
 
 export default QuerySection;

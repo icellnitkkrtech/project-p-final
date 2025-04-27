@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useParams, useNavigate } from "react-router-dom";
 import { LogoutOutlined } from "@mui/icons-material";
-import axios from "./axios";
+import { Badge } from "@mui/material";
+import axiosInstance from "../../config/axios";
 import {
   Menu as MenuIcon,
   Close as CloseIcon,
@@ -12,6 +13,7 @@ import {
   Description as DescriptionIcon,
   BusinessCenter as BusinessCenterIcon,
 } from "@mui/icons-material";
+import { initNotificationSound, playNotificationSound } from '../../utils/notificationSound';
 
 const StudentDashboard = () => {
   // const { id } = useParams();
@@ -21,6 +23,7 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const tabs = [
     { id: "profile", label: "Profile", icon: <PersonIcon /> },
@@ -30,7 +33,11 @@ const StudentDashboard = () => {
     {
       id: "notifications",
       label: "Notifications",
-      icon: <NotificationsIcon />,
+      icon: (
+        <Badge badgeContent={unreadCount} color="error" max={99}>
+          <NotificationsIcon />
+        </Badge>
+      ),
     },
     { id: "queries", label: "Support Queries", icon: <QuestionAnswerIcon /> },
   ];
@@ -44,7 +51,7 @@ const StudentDashboard = () => {
           throw new Error("No student ID found");
         }
 
-        const response = await axios.get(`/student/profile/${id}`);
+        const response = await axiosInstance.get(`/student/profile/${id}`);
         setStudent(response.data.data);
       } catch (error) {
         setError(
@@ -56,6 +63,41 @@ const StudentDashboard = () => {
     };
     fetchStudent();
   }, []);
+
+  // Initialize audio on component mount
+  useEffect(() => {
+    initNotificationSound();
+  }, []);
+
+  useEffect(() => {
+    if (!student?._id) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await axiosInstance.get('/notifications/unread/count');
+        const newCount = response.data.count || 0;
+        
+        // Only play sound if count increased and document is visible
+        if (newCount > unreadCount) {
+          playNotificationSound();
+        }
+        
+        setUnreadCount(newCount);
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchUnreadCount();
+
+    // Set up polling interval (every 30 seconds)
+    const intervalId = setInterval(fetchUnreadCount, 30000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
+  }, [student, unreadCount]);
+
   const handleLogout = () => {
     // Clear all localStorage items
     localStorage.removeItem("studentId");
@@ -64,10 +106,19 @@ const StudentDashboard = () => {
     // Redirect to login page
     navigate("/auth/student/login");
   };
+
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     navigate(`/student/${tabId}`);
     setIsSidebarOpen(false);
+    
+    // Reset unread count when visiting notifications tab
+    if (tabId === 'notifications') {
+      setUnreadCount(0);
+      // Mark notifications as read in backend
+      axiosInstance.post('/notifications/mark-read')
+        .catch(error => console.error('Error marking notifications as read:', error));
+    }
   };
 
   if (loading) {
