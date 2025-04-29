@@ -14,6 +14,7 @@ import reportRouter from './reportRoutes.js';
 import placementSessionRoutes from './placementSessionRoutes.js';
 // import auditRoutes from './auditRoutes.js';
 import placementPolicyRoutes from './placementPolicyRoutes.js';
+import queryRouter from './queryRoutes.js';
 const router = Router();
 
 router.get('/', (req, res) => {
@@ -34,4 +35,5 @@ router.use("/audit", auditRouter);
 router.use("/reports", reportRouter);
 router.use("/placement-sessions", placementSessionRoutes);
 router.use("/placement-policy", placementPolicyRoutes);
+router.use("/query", queryRouter);
 export default router;

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import router from "./src/routes/index.js";
+import notificationRouter from "./src/routes/notificationRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -36,6 +37,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 // Base Route Handler
 app.get('/', (req, res) => {
   res.json({ 
@@ -58,6 +60,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/v1", router);
+app.use('/api/v1/notifications', notificationRouter);
 
 // Enhanced Error Handler
 app.use((err, req, res, next) => {
